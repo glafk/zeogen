@@ -1,0 +1,59 @@
+root_path: C:/TUE/Thesis/zeogen/data/MOR
+prop: hoa
+num_targets: 1
+niggli: false
+primitive: true
+graph_method: crystalnn
+lattice_scale_method: scale_length
+preprocess_workers: 4
+readout: mean
+max_atoms: 128
+otf_graph: false
+eval_model_name: hoa
+
+datamodule:
+  _target_: source.data_utils.data_module.CrystDataModule
+
+  datasets:
+    train:
+      _target_: source.data_utils.CrystalDataset.TensorCrystDataset
+      name: HOA train
+      path: ${data.root_path}/MOR_train.pickle
+      prop: ${data.prop}
+      niggli: ${data.niggli}
+      primitive: ${data.primitive}
+      graph_method: ${data.graph_method}
+      lattice_scale_method: ${data.lattice_scale_method}
+      preprocess_workers: ${data.preprocess_workers}
+
+    val:
+      _target_: source.data_utils.CrystalDataset.TensorCrystDataset
+      name: HOA val
+      path: ${data.root_path}/MOR_val.pickle
+      prop: ${data.prop}
+      niggli: ${data.niggli}
+      primitive: ${data.primitive}
+      graph_method: ${data.graph_method}
+      lattice_scale_method: ${data.lattice_scale_method}
+      preprocess_workers: ${data.preprocess_workers}
+
+    test:
+      _target_: source.data_utils.CrystalDataset.TensorCrystDataset
+      name: HOA test
+      path: ${data.root_path}/MOR_test.pickle
+      prop: ${data.prop}
+      niggli: ${data.niggli}
+      primitive: ${data.primitive}
+      graph_method: ${data.graph_method}
+      lattice_scale_method: ${data.lattice_scale_method}
+      preprocess_workers: ${data.preprocess_workers}
+
+  num_workers:
+    train: 1
+    val: 1
+    test: 1
+
+  batch_size:
+    train: 16
+    val: 16
+    test: 16
