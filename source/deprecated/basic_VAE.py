@@ -5,7 +5,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 from torch.distributions import Normal
 from torch_geometric.nn import aggr
-from egnn import EGNN
+from source.deprecated.egnn import EGNN
 
 # DEPRECATED
 def unpack_batch(databatch, device='cuda'):

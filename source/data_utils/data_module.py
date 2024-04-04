@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import pytorch_lightning as pl
 from torch.utils.data import Dataset
-from torch_geometric.data import DataLoader
+from torch_geometric.loader import DataLoader
 import hydra
 from omegaconf import DictConfig
 
