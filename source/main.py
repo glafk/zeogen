@@ -30,8 +30,6 @@ def run_diffusion(cfg: omegaconf.DictConfig):
     # Hydra run directory
     hydra_dir = Path(HydraConfig.get().run.dir)
 
-    print(hydra_dir)
-
     # Instantiate datamodule
     hydra.utils.log.info(f"Instantiating <{cfg.data.datamodule._target_}>")
     datamodule: pl.LightningDataModule = hydra.utils.instantiate(

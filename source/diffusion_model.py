@@ -9,6 +9,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 from torch_scatter import scatter
 from tqdm import tqdm
+import pickle
 
 from data_utils.crystal_utils import frac_to_cart_coords, cart_to_frac_coords, min_distance_sqr_pbc, mard, lengths_angles_to_volume
 
@@ -293,6 +294,98 @@ class DiffusionModel(BaseModule):
         z_per_atom = z.repeat_interleave(num_atoms, dim=0)
         pred_composition_per_atom = self.fc_composition(z_per_atom)
         return pred_composition_per_atom
+
+
+    @torch.no_grad()
+    def langevin_dynamics(self, z, ld_kwargs, gt_num_atoms=None, gt_atom_types=None):
+        """
+        decode crystral structure from latent embeddings.
+        ld_kwargs: args for doing annealed langevin dynamics sampling:
+            n_step_each:  number of steps for each sigma level.
+            step_lr:      step size param.
+            min_sigma:    minimum sigma to use in annealed langevin dynamics.
+            save_traj:    if <True>, save the entire LD trajectory.
+            disable_bar:  disable the progress bar of langevin dynamics.
+        gt_num_atoms: if not <None>, use the ground truth number of atoms.
+        gt_atom_types: if not <None>, use the ground truth atom types.
+        """
+        if ld_kwargs.save_traj:
+            all_frac_coords = []
+            all_pred_cart_coord_diff = []
+            all_noise_cart = []
+            all_atom_types = []
+
+        # obtain key stats.
+        num_atoms, _, lengths, angles, composition_per_atom = self.decode_stats(
+            z, gt_num_atoms)
+        if gt_num_atoms is not None:
+            num_atoms = gt_num_atoms
+
+        # obtain atom types.
+        composition_per_atom = F.softmax(composition_per_atom, dim=-1)
+        if gt_atom_types is None:
+            cur_atom_types = self.sample_composition(
+                composition_per_atom, num_atoms)
+        else:
+            cur_atom_types = gt_atom_types
+
+        # init coords.
+        cur_frac_coords = torch.rand((num_atoms.sum(), 3), device=z.device)
+
+        # annealed langevin dynamics.
+        for sigma in tqdm(self.sigmas, total=self.sigmas.size(0), disable=ld_kwargs.disable_bar):
+            if sigma < ld_kwargs.min_sigma:
+                break
+            step_size = ld_kwargs.step_lr * (sigma / self.sigmas[-1]) ** 2
+
+            for step in range(ld_kwargs.n_step_each):
+                noise_cart = torch.randn_like(
+                    cur_frac_coords) * torch.sqrt(step_size * 2)
+                pred_cart_coord_diff, pred_atom_types = self.decoder(
+                    z, cur_frac_coords, cur_atom_types, num_atoms, lengths, angles)
+                cur_cart_coords = frac_to_cart_coords(
+                    cur_frac_coords, lengths, angles, num_atoms)
+                pred_cart_coord_diff = pred_cart_coord_diff / sigma
+                cur_cart_coords = cur_cart_coords + step_size * pred_cart_coord_diff + noise_cart
+                cur_frac_coords = cart_to_frac_coords(
+                    cur_cart_coords, lengths, angles, num_atoms)
+
+                if gt_atom_types is None:
+                    cur_atom_types = torch.argmax(pred_atom_types, dim=1) + 1
+
+                if ld_kwargs.save_traj:
+                    all_frac_coords.append(cur_frac_coords)
+                    all_pred_cart_coord_diff.append(
+                        step_size * pred_cart_coord_diff)
+                    all_noise_cart.append(noise_cart)
+                    all_atom_types.append(cur_atom_types)
+
+        output_dict = {'num_atoms': num_atoms, 'lengths': lengths, 'angles': angles,
+                       'frac_coords': cur_frac_coords, 'atom_types': cur_atom_types,
+                       'is_traj': False}
+
+        if ld_kwargs.save_traj:
+            output_dict.update(dict(
+                all_frac_coords=torch.stack(all_frac_coords, dim=0),
+                all_atom_types=torch.stack(all_atom_types, dim=0),
+                all_pred_cart_coord_diff=torch.stack(
+                    all_pred_cart_coord_diff, dim=0),
+                all_noise_cart=torch.stack(all_noise_cart, dim=0),
+                is_traj=True))
+
+        return output_dict
+
+    def sample(self, num_samples, ld_kwargs, save_samples=False):
+        # Here in the sampling part I will need to figure out how to force the model to sample from the part of the distribution where the representations of the "high-capacity" crystals lie
+        z = torch.randn(num_samples, self.hparams.hidden_dim,
+                        device=self.device)
+        samples = self.langevin_dynamics(z, ld_kwargs)
+
+        if save_samples:
+            with open("samples.pickle", "wb") as f:
+                pickle.dump(samples, f)
+
+        return samples
 
     def num_atom_loss(self, pred_num_atoms, batch):
         return F.cross_entropy(pred_num_atoms, batch.num_atoms)
