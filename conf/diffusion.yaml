@@ -1,4 +1,4 @@
-expname: test
+expname: Large_dataset_multiple_types
 
 # metadata specialised for each experiment
 core:
@@ -9,9 +9,10 @@ core:
 hydra:
   run:
     dir: ${oc.env:HYDRA_JOBS}/singlerun/${now:%Y-%m-%d}/${expname}/
-  
+
 defaults:
   - data: data_combined
   - model: diffusion
   - optim: optim
   - train: train
+  - logging: wandb_logging

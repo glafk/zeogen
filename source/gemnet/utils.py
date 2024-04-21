@@ -10,7 +10,6 @@ import json
 import torch
 from torch_scatter import segment_csr
 
-
 def read_json(path):
     """"""
     if not path.endswith(".json"):

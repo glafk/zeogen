@@ -1,4 +1,4 @@
-root_path: C:/TUE/Thesis/zeogen/data/MOR
+root_path: C:/TUE/Thesis/zeogen/data/combined_dataset
 prop: hoa
 num_targets: 1
 niggli: false
@@ -23,38 +23,38 @@ datamodule:
     train:
       _target_: data_utils.CrystalDataset.TensorCrystDataset
       name: HOA train
-      path: ${data.root_path}/MOR_train.pickle
+      path: ${data.root_path}/combined_train.pickle
       prop: ${data.prop}
       niggli: ${data.niggli}
       primitive: ${data.primitive}
       graph_method: ${data.graph_method}
       lattice_scale_method: ${data.lattice_scale_method}
       preprocess_workers: ${data.preprocess_workers}
-      num_records: 250
+      # num_records: 250
 
     val:
       _target_: data_utils.CrystalDataset.TensorCrystDataset
       name: HOA val
-      path: ${data.root_path}/MOR_val.pickle
+      path: ${data.root_path}/combined_val.pickle
       prop: ${data.prop}
       niggli: ${data.niggli}
       primitive: ${data.primitive}
       graph_method: ${data.graph_method}
       lattice_scale_method: ${data.lattice_scale_method}
       preprocess_workers: ${data.preprocess_workers}
-      num_records: 250
+      num_records: 50
 
     test:
       _target_: data_utils.CrystalDataset.TensorCrystDataset
       name: HOA test
-      path: ${data.root_path}/MOR_test.pickle
+      path: ${data.root_path}/combined_test.pickle
       prop: ${data.prop}
       niggli: ${data.niggli}
       primitive: ${data.primitive}
       graph_method: ${data.graph_method}
       lattice_scale_method: ${data.lattice_scale_method}
       preprocess_workers: ${data.preprocess_workers}
-      num_records: 100
+      num_records: 50
 
   num_workers:
     train: 0

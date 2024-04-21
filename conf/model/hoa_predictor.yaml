@@ -1,0 +1,7 @@
+
+_target_: hoa_predictor.HOAPredictor
+# conf\hoa_predictor.yaml
+
+defaults: 
+  - gnn: gemnet
+

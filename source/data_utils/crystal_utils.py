@@ -8,7 +8,7 @@ from pymatgen.analysis import local_env
 import torch
 from p_tqdm import p_umap
 
-from source.data_utils.utils import abs_cap
+from data_utils.utils import abs_cap
 
 CrystalNN = local_env.CrystalNN(
     distance_cutoffs=None, x_diff_weight=-1, porous_adjustment=False)
@@ -619,24 +619,25 @@ def preprocess(input_files, num_workers, niggli, primitive, graph_method,
         num_cpus=num_workers)
 
     mpid_to_results = {result['mp_id']: result for result in unordered_results}
-    ordered_results = [mpid_to_results[df.iloc[idx]['material_id']]
-                       for idx in range(len(df))]
+    #ordered_results = [mpid_to_results[df.iloc[idx]['material_id']]
+    #                   for idx in range(len(df))]
 
-    return ordered_results
+    #return ordered_results
+
 
 # Array shape
 # arr = [{frac_coords: [list], atom_types: [list], lengths: [list], angles: [list], adsorption_cap: float]}]
 # lengths = [a,b,c]; angles = [alpha, beta, gamma)
-def preprocess_tensors(crystal_dict_list, graph_method):
+def preprocess_tensors(crystal_dict_list, graph_method, num_records=None):
     def process_one(batch_idx, crystal_dict, graph_method):
         frac_coords = crystal_dict['frac_coords']
         atom_types = crystal_dict['atom_types']
         lengths = crystal_dict['lengths']
         angles = crystal_dict['angles']
-        adsorption_capacity = crystal_dict['hoa']
+        hoa = crystal_dict['hoa']
         crystal = Structure(
             lattice=Lattice.from_parameters(
-                *(lengths.tolist() + angles.tolist())),
+                *(lengths + angles)),
             species=atom_types,
             coords=frac_coords,
             coords_are_cartesian=False)
@@ -644,10 +645,14 @@ def preprocess_tensors(crystal_dict_list, graph_method):
         result_dict = {
             'batch_idx': batch_idx,
             'graph_arrays': graph_arrays,
-            'adsorption_cap': adsorption_capacity
+            'hoa': hoa
         }
         return result_dict
 
+    # Limit number of items temporarily for testing purporses
+    if num_records is not None:
+        crystal_dict_list = crystal_dict_list[:num_records]
+    
     unordered_results = p_umap(
         process_one,
         list(range(len(crystal_dict_list))),
@@ -712,6 +717,20 @@ def batch_accuracy_precision_recall(
     return np.mean(accuracies), np.mean(precisions), np.mean(recalls)
 """
     
+
+def compute_volume(batch_lattice):
+    """Compute volume from batched lattice matrix
+
+    batch_lattice: (N, 3, 3)
+    """
+    vector_a, vector_b, vector_c = torch.unbind(batch_lattice, dim=1)
+    return torch.abs(torch.einsum('bi,bi->b', vector_a,
+                                  torch.cross(vector_b, vector_c, dim=1)))
+
+
+def lengths_angles_to_volume(lengths, angles):
+    lattice = lattice_params_to_matrix_torch(lengths, angles)
+    return compute_volume(lattice)
 
 class StandardScaler:
     """A :class:`StandardScaler` normalizes the features of a dataset.

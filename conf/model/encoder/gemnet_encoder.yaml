@@ -1,0 +1,7 @@
+_target_: encoder.GemNetTEncoder
+hidden_size: 128
+num_targets: $(model.latent_dim)
+max_neighbors: ${model.max_neighbors}
+radius: ${model.radius}
+scale_file: ${oc.env:PROJECT_ROOT}/source/gemnet/scaling_factors_gemnet_diffusion.json
+scaler_path: ${oc.env.PROJECT_ROOT}/source/data_utils

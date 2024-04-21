@@ -14,7 +14,7 @@ from torch_scatter import scatter
 from torch_sparse import SparseTensor
 
 
-from source.data_utils.crystal_utils import (
+from data_utils.crystal_utils import (
     get_pbc_distances, radius_graph_pbc, frac_to_cart_coords)
 
 from .layers.atom_update_block import OutputBlock
@@ -500,7 +500,7 @@ class GemNetT(torch.nn.Module):
                 edge_index, to_jimages, num_bonds):
         """
         args:
-            z: (N_cryst, num_latent)
+            z: (N_cryst, num_latent) - None can be passed
             frac_coords: (N_atoms, 3)
             atom_types: (N_atoms, ), need to use atomic number e.g. H = 1
             num_atoms: (N_cryst,)

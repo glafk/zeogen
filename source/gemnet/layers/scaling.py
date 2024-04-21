@@ -22,6 +22,7 @@ class AutomaticFit:
     fitting_mode = False
 
     def __init__(self, variable, scale_file, name):
+        print("AutomaticFit init called.")
         self.variable = variable  # variable to find value for
         self.scale_file = scale_file
         self._name = name
@@ -30,6 +31,8 @@ class AutomaticFit:
         self.load_maybe()
 
         # first instance created
+        print("Fitting mode: ", AutomaticFit.fitting_mode)
+        print("Fitted: ", self._fitted)
         if AutomaticFit.fitting_mode and not self._fitted:
 
             # if first layer set to active
@@ -52,6 +55,7 @@ class AutomaticFit:
         AutomaticFit.fitting_mode = True
 
     def _add2queue(self):
+        print(f"Adding {self._name} to queue.")
         logging.debug(f"Add {self._name} to queue.")
         # check that same variable is not added twice
         for var in AutomaticFit.queue:
@@ -184,6 +188,7 @@ class ScalingFactor(torch.nn.Module):
         self.scale_factor = torch.nn.Parameter(
             torch.tensor(1.0, device=device), requires_grad=False
         )
+        print(f"Instantiating autoscaleFit for {name}")
         self.autofit = AutoScaleFit(self.scale_factor, scale_file, name)
 
     def forward(self, x_ref, y):

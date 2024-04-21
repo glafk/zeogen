@@ -10,7 +10,7 @@ from torch_geometric.loader import DataLoader
 import hydra
 from omegaconf import DictConfig
 
-from source.data_utils.crystal_utils import get_scaler_from_data_list
+from data_utils.crystal_utils import get_scaler_from_data_list
 
 
 def worker_init_fn(id: int):
@@ -57,6 +57,8 @@ class CrystDataModule(pl.LightningDataModule):
     def get_scaler(self, scaler_path):
         # Load once to compute property scaler
         if scaler_path is None:
+            # temporarily change this to the test dataset to generate the scaling factors
+            # test_dataset = hydra.utils.instantiate(self.datasets.test)
             train_dataset = hydra.utils.instantiate(self.datasets.train)
             self.lattice_scaler = get_scaler_from_data_list(
                 train_dataset.cached_data,
@@ -73,29 +75,26 @@ class CrystDataModule(pl.LightningDataModule):
         """
         construct datasets and assign data scalers.
         """
+        print("Setting up data module")
         if stage is None or stage == "fit":
             self.train_dataset = hydra.utils.instantiate(self.datasets.train)
-            self.val_datasets = [
-                hydra.utils.instantiate(dataset_cfg)
-                for dataset_cfg in self.datasets.val
-            ]
+            self.val_dataset = hydra.utils.instantiate(self.datasets.val)
 
             self.train_dataset.lattice_scaler = self.lattice_scaler
             self.train_dataset.scaler = self.scaler
-            for val_dataset in self.val_datasets:
-                val_dataset.lattice_scaler = self.lattice_scaler
-                val_dataset.scaler = self.scaler
+            self.val_dataset.lattice_scaler = self.lattice_scaler
+            self.val_dataset.scaler = self.scaler
 
         if stage is None or stage == "test":
-            self.test_datasets = [
-                hydra.utils.instantiate(dataset_cfg)
-                for dataset_cfg in self.datasets.test
-            ]
-            for test_dataset in self.test_datasets:
-                test_dataset.lattice_scaler = self.lattice_scaler
-                test_dataset.scaler = self.scaler
+            self.test_dataset = hydra.utils.instantiate(self.datasets.test)
+            print("Instantiating test dataset") 
+            self.test_dataset.lattice_scaler = self.lattice_scaler
+            self.test_dataset.scaler = self.scaler
 
     def train_dataloader(self) -> DataLoader:
+        with open("train_dataloader.txt", "w+") as f:
+            f.writelines(["train dataloader accessed"])
+
         return DataLoader(
             self.train_dataset,
             shuffle=True,
@@ -105,28 +104,28 @@ class CrystDataModule(pl.LightningDataModule):
         )
 
     def val_dataloader(self) -> Sequence[DataLoader]:
-        return [
-            DataLoader(
-                dataset,
+
+        with open("val_dataloader.txt", "w+") as f:
+            f.writelines(["val dataloader accessed"])
+
+        return DataLoader(
+                self.val_dataset,
                 shuffle=False,
                 batch_size=self.batch_size.val,
                 num_workers=self.num_workers.val,
                 worker_init_fn=worker_init_fn,
             )
-            for dataset in self.val_datasets
-        ]
 
     def test_dataloader(self) -> Sequence[DataLoader]:
-        return [
-            DataLoader(
-                dataset,
+        with open("test_dataloader.txt", "w+") as f:
+            f.writelines(["test dataloader accessed"])
+        return DataLoader(
+                self.test_dataset,
                 shuffle=False,
                 batch_size=self.batch_size.test,
                 num_workers=self.num_workers.test,
                 worker_init_fn=worker_init_fn,
             )
-            for dataset in self.test_datasets
-        ]
 
     def __repr__(self) -> str:
         return (

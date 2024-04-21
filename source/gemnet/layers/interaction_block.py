@@ -82,6 +82,7 @@ class InteractionBlockTripletsOnly(torch.nn.Module):
             bias=False,
         )
 
+        print("Instantiating triplet interaction")
         # Triplet Interaction
         self.trip_interaction = TripletInteraction(
             emb_size_edge=emb_size_edge,
@@ -253,6 +254,7 @@ class TripletInteraction(torch.nn.Module):
     ):
         super().__init__()
         self.name = name
+        print(f"Instantiating {self.name}")
 
         # Dense transformation
         self.dense_ba = Dense(

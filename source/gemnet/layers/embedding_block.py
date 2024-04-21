@@ -10,7 +10,7 @@ import torch
 
 from .base_layers import Dense
 
-from pl_modules.embeddings import MAX_ATOMIC_NUM
+MAX_ATOMIC_NUM = 100
 
 
 class AtomEmbedding(torch.nn.Module):
