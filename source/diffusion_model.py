@@ -333,6 +333,7 @@ class DiffusionModel(BaseModule):
         cur_frac_coords = torch.rand((num_atoms.sum(), 3), device=z.device)
 
         # annealed langevin dynamics.
+        print(f"Langevin dynamics sigmas...", self.sigmas)
         for sigma in tqdm(self.sigmas, total=self.sigmas.size(0), disable=ld_kwargs.disable_bar):
             if sigma < ld_kwargs.min_sigma:
                 break
@@ -342,11 +343,11 @@ class DiffusionModel(BaseModule):
                 noise_cart = torch.randn_like(
                     cur_frac_coords) * torch.sqrt(step_size * 2)
                 pred_cart_coord_diff, pred_atom_types = self.decoder(
-                    z, cur_frac_coords, cur_atom_types, num_atoms, lengths, angles)
+                    z, cur_frac_coords, cur_atom_types, num_atoms, lengths, angles) # lines 8,9 of pseudocode
                 cur_cart_coords = frac_to_cart_coords(
                     cur_frac_coords, lengths, angles, num_atoms)
                 pred_cart_coord_diff = pred_cart_coord_diff / sigma
-                cur_cart_coords = cur_cart_coords + step_size * pred_cart_coord_diff + noise_cart
+                cur_cart_coords = cur_cart_coords + step_size * pred_cart_coord_diff + noise_cart # line 11 in psedocode
                 cur_frac_coords = cart_to_frac_coords(
                     cur_cart_coords, lengths, angles, num_atoms)
 

@@ -83,6 +83,8 @@ def run_diffusion(cfg: omegaconf.DictConfig):
     hydra.utils.log.info("Starting testing!")
     trainer.test(datamodule=datamodule)
 
+    model.sample(25, omegaconf.DictConfig({"n_step_each": 10, "step_lr": 0.1, "min_sigma": 0.01, "save_traj": False, "disable_bar": False}), save_samples=True)
+
     # Logger closing to release resources/avoid multi-run conflicts
     if wandb_logger is not None:
         wandb_logger.experiment.finish()
