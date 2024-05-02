@@ -376,14 +376,32 @@ class DiffusionModel(BaseModule):
 
         return output_dict
 
-    def sample(self, num_samples, ld_kwargs, save_samples=False):
+    def sample(self, num_samples, ld_kwargs, save_samples=False, samples_file="samples.pickle"):
         # Here in the sampling part I will need to figure out how to force the model to sample from the part of the distribution where the representations of the "high-capacity" crystals lie
+        print(f"Saving sampled crystals - {save_samples}.")
+        print(self.device)
         z = torch.randn(num_samples, self.hparams.hidden_dim,
                         device=self.device)
         samples = self.langevin_dynamics(z, ld_kwargs)
 
         if save_samples:
-            with open("samples.pickle", "wb") as f:
+            print(f"Saving samples to {samples_file}.")
+            with open(samples_file, "wb") as f:
+                pickle.dump(samples, f)
+
+        return samples
+
+    def reconstruct(self, num_samples, ld_kwargs, save_samples=False, samples_file="samples.pickle"):
+        # TODO: Forward pass instead of sample, add option for ground truth angles and lengths to see if diffusion of atom sites works properly
+        print(f"Saving sampled crystals - {save_samples}.")
+        print(self.device)
+        z = torch.randn(num_samples, self.hparams.hidden_dim,
+                        device=self.device)
+        samples = self.langevin_dynamics(z, ld_kwargs)
+
+        if save_samples:
+            print(f"Saving samples to {samples_file}.")
+            with open(samples_file, "wb") as f:
                 pickle.dump(samples, f)
 
         return samples

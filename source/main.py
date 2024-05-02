@@ -8,6 +8,7 @@ import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from hydra.core.hydra_config import HydraConfig
 from pytorch_lightning.loggers import WandbLogger
+import notebooks
 
 import env
 
@@ -55,19 +56,19 @@ def run_diffusion(cfg: omegaconf.DictConfig):
 
     # Logger instantiation/configuration
     wandb_logger = None
-    if "wandb" in cfg.logging:
-        hydra.utils.log.info("Instantiating <WandbLogger>")
-        wandb_config = cfg.logging.wandb
-        wandb_logger = WandbLogger(
-            **wandb_config,
-            tags=cfg.core.tags,
-        )
-        hydra.utils.log.info("W&B is now watching <{cfg.logging.wandb_watch.log}>!")
-        wandb_logger.watch(
-            model,
-            log=cfg.logging.wandb_watch.log,
-            log_freq=cfg.logging.wandb_watch.log_freq,
-        )
+    # if "wandb" in cfg.logging:
+    #     hydra.utils.log.info("Instantiating <WandbLogger>")
+    #     wandb_config = cfg.logging.wandb
+    #     wandb_logger = WandbLogger(
+    #         **wandb_config,
+    #         tags=cfg.core.tags,
+    #     )
+    #     hydra.utils.log.info("W&B is now watching <{cfg.logging.wandb_watch.log}>!")
+    #     wandb_logger.watch(
+    #         model,
+    #         log=cfg.logging.wandb_watch.log,
+    #         log_freq=cfg.logging.wandb_watch.log_freq,
+    #     )
 
     hydra.utils.log.info("Instantiating the Trainer")
     trainer = pl.Trainer(
@@ -75,6 +76,7 @@ def run_diffusion(cfg: omegaconf.DictConfig):
         deterministic=cfg.train.deterministic,
         logger=wandb_logger,
         **cfg.train.pl_trainer,
+        accelerator="gpu"
     )
 
     hydra.utils.log.info("Starting training!")
@@ -83,7 +85,9 @@ def run_diffusion(cfg: omegaconf.DictConfig):
     hydra.utils.log.info("Starting testing!")
     trainer.test(datamodule=datamodule)
 
-    model.sample(25, omegaconf.DictConfig({"n_step_each": 10, "step_lr": 0.1, "min_sigma": 0.01, "save_traj": False, "disable_bar": False}), save_samples=True)
+    model = model.to("cuda")
+
+    model.sample(5, omegaconf.DictConfig({"n_step_each": 10, "step_lr": 0.1, "min_sigma": 0.01, "save_traj": False, "disable_bar": False}), save_samples=True, samples_file="samples_test_gpu_run.pickle")
 
     # Logger closing to release resources/avoid multi-run conflicts
     if wandb_logger is not None:
@@ -92,7 +96,8 @@ def run_diffusion(cfg: omegaconf.DictConfig):
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="diffusion")
 def main(cfg: omegaconf.DictConfig):
-    run_diffusion(cfg)
+    # run_diffusion(cfg)
+    ...
 
 if __name__ == "__main__":
     main()

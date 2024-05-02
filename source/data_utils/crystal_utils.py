@@ -1,10 +1,12 @@
 import copy
+import os
 
 import numpy as np
 from pymatgen.core.structure import Structure
 from pymatgen.core.lattice import Lattice
 from pymatgen.analysis.graphs import StructureGraph
 from pymatgen.analysis import local_env
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 import torch
 from p_tqdm import p_umap
 
@@ -793,3 +795,97 @@ class StandardScaler:
             np.isnan(transformed_with_nan), self.replace_nan_token, transformed_with_nan)
 
         return transformed_with_none
+
+
+def write_cif(structure: Structure, path: str, decimals: int = 3, *args, **kwargs):
+    '''
+    Write a structure to a CIF file
+
+    Parameters
+    ----------
+    structure : pymatgen.core.structure.Structure
+        Structure to write
+    filename : str
+        Name of the CIF file
+    '''
+    a = structure.lattice.a
+    b = structure.lattice.b
+    c = structure.lattice.c
+
+    alpha = structure.lattice.alpha
+    beta = structure.lattice.beta
+    gamma = structure.lattice.gamma
+
+    vol = structure.volume
+
+    sga = SpacegroupAnalyzer(structure, symprec=0.001)
+    try:
+        crystal_system = sga.get_crystal_system()
+    except:
+        crystal_system = 'triclinic'
+
+
+    print(f"Saving to {path}.")
+    with open(path, 'w') as f:
+        
+        f.write(f"_cell_length_a {a:.{decimals}f}\n")
+        f.write(f"_cell_length_b {b:.{decimals}f}\n")
+        f.write(f"_cell_length_c {c:.{decimals}f}\n")
+        f.write(f"_cell_angle_alpha {alpha:.{decimals}f}\n")
+        f.write(f"_cell_angle_beta {beta:.{decimals}f}\n")
+        f.write(f"_cell_angle_gamma {gamma:.{decimals}f}\n")
+        f.write(f"_cell_volume {vol:.{decimals}f}\n")
+        f.write("\n")
+        f.write(f"_symmetry_cell_setting {crystal_system}\n")
+        f.write(f"_symmetry_space_group_name_Hall 'P 1'\n")
+        f.write(f"_symmetry_space_group_name_H-M 'P 1'\n")
+        f.write("_symmetry_Int_Tables_number 1\n")
+        f.write("_symmetry_equiv_pos_as_xyz 'x,y,z'\n")
+        f.write("\n")
+        f.write("loop_\n")
+        f.write("_atom_site_label\n")
+        f.write("_atom_site_type_symbol\n")
+        f.write("_atom_site_fract_x\n")
+        f.write("_atom_site_fract_y\n")
+        f.write("_atom_site_fract_z\n")
+        f.write("_atom_site_charge\n")
+
+        for site in structure:
+            # for zeolites:
+            if site.species_string == 'Si':
+                f.write(f"{site.species_string} {site.species_string} {site.frac_coords[0]:.{decimals}f} {site.frac_coords[1]:.{decimals}f} {site.frac_coords[2]:.{decimals}f} -0.393\n")
+
+            else:
+                f.write(f"{site.species_string} {site.species_string} {site.frac_coords[0]:.{decimals}f} {site.frac_coords[1]:.{decimals}f} {site.frac_coords[2]:.{decimals}f} 0.000\n")
+
+
+def sample2cif(sample: dict, path: str):
+    a,b,c = sample["lengths"]
+    alpha, beta, gamma = sample["angles"]
+    lattice = Lattice.from_parameters(a=a, b=b, c=c, alpha=alpha, beta=beta, gamma=gamma)
+    species = sample["atom_types"]
+    coords = sample["frac_coords"]
+    structure = Structure(lattice, species, coords)
+
+    write_cif(structure, path)
+
+
+def save_samples_as_cifs(samples: dict, directory: str):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    # Split atom types
+    split_atom_types = np.split(samples["atom_types"], np.cumsum(samples["num_atoms"])[:-1])
+
+    # Split fractional coordinates
+    split_frac_coords = np.split(samples["frac_coords"], np.cumsum(samples["num_atoms"])[:-1])
+
+    individual_samples = []
+    for i in range(len(samples["num_atoms"])):
+        individual_samples.append({"atom_types": split_atom_types[i], "frac_coords": split_frac_coords[i], "lengths": samples["lengths"][i], "angles": samples["angles"][i]})
+
+    counter = 1
+    for sample in individual_samples:
+        filename = os.path.join(directory, f"sample_{counter}.cif")
+        sample2cif(sample, filename)
+        counter += 1
