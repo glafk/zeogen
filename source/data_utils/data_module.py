@@ -76,7 +76,7 @@ class CrystDataModule(pl.LightningDataModule):
         construct datasets and assign data scalers.
         """
         print("Setting up data module")
-        if stage is None or stage == "fit":
+        if stage == "fit":
             self.train_dataset = hydra.utils.instantiate(self.datasets.train)
             self.val_dataset = hydra.utils.instantiate(self.datasets.val)
 
@@ -85,11 +85,17 @@ class CrystDataModule(pl.LightningDataModule):
             self.val_dataset.lattice_scaler = self.lattice_scaler
             self.val_dataset.scaler = self.scaler
 
-        if stage is None or stage == "test":
+        if stage == "test" or stage == "predict":
             self.test_dataset = hydra.utils.instantiate(self.datasets.test)
             print("Instantiating test dataset") 
             self.test_dataset.lattice_scaler = self.lattice_scaler
             self.test_dataset.scaler = self.scaler
+
+        if stage == "predict":
+            self.predict_dataset = hydra.utils.instantiate(self.datasets.predict)
+            print("Instantiating predict dataset")
+            self.predict_dataset.lattice_scaler = self.lattice_scaler
+            self.predict_dataset.scaler = self.scaler 
 
     def train_dataloader(self) -> DataLoader:
         with open("train_dataloader.txt", "w+") as f:

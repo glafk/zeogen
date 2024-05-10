@@ -874,6 +874,12 @@ def save_samples_as_cifs(samples: dict, directory: str):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
+    samples["atom_types"] = samples["atom_types"].cpu()
+    samples["angles"] = samples["angles"].cpu()
+    samples["lengths"] = samples["lengths"].cpu()
+    samples["num_atoms"] = samples["num_atoms"].cpu()
+    samples["frac_coords"] = samples["frac_coords"].cpu()
+
     # Split atom types
     split_atom_types = np.split(samples["atom_types"], np.cumsum(samples["num_atoms"])[:-1])
 

@@ -391,20 +391,18 @@ class DiffusionModel(BaseModule):
 
         return samples
 
-    def reconstruct(self, num_samples, ld_kwargs, save_samples=False, samples_file="samples.pickle"):
-        # TODO: Forward pass instead of sample, add option for ground truth angles and lengths to see if diffusion of atom sites works properly
-        print(f"Saving sampled crystals - {save_samples}.")
-        print(self.device)
-        z = torch.randn(num_samples, self.hparams.hidden_dim,
-                        device=self.device)
-        samples = self.langevin_dynamics(z, ld_kwargs)
+    def predict_step(self, batch, ld_kwargs, reconstructions_file="reconstructions.pickle"):
+        # Reconstruct materials from dataset sample
+        mu, log_var, z = self.encode(batch)
 
-        if save_samples:
-            print(f"Saving samples to {samples_file}.")
-            with open(samples_file, "wb") as f:
-                pickle.dump(samples, f)
+        reconstruction = self.langevin_dynamics(z, ld_kwargs)
 
-        return samples
+        print(f"Saving reconstructions to {reconstructions_file}.")
+        with open(reconstructions_file, "ab") as f:
+            pickle.dump(reconstruction, f)
+
+        with open(reconstructions_file.split('.')[0] + "_gt.pickle", "ab") as f:
+            pickle.dump(batch, f)
 
     def num_atom_loss(self, pred_num_atoms, batch):
         return F.cross_entropy(pred_num_atoms, batch.num_atoms)

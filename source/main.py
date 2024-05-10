@@ -8,6 +8,7 @@ import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from hydra.core.hydra_config import HydraConfig
 from pytorch_lightning.loggers import WandbLogger
+from diffusion_model import DiffusionModel
 import notebooks
 
 import env
@@ -56,19 +57,19 @@ def run_diffusion(cfg: omegaconf.DictConfig):
 
     # Logger instantiation/configuration
     wandb_logger = None
-    # if "wandb" in cfg.logging:
-    #     hydra.utils.log.info("Instantiating <WandbLogger>")
-    #     wandb_config = cfg.logging.wandb
-    #     wandb_logger = WandbLogger(
-    #         **wandb_config,
-    #         tags=cfg.core.tags,
-    #     )
-    #     hydra.utils.log.info("W&B is now watching <{cfg.logging.wandb_watch.log}>!")
-    #     wandb_logger.watch(
-    #         model,
-    #         log=cfg.logging.wandb_watch.log,
-    #         log_freq=cfg.logging.wandb_watch.log_freq,
-    #     )
+    if "wandb" in cfg.logging:
+        hydra.utils.log.info("Instantiating <WandbLogger>")
+        wandb_config = cfg.logging.wandb
+        wandb_logger = WandbLogger(
+            **wandb_config,
+            tags=cfg.core.tags,
+        )
+        hydra.utils.log.info("W&B is now watching <{cfg.logging.wandb_watch.log}>!")
+        wandb_logger.watch(
+            model,
+            log=cfg.logging.wandb_watch.log,
+            log_freq=cfg.logging.wandb_watch.log_freq,
+        )
 
     hydra.utils.log.info("Instantiating the Trainer")
     trainer = pl.Trainer(
@@ -93,11 +94,34 @@ def run_diffusion(cfg: omegaconf.DictConfig):
     if wandb_logger is not None:
         wandb_logger.experiment.finish()
 
+def run_reconstruction(cfg: omegaconf.DictConfig):
+    if cfg.train.deterministic:
+        seed_everything(cfg.train.random_seed)
+    
+    # Hydra run directory
+    hydra_dir = Path(HydraConfig.get().run.dir)
+
+    # Load model
+    hydra.utils.log.info(f"Loading model <{cfg.model._target_}>")
+    model = DiffusionModel.load_from_checkpoint(cfg.model.ckpt_path)
+
+    # Instantiate datamodule
+    hydra.utils.log.info(f"Instantiating <{cfg.data.datamodule._target_}>")
+    datamodule: pl.LightningDataModule = hydra.utils.instantiate(
+        cfg.data.datamodule, _recursive_=False
+    ) 
+
+    model.eval()
+    model.freeze()
+
+    model.predict(datamodule=datamodule)
+    
+
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="diffusion")
 def main(cfg: omegaconf.DictConfig):
     # run_diffusion(cfg)
-    ...
+    run_reconstruction(cfg)
 
 if __name__ == "__main__":
     main()
