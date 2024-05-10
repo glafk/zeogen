@@ -2,6 +2,7 @@ import os
 from typing import Optional
 
 import dotenv
+from dotenv import dotenv_values
 
 def get_env(env_name: str, default: Optional[str] = None) -> str:
     """

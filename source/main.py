@@ -111,10 +111,13 @@ def run_reconstruction(cfg: omegaconf.DictConfig):
         cfg.data.datamodule, _recursive_=False
     ) 
 
+    datamodule.setup(stage="predict")
     model.eval()
-    model.freeze()
+    predict_dataloader = datamodule.predict_dataloader()
 
-    model.predict(datamodule=datamodule)
+    for batch in predict_dataloader:
+        with torch.no_grad():  # No need to track gradients during inference
+            model.reconstruct(batch)
     
 
 

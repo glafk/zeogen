@@ -136,6 +136,18 @@ class CrystDataModule(pl.LightningDataModule):
                 persistent_workers=True
             )
 
+    def predict_dataloader(self) -> Sequence[DataLoader]:
+        with open("predict_dataloader.txt", "w+") as f:
+            f.writelines(["predict dataloader accessed"])
+        return DataLoader(
+                self.predict_dataset,
+                shuffle=False,
+                batch_size=self.batch_size.predict,
+                num_workers=self.num_workers.predict,
+                worker_init_fn=worker_init_fn,
+                persistent_workers=True
+            )
+
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}("

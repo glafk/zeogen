@@ -391,7 +391,7 @@ class DiffusionModel(BaseModule):
 
         return samples
 
-    def predict_step(self, batch, ld_kwargs, reconstructions_file="reconstructions.pickle"):
+    def reconstruct(self, batch, ld_kwargs, reconstructions_file="reconstructions.pickle"):
         # Reconstruct materials from dataset sample
         mu, log_var, z = self.encode(batch)
 
