@@ -88,7 +88,7 @@ def run_diffusion(cfg: omegaconf.DictConfig):
 
     model = model.to("cuda")
 
-    model.sample(5, omegaconf.DictConfig({"n_step_each": 10, "step_lr": 0.1, "min_sigma": 0.01, "save_traj": False, "disable_bar": False}), save_samples=True, samples_file="samples_test_gpu_run.pickle")
+    model.sample(50, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.1, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}), save_samples=True, samples_file="samples_test_gpu_run.pickle")
 
     # Logger closing to release resources/avoid multi-run conflicts
     if wandb_logger is not None:
@@ -111,19 +111,27 @@ def run_reconstruction(cfg: omegaconf.DictConfig):
         cfg.data.datamodule, _recursive_=False
     ) 
 
+    # Pass scaler from datamodule to model
+    hydra.utils.log.info(f"Passing scaler from datamodule to model <{datamodule.scaler}>")
+    model.lattice_scaler = datamodule.lattice_scaler.copy()
+    model.scaler = datamodule.scaler.copy()
+
     datamodule.setup(stage="predict")
     model.eval()
     predict_dataloader = datamodule.predict_dataloader()
+    
+    model = model.to("cuda")
 
     for batch in predict_dataloader:
+        batch = batch.to("cuda")
         with torch.no_grad():  # No need to track gradients during inference
-            model.reconstruct(batch)
+            model.reconstruct(batch, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.1, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}))
     
 
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="diffusion")
 def main(cfg: omegaconf.DictConfig):
-    # run_diffusion(cfg)
+    run_diffusion(cfg)
     run_reconstruction(cfg)
 
 if __name__ == "__main__":

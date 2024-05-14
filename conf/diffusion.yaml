@@ -1,4 +1,4 @@
-expname: Large_dataset_multiple_types_fitted_factors_with_samples
+expname: sampling_100_langevin_steps
 
 # metadata specialised for each experiment
 core:
