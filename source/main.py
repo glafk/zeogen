@@ -127,11 +127,30 @@ def run_reconstruction(cfg: omegaconf.DictConfig):
         with torch.no_grad():  # No need to track gradients during inference
             model.reconstruct(batch, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.1, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}))
     
+def run_sampling(cfg: omegaconf.DictConfig):
+    if cfg.train.deterministic:
+        seed_everything(cfg.train.random_seed)
+    
+    # Hydra run directory
+    hydra_dir = Path(HydraConfig.get().run.dir)
 
+    # Load model
+    hydra.utils.log.info(f"Loading model <{cfg.model._target_}>")
+    model = DiffusionModel.load_from_checkpoint(cfg.model.ckpt_path)
+
+    model = model.to("cuda")
+
+    model.sample(50, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.1, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}), save_samples=True, samples_file="samples_test_gpu_run.pickle")
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="diffusion")
 def main(cfg: omegaconf.DictConfig):
-    run_diffusion(cfg)
+    # Run training and sampling loop
+    # run_diffusion(cfg)
+    
+    # Run only sampling from saved model
+    run_sampling(cfg)
+
+    # Run reconstruction from saved model
     run_reconstruction(cfg)
 
 if __name__ == "__main__":
