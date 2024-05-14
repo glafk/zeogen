@@ -1,4 +1,4 @@
-root_path: C:/TUE/Thesis/zeogen/data/combined_dataset
+root_path: ${oc.env:PROJECT_ROOT}/data/combined_dataset
 prop: hoa
 num_targets: 1
 niggli: false
