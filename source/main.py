@@ -138,6 +138,22 @@ def run_sampling(cfg: omegaconf.DictConfig):
     hydra.utils.log.info(f"Loading model <{cfg.model._target_}>")
     model = DiffusionModel.load_from_checkpoint(cfg.model.ckpt_path)
 
+    # Instantiate datamodule
+    # Here we isntantiate the datamodule because we need to pass the scaler
+    hydra.utils.log.info(f"Instantiating <{cfg.data.datamodule._target_}>")
+    datamodule: pl.LightningDataModule = hydra.utils.instantiate(
+        cfg.data.datamodule, _recursive_=False
+    ) 
+
+    # Pass scaler from datamodule to model
+    hydra.utils.log.info(f"Passing scaler from datamodule to model <{datamodule.scaler}>")
+    model.lattice_scaler = datamodule.lattice_scaler.copy()
+    model.scaler = datamodule.scaler.copy()
+
+    datamodule.setup(stage="predict")
+    model.eval()
+    predict_dataloader = datamodule.predict_dataloader()
+
     model = model.to("cuda")
 
     model.sample(50, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.1, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}), save_samples=True, samples_file="samples_test_gpu_run.pickle")
