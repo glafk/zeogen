@@ -86,24 +86,24 @@ def run_diffusion(cfg: omegaconf.DictConfig):
     hydra.utils.log.info("Starting testing!")
     trainer.test(datamodule=datamodule)
 
-    model = model.to("cuda")
-
-    model.sample(50, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.1, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}), save_samples=True, samples_file="samples_test_gpu_run.pickle")
-
     # Logger closing to release resources/avoid multi-run conflicts
     if wandb_logger is not None:
         wandb_logger.experiment.finish()
+    
+    return model
 
-def run_reconstruction(cfg: omegaconf.DictConfig):
+def run_reconstruction(cfg: omegaconf.DictConfig, model: DiffusionModel):
+
     if cfg.train.deterministic:
         seed_everything(cfg.train.random_seed)
     
     # Hydra run directory
     hydra_dir = Path(HydraConfig.get().run.dir)
 
-    # Load model
-    hydra.utils.log.info(f"Loading model <{cfg.model._target_}>")
-    model = DiffusionModel.load_from_checkpoint(cfg.model.ckpt_path)
+    if model is None:
+        # Load model
+        hydra.utils.log.info(f"Loading model <{cfg.model._target_}>")
+        model = DiffusionModel.load_from_checkpoint(cfg.model.ckpt_path)
 
     # Instantiate datamodule
     hydra.utils.log.info(f"Instantiating <{cfg.data.datamodule._target_}>")
@@ -127,16 +127,17 @@ def run_reconstruction(cfg: omegaconf.DictConfig):
         with torch.no_grad():  # No need to track gradients during inference
             model.reconstruct(batch, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.1, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}))
     
-def run_sampling(cfg: omegaconf.DictConfig):
+def run_sampling(cfg: omegaconf.DictConfig, model: DiffusionModel):
     if cfg.train.deterministic:
         seed_everything(cfg.train.random_seed)
     
     # Hydra run directory
     hydra_dir = Path(HydraConfig.get().run.dir)
 
-    # Load model
-    hydra.utils.log.info(f"Loading model <{cfg.model._target_}>")
-    model = DiffusionModel.load_from_checkpoint(cfg.model.ckpt_path)
+    if model is None:
+        # Load model
+        hydra.utils.log.info(f"Loading model <{cfg.model._target_}>")
+        model = DiffusionModel.load_from_checkpoint(cfg.model.ckpt_path)
 
     # Instantiate datamodule
     # Here we isntantiate the datamodule because we need to pass the scaler
@@ -161,7 +162,7 @@ def run_sampling(cfg: omegaconf.DictConfig):
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="diffusion")
 def main(cfg: omegaconf.DictConfig):
     # Run training and sampling loop
-    # run_diffusion(cfg)
+    run_diffusion(cfg)
     
     # Run only sampling from saved model
     run_sampling(cfg)
