@@ -15,9 +15,9 @@ teacher_forcing_lattice: true
 teacher_forcing_max_epoch: ${data.teacher_forcing_max_epoch}
 max_neighbors: 20  # maximum number of neighbors for OTF graph bulding in decoder
 radius: 7.  # maximum search radius for OTF graph building in decoder
-sigma_begin: 10.
+sigma_begin: 30.
 sigma_end: 0.01
-type_sigma_begin: 5.
+type_sigma_begin: 10.
 type_sigma_end: 0.01
 num_noise_level: 50
 predict_property: False
