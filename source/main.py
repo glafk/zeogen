@@ -92,7 +92,7 @@ def run_diffusion(cfg: omegaconf.DictConfig):
     
     return model
 
-def run_reconstruction(cfg: omegaconf.DictConfig, model: DiffusionModel):
+def run_reconstruction(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
 
     if cfg.train.deterministic:
         seed_everything(cfg.train.random_seed)
@@ -127,7 +127,7 @@ def run_reconstruction(cfg: omegaconf.DictConfig, model: DiffusionModel):
         with torch.no_grad():  # No need to track gradients during inference
             model.reconstruct(batch, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.1, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}))
     
-def run_sampling(cfg: omegaconf.DictConfig, model: DiffusionModel):
+def run_sampling(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
     if cfg.train.deterministic:
         seed_everything(cfg.train.random_seed)
     
@@ -162,7 +162,7 @@ def run_sampling(cfg: omegaconf.DictConfig, model: DiffusionModel):
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="diffusion")
 def main(cfg: omegaconf.DictConfig):
     # Run training and sampling loop
-    run_diffusion(cfg)
+    # run_diffusion(cfg)
     
     # Run only sampling from saved model
     run_sampling(cfg)

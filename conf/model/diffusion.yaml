@@ -21,7 +21,7 @@ type_sigma_begin: 10.
 type_sigma_end: 0.01
 num_noise_level: 50
 predict_property: False
-# ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model.ckpt
+ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model_sigma_30.ckpt
 
 defaults:
   - encoder: gemnet_encoder
