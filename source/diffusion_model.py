@@ -17,6 +17,8 @@ import pickle
 
 from data_utils.crystal_utils import frac_to_cart_coords, cart_to_frac_coords, min_distance_sqr_pbc, mard, lengths_angles_to_volume
 
+# Load environment variables
+env.load_envs()
 
 MAX_ATOMIC_NUM = 100
 PROJECT_ROOT = Path(env.get_env("PROJECT_ROOT"))
