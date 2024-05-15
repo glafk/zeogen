@@ -1,5 +1,9 @@
+from pathlib import Path
 from typing import Any, Dict
+import os
 
+
+import env
 import hydra
 import numpy as np
 import omegaconf
@@ -15,7 +19,7 @@ from data_utils.crystal_utils import frac_to_cart_coords, cart_to_frac_coords, m
 
 
 MAX_ATOMIC_NUM = 100
-
+PROJECT_ROOT = Path(env.get_env("PROJECT_ROOT"))
 
 def build_mlp(in_dim, hidden_dim, fc_num_layers, out_dim):
     mods = [nn.Linear(in_dim, hidden_dim), nn.ReLU()]
@@ -386,7 +390,7 @@ class DiffusionModel(BaseModule):
 
         if save_samples:
             print(f"Saving samples to {samples_file}.")
-            with open(samples_file, "wb") as f:
+            with open(os.path.join(f"{PROJECT_ROOT}/samples", samples_file, "wb")) as f:
                 pickle.dump(samples, f)
 
         return samples
@@ -398,7 +402,7 @@ class DiffusionModel(BaseModule):
         reconstruction = self.langevin_dynamics(z, ld_kwargs)
 
         print(f"Saving reconstructions to {reconstructions_file}.")
-        with open(reconstructions_file, "ab") as f:
+        with open(os.path.join(f"{PROJECT_ROOT}/reconstructions", reconstructions_file, "ab")) as f:
             pickle.dump(reconstruction, f)
 
         with open(reconstructions_file.split('.')[0] + "_gt.pickle", "ab") as f:
