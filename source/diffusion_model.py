@@ -392,7 +392,7 @@ class DiffusionModel(BaseModule):
 
         if save_samples:
             print(f"Saving samples to {samples_file}.")
-            with open(os.path.join(f"{PROJECT_ROOT}/samples", samples_file, "wb")) as f:
+            with open(os.path.join(f"{PROJECT_ROOT}/samples", samples_file), "wb") as f:
                 pickle.dump(samples, f)
 
         return samples
@@ -404,7 +404,7 @@ class DiffusionModel(BaseModule):
         reconstruction = self.langevin_dynamics(z, ld_kwargs)
 
         print(f"Saving reconstructions to {reconstructions_file}.")
-        with open(os.path.join(f"{PROJECT_ROOT}/reconstructions", reconstructions_file, "ab")) as f:
+        with open(os.path.join(f"{PROJECT_ROOT}/reconstructions", reconstructions_file), "ab") as f:
             pickle.dump(reconstruction, f)
 
         with open(reconstructions_file.split('.')[0] + "_gt.pickle", "ab") as f:
