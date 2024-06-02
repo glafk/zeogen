@@ -9,6 +9,9 @@ from pymatgen.analysis import local_env
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 import torch
 from p_tqdm import p_umap
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 
 from data_utils.utils import abs_cap
 
@@ -895,3 +898,34 @@ def save_samples_as_cifs(samples: dict, directory: str):
         filename = os.path.join(directory, f"sample_{counter}.cif")
         sample2cif(sample, filename)
         counter += 1
+
+
+def visualize_trajectory(fractional_coords, lattice_vectors):
+    """
+    Visualize the trajectory of an atom given its fractional coordinates and lattice vectors.
+
+    Parameters:
+    - fractional_coords: List of fractional coordinates (each element is [x, y, z]).
+    - lattice_vectors: 3x3 array of lattice vectors defining the unit cell.
+    """
+
+    # Convert fractional coordinates to Cartesian coordinates
+    fractional_coords = np.array(fractional_coords)
+    lattice_vectors = np.array(lattice_vectors)
+    cartesian_coords = np.dot(fractional_coords, lattice_vectors)
+
+    # Plot the trajectory
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    
+    ax.plot(cartesian_coords[:, 0], cartesian_coords[:, 1], cartesian_coords[:, 2], marker='o')
+    
+    # Set labels
+    ax.set_xlabel('X (Å)')
+    ax.set_ylabel('Y (Å)')
+    ax.set_zlabel('Z (Å)')
+    
+    # Title
+    ax.set_title('Atom Trajectory in 3D Space')
+
+    plt.show()

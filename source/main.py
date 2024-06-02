@@ -125,7 +125,7 @@ def run_reconstruction(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
     for batch in predict_dataloader:
         batch = batch.to("cuda")
         with torch.no_grad():  # No need to track gradients during inference
-            model.reconstruct(batch, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.1, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}))
+            model.reconstruct(batch, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.0001, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}), reconstructions_file="reconstructions_low_noise.pickle")
     
 def run_sampling(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
     if cfg.train.deterministic:
@@ -157,12 +157,12 @@ def run_sampling(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
 
     model = model.to("cuda")
 
-    model.sample(50, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.1, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}), save_samples=True, samples_file="samples_test_gpu_run.pickle")
+    model.sample(50, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.0001, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}), save_samples=True, samples_file="samples_low_noise.pickle")
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="diffusion")
 def main(cfg: omegaconf.DictConfig):
     # Run training and sampling loop
-    # run_diffusion(cfg)
+    run_diffusion(cfg)
     
     # Run only sampling from saved model
     run_sampling(cfg)

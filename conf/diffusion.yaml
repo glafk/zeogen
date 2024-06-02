@@ -1,4 +1,4 @@
-expname: sampling_100_langevin_steps
+expname: train_and_sample_300_epochs
 
 # metadata specialised for each experiment
 core:
