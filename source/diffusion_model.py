@@ -15,7 +15,10 @@ from torch_scatter import scatter
 from tqdm import tqdm
 import pickle
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 027a297a0576b492021451936f1989c48c097104
 from utils import add_object
 from data_utils.crystal_utils import frac_to_cart_coords, cart_to_frac_coords, min_distance_sqr_pbc, mard, lengths_angles_to_volume
 
@@ -376,6 +379,7 @@ class DiffusionModel(BaseModule):
 
         if ld_kwargs.save_traj:
             output_dict.update(dict(
+                z=z,
                 all_frac_coords=torch.stack(all_frac_coords, dim=0),
                 all_atom_types=torch.stack(all_atom_types, dim=0),
                 all_pred_cart_coord_diff=torch.stack(

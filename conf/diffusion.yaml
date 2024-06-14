@@ -1,4 +1,4 @@
-expname: sampling_100_langevin_steps
+expname: train_and_sample_150_epochs_MFI_only
 
 # metadata specialised for each experiment
 core:
@@ -11,7 +11,7 @@ hydra:
     dir: ${oc.env:HYDRA_JOBS}/singlerun/${now:%Y-%m-%d}/${expname}/
 
 defaults:
-  - data: data_combined
+  - data: data_MFI_only
   - model: diffusion
   - optim: optim
   - train: train

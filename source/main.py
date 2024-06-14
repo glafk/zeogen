@@ -25,7 +25,7 @@ assert (
 os.chdir(PROJECT_ROOT)
 
 
-def run_diffusion(cfg: omegaconf.DictConfig):
+def run_training(cfg: omegaconf.DictConfig):
     if cfg.train.deterministic:
         seed_everything(cfg.train.random_seed)
     
@@ -70,6 +70,28 @@ def run_diffusion(cfg: omegaconf.DictConfig):
             log=cfg.logging.wandb_watch.log,
             log_freq=cfg.logging.wandb_watch.log_freq,
         )
+
+    # Log the current config used for the experiment
+    # Convert OmegaConf object to a dictionary
+    config_dict = OmegaConf.to_container(config, resolve=True)
+
+    # Define the filename for saving the config
+    config_filename = 'config.json'
+
+    # Save the config dictionary to a JSON file
+    with open(config_filename, 'w') as f:
+        json.dump(config_dict, f, indent=4)
+
+    # Create a wandb artifact and add the config file
+    artifact = wandb.Artifact('config', type='configuration')
+    artifact.add_file(config_filename)
+
+    # Log the artifact to the current run
+    wandb.log_artifact(artifact)
+
+    # Clean up the file so that it doesn't hang around
+    # Optionally, clean up the local config file
+    os.remove(config_filename)
 
     hydra.utils.log.info("Instantiating the Trainer")
     trainer = pl.Trainer(
@@ -125,7 +147,7 @@ def run_reconstruction(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
     for batch in predict_dataloader:
         batch = batch.to("cuda")
         with torch.no_grad():  # No need to track gradients during inference
-            model.reconstruct(batch, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.1, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}))
+            model.reconstruct(batch, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.0001, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}), reconstructions_file=cfg.model.reconstructions_file)
     
 def run_sampling(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
     if cfg.train.deterministic:
@@ -157,18 +179,23 @@ def run_sampling(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
 
     model = model.to("cuda")
 
-    model.sample(50, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.1, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}), save_samples=True, samples_file="samples_test_gpu_run.pickle")
+    model.sample(50, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.0001, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}), save_samples=True, samples_file=cfg.model.samples_file)
+
+    
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="diffusion")
 def main(cfg: omegaconf.DictConfig):
     # Run training and sampling loop
-    # run_diffusion(cfg)
+    if cfg.model.run_training:
+        run_training(cfg)
     
     # Run only sampling from saved model
-    run_sampling(cfg)
+    if cfg.model.run_sampling:
+        run_sampling(cfg)
 
     # Run reconstruction from saved model
-    run_reconstruction(cfg)
+    if cfg.model.run_reconstruction:
+        run_reconstruction(cfg)
 
 if __name__ == "__main__":
     main()
