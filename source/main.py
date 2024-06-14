@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import json
 
 import torch
 import hydra
@@ -9,7 +10,9 @@ from pytorch_lightning import seed_everything
 from hydra.core.hydra_config import HydraConfig
 from pytorch_lightning.loggers import WandbLogger
 from diffusion_model import DiffusionModel
-import notebooks
+import wandb
+
+from utils import load_from_wandb
 
 import env
 
@@ -73,10 +76,10 @@ def run_training(cfg: omegaconf.DictConfig):
 
     # Log the current config used for the experiment
     # Convert OmegaConf object to a dictionary
-    config_dict = OmegaConf.to_container(config, resolve=True)
+    config_dict = omegaconf.to_container(cfg, resolve=True)
 
     # Define the filename for saving the config
-    config_filename = 'config.json'
+    config_filename = f'config_{cfg.expname}.json'
 
     # Save the config dictionary to a JSON file
     with open(config_filename, 'w') as f:
@@ -116,16 +119,18 @@ def run_training(cfg: omegaconf.DictConfig):
 
 def run_reconstruction(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
 
-    if cfg.train.deterministic:
-        seed_everything(cfg.train.random_seed)
-    
-    # Hydra run directory
-    hydra_dir = Path(HydraConfig.get().run.dir)
+    if cfg.load_model:
+        # Make sure that the model location is provided
+        assert cfg.model_location is not None
 
-    if model is None:
-        # Load model
-        hydra.utils.log.info(f"Loading model <{cfg.model._target_}>")
-        model = DiffusionModel.load_from_checkpoint(cfg.model.ckpt_path)
+        if cfg.model_location == "local":
+            assert cfg.ckpt_path is not None, "Please provide a path to the model checkpoint"
+            # Load model
+            hydra.utils.log.info(f"Loading model <{cfg.model._target_}>")
+            model = DiffusionModel.load_from_checkpoint(cfg.model.ckpt_path)
+        elif cfg.model_location == "wandb":
+            assert cfg.model.experiment_name is not None, "Please provide an experiment name"
+            model = load_from_wandb(cfg.model.experiment_name)
 
     # Instantiate datamodule
     hydra.utils.log.info(f"Instantiating <{cfg.data.datamodule._target_}>")
@@ -150,16 +155,18 @@ def run_reconstruction(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
             model.reconstruct(batch, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.0001, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}), reconstructions_file=cfg.model.reconstructions_file)
     
 def run_sampling(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
-    if cfg.train.deterministic:
-        seed_everything(cfg.train.random_seed)
-    
-    # Hydra run directory
-    hydra_dir = Path(HydraConfig.get().run.dir)
+    if cfg.load_model:
+        # Make sure that the model location is provided
+        assert cfg.model_location is not None
 
-    if model is None:
-        # Load model
-        hydra.utils.log.info(f"Loading model <{cfg.model._target_}>")
-        model = DiffusionModel.load_from_checkpoint(cfg.model.ckpt_path)
+        if cfg.model_location == "local":
+            assert cfg.ckpt_path is not None, "Please provide a path to the model checkpoint"
+            # Load model
+            hydra.utils.log.info(f"Loading model <{cfg.model._target_}>")
+            model = DiffusionModel.load_from_checkpoint(cfg.model.ckpt_path)
+        elif cfg.model_location == "wandb":
+            assert cfg.model.experiment_name is not None, "Please provide an experiment name"
+            model = load_from_wandb(cfg.model.experiment_name)
 
     # Instantiate datamodule
     # Here we isntantiate the datamodule because we need to pass the scaler
