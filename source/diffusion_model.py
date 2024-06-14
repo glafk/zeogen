@@ -15,10 +15,6 @@ from torch_scatter import scatter
 from tqdm import tqdm
 import pickle
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 027a297a0576b492021451936f1989c48c097104
 from utils import add_object
 from data_utils.crystal_utils import frac_to_cart_coords, cart_to_frac_coords, min_distance_sqr_pbc, mard, lengths_angles_to_volume
 
