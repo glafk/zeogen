@@ -15,6 +15,8 @@ from torch_scatter import scatter
 from tqdm import tqdm
 import pickle
 
+
+from utils import add_object
 from data_utils.crystal_utils import frac_to_cart_coords, cart_to_frac_coords, min_distance_sqr_pbc, mard, lengths_angles_to_volume
 
 # Load environment variables
@@ -353,6 +355,7 @@ class DiffusionModel(BaseModule):
                 cur_cart_coords = frac_to_cart_coords(
                     cur_frac_coords, lengths, angles, num_atoms)
                 pred_cart_coord_diff = pred_cart_coord_diff / sigma
+                # Noise added to cartesian coordinates
                 cur_cart_coords = cur_cart_coords + step_size * pred_cart_coord_diff + noise_cart # line 11 in psedocode
                 cur_frac_coords = cart_to_frac_coords(
                     cur_cart_coords, lengths, angles, num_atoms)
@@ -404,11 +407,10 @@ class DiffusionModel(BaseModule):
         reconstruction = self.langevin_dynamics(z, ld_kwargs)
 
         print(f"Saving reconstructions to {reconstructions_file}.")
-        with open(os.path.join(f"{PROJECT_ROOT}/reconstructions", reconstructions_file), "ab") as f:
-            pickle.dump(reconstruction, f)
 
-        with open(reconstructions_file.split('.')[0] + "_gt.pickle", "ab") as f:
-            pickle.dump(batch, f)
+        add_object(reconstruction, os.path.join(f"{PROJECT_ROOT}/reconstructions", reconstructions_file))
+
+        add_object(batch, os.path.join(f"{PROJECT_ROOT}/reconstructions", reconstructions_file.split('.')[0] + "_gt.pickle"))
 
     def num_atom_loss(self, pred_num_atoms, batch):
         return F.cross_entropy(pred_num_atoms, batch.num_atoms)

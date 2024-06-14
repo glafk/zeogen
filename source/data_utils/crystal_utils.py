@@ -1,5 +1,6 @@
 import copy
 import os
+from itertools import islice
 
 import numpy as np
 from pymatgen.core.structure import Structure
@@ -9,6 +10,9 @@ from pymatgen.analysis import local_env
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 import torch
 from p_tqdm import p_umap
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import plotly.graph_objects as go
 
 from data_utils.utils import abs_cap
 
@@ -870,6 +874,42 @@ def sample2cif(sample: dict, path: str):
     write_cif(structure, path)
 
 
+def reconstruction2cif(reconstruction: dict, path: str, trajectory_path: str=None, save_trajectory=False, downsample_trajectory=False, downsample_frame_rate=5):
+    reconstruction["atom_types"] = reconstruction["atom_types"].cpu()
+    reconstruction["angles"] = reconstruction["angles"].cpu()[0]
+    reconstruction["lengths"] = reconstruction["lengths"].cpu()[0]
+    reconstruction["num_atoms"] = reconstruction["num_atoms"].cpu()
+    reconstruction["frac_coords"] = reconstruction["frac_coords"].cpu()
+    if save_trajectory:
+        reconstruction["all_frac_coords"] = reconstruction["all_frac_coords"].cpu()
+        reconstruction["all_atom_types"] = reconstruction["all_atom_types"].cpu()
+
+    a,b,c = reconstruction["lengths"]
+    alpha, beta, gamma = reconstruction["angles"]
+    lattice = Lattice.from_parameters(a=a, b=b, c=c, alpha=alpha, beta=beta, gamma=gamma)
+    final_species = reconstruction["atom_types"]
+    final_coords = reconstruction["frac_coords"]
+    final_structure = Structure(lattice, final_species, final_coords)
+
+    write_cif(final_structure, path)
+    if save_trajectory:
+        if not downsample_trajectory:
+            counter = 1
+            for step_coords, step_atoms in zip(reconstruction["all_frac_coords"], reconstruction["all_atom_types"]):
+                step_structure = Structure(lattice, step_atoms, step_coords)
+                step_path = os.path.join(trajectory_path, f"step_{counter}.cif")
+                write_cif(step_structure, step_path)
+                counter+=1
+        else:
+            counter=1
+            for step_coords, step_atoms in islice(zip(reconstruction["all_frac_coords"], reconstruction["all_atom_types"]), 0, None, downsample_frame_rate):
+                step_structure = Structure(lattice, step_atoms, step_coords)
+                step_path = os.path.join(trajectory_path, f"step_{counter}.cif")
+                write_cif(step_structure, step_path)
+                counter+=downsample_frame_rate
+
+
+
 def save_samples_as_cifs(samples: dict, directory: str):
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -895,3 +935,70 @@ def save_samples_as_cifs(samples: dict, directory: str):
         filename = os.path.join(directory, f"sample_{counter}.cif")
         sample2cif(sample, filename)
         counter += 1
+
+
+def save_reconstructions_as_cifs(reconstructions: list, directory: str, ground_truth: bool = False, save_trajectory=False, downsample_trajectory=False, downsample_frame_rate=5):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    counter = 1
+    for reconstruction in reconstructions:
+        filename = os.path.join(directory, f"reconstruction_{counter}.cif")
+        if ground_truth:
+            filename = os.path.join(directory, f"reconstruction_{counter}_gt.cif")
+        
+        if reconstruction.get("is_traj", False) and save_trajectory:
+            traj_directory = os.path.join(directory, f"reconstruction_{counter}_traj")
+            if not os.path.exists(traj_directory):
+                os.makedirs(traj_directory)
+            reconstruction2cif(reconstruction, filename, traj_directory, save_trajectory=True, downsample_trajectory=downsample_trajectory, downsample_frame_rate=downsample_frame_rate)
+        else:
+            reconstruction2cif(reconstruction, filename)
+
+        counter += 1  
+
+
+def visualize_trajectory(fractional_coords, lattice_vectors):
+    """
+    Visualize the trajectory of an atom given its fractional coordinates and lattice vectors using Plotly.
+
+    Parameters:
+    - fractional_coords: List of fractional coordinates (each element is [x, y, z]).
+    - lattice_vectors: 3x3 array of lattice vectors defining the unit cell.
+    """
+
+    # Convert fractional coordinates to Cartesian coordinates
+    cartesian_coords = np.array(fractional_coords)
+    # lattice_vectors = np.array(lattice_vectors)
+    # cartesian_coords = np.dot(fractional_coords, lattice_vectors)
+
+    # Create 3D scatter plot with optimized performance
+    fig = go.Figure(data=[go.Scatter3d(
+        x=cartesian_coords[:, 0],
+        y=cartesian_coords[:, 1],
+        z=cartesian_coords[:, 2],
+        mode='markers+lines',
+        marker=dict(size=5),
+        line=dict(width=2)
+    )])
+
+    # Set plot title and axis labels
+    fig.update_layout(
+        title='Atom Trajectory in 3D Space',
+        scene=dict(
+            xaxis=dict(title='X (Å)', range=[0, 1]),
+            yaxis=dict(title='Y (Å)', range=[0, 1]),
+            zaxis=dict(title='Z (Å)', range=[0, 1]),
+            aspectmode='cube'
+        ),
+        scene_camera=dict(
+            eye=dict(x=1.25, y=1.25, z=1.25)
+        )
+    )
+
+    # Optimize rendering mode
+    fig.update_traces(marker=dict(size=5, line=dict(width=2)),
+                      selector=dict(mode='markers+lines'))
+
+    # Show the plot
+    fig.show()

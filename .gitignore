@@ -166,6 +166,10 @@ cython_debug/
 
 # Custom ignores
 parsed_samples/
-# model_checkpoints/
+reconstructions/
+samples/
 source/notebooks/parsed_samples/
+/parsed_reconstructions
+/parsed_samples_low_noise_small_LR
+/model_checkpoints
 
