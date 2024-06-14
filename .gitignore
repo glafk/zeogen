@@ -176,5 +176,6 @@ source/notebooks/parsed_samples/
 reconstructions/
 samples/
 source/*.out
+source/cluster_logs
 
 
