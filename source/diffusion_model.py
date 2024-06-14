@@ -374,6 +374,7 @@ class DiffusionModel(BaseModule):
 
         if ld_kwargs.save_traj:
             output_dict.update(dict(
+                z=z,
                 all_frac_coords=torch.stack(all_frac_coords, dim=0),
                 all_atom_types=torch.stack(all_atom_types, dim=0),
                 all_pred_cart_coord_diff=torch.stack(

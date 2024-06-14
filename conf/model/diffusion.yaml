@@ -21,7 +21,12 @@ type_sigma_begin: 10.
 type_sigma_end: 0.01
 num_noise_level: 50
 predict_property: False
-ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model_low_noise_low_steps.ckpt
+ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model-150-epochs-MFI-only.ckpt
+run_training: false
+run_reconstruction: true
+reconstructions_file: reconstructions-150e-MFI-only.pickle
+run_sampling: true
+samples_file: samples-150e-MFI-only.pickle 
 
 defaults:
   - encoder: gemnet_encoder
