@@ -12,7 +12,7 @@ from pytorch_lightning.loggers import WandbLogger
 from diffusion_model import DiffusionModel
 import wandb
 
-from utils import load_from_wandb
+from utils import load_from_wandb, log_config_to_wandb
 
 import env
 
@@ -117,7 +117,13 @@ def run_training(cfg: omegaconf.DictConfig):
     
     return model
 
+
 def run_reconstruction(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
+
+    # Instantiate wandb run
+    run = wandb.init(project="zeogen", entity="glafk", name=cfg.expname)
+    # Log the configuration using wandb.config
+    log_config_to_wandb(cfg)
 
     if cfg.load_model:
         # Make sure that the model location is provided
@@ -129,8 +135,8 @@ def run_reconstruction(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
             hydra.utils.log.info(f"Loading model <{cfg.model._target_}>")
             model = DiffusionModel.load_from_checkpoint(cfg.model.ckpt_path)
         elif cfg.model_location == "wandb":
-            assert cfg.model.experiment_name is not None, "Please provide an experiment name"
-            model = load_from_wandb(cfg.model.experiment_name)
+            assert cfg.model.experiment_name_to_load is not None, "Please provide an experiment name"
+            model = load_from_wandb(cfg.model.experiment_name_to_load)
 
     # Instantiate datamodule
     hydra.utils.log.info(f"Instantiating <{cfg.data.datamodule._target_}>")
@@ -152,9 +158,26 @@ def run_reconstruction(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
     for batch in predict_dataloader:
         batch = batch.to("cuda")
         with torch.no_grad():  # No need to track gradients during inference
-            model.reconstruct(batch, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.0001, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}), reconstructions_file=cfg.model.reconstructions_file)
-    
+            model.reconstruct(batch, omegaconf.DictConfig(
+                {"n_step_each": 100, 
+                 "step_lr": 0.0001, 
+                 "min_sigma": 0.01, 
+                 "save_traj": True, 
+                 "disable_bar": False}), 
+                 reconstructions_file=cfg.model.reconstructions_file,
+                 wandb_run=run if cfg.model.save_reconstructions_online else None)
+
+    # Finish the wandb run
+    run.finish()
+
+
 def run_sampling(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
+
+    # Instantiate wandb run
+    run = wandb.init(project="zeogen", entity="glafk", name=cfg.expname)
+    # Log the configuration using wandb.config
+    log_config_to_wandb(cfg)
+
     if cfg.load_model:
         # Make sure that the model location is provided
         assert cfg.model_location is not None
@@ -165,11 +188,11 @@ def run_sampling(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
             hydra.utils.log.info(f"Loading model <{cfg.model._target_}>")
             model = DiffusionModel.load_from_checkpoint(cfg.model.ckpt_path)
         elif cfg.model_location == "wandb":
-            assert cfg.model.experiment_name is not None, "Please provide an experiment name"
-            model = load_from_wandb(cfg.model.experiment_name)
+            assert cfg.model.experiment_name_to_load is not None, "Please provide an experiment name"
+            model = load_from_wandb(cfg.model.experiment_name_to_load)
 
     # Instantiate datamodule
-    # Here we isntantiate the datamodule because we need to pass the scaler
+    # Here we instantiate the datamodule because we need to pass the scaler
     hydra.utils.log.info(f"Instantiating <{cfg.data.datamodule._target_}>")
     datamodule: pl.LightningDataModule = hydra.utils.instantiate(
         cfg.data.datamodule, _recursive_=False
@@ -182,12 +205,22 @@ def run_sampling(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
 
     datamodule.setup(stage="predict")
     model.eval()
-    predict_dataloader = datamodule.predict_dataloader()
 
     model = model.to("cuda")
 
-    model.sample(50, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.0001, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}), save_samples=True, samples_file=cfg.model.samples_file)
+    with torch.no_grad():  # No need to track gradients during inference
+        model.sample(50, omegaconf.DictConfig(
+            {"n_step_each": 100,
+            "step_lr": 0.0001, 
+            "min_sigma": 0.01, 
+            "save_traj": True, 
+            "disable_bar": False}), 
+            save_samples=True, 
+            samples_file=cfg.model.samples_file,
+            wandb_run=run if cfg.model.save_samples_online else None)
 
+    # Finish the wandb run
+    run.finish()
     
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="diffusion")

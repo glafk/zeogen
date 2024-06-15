@@ -1,4 +1,6 @@
 _target_: diffusion_model.DiffusionModel
+
+# Model parameters
 hidden_dim: 256
 latent_dim: 256
 fc_num_layers: 1
@@ -11,6 +13,8 @@ cost_composition: 1.
 cost_edge: 10.
 cost_property: 1.
 beta: 0.01
+
+# Training parameters
 teacher_forcing_lattice: true
 teacher_forcing_max_epoch: ${data.teacher_forcing_max_epoch}
 max_neighbors: 20  # maximum number of neighbors for OTF graph bulding in decoder
@@ -21,15 +25,19 @@ type_sigma_begin: 10.
 type_sigma_end: 0.01
 num_noise_level: 50
 predict_property: False
+
+# Logging and loading parameters
 load_model: False
 model_location: local
 ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model-150-epochs-MFI-only.ckpt
-experiment_name: model-150-epochs-MFI-only
+experiment_name_to_load: model-150-epochs-MFI-only
 run_training: false
 run_reconstruction: true
 reconstructions_file: reconstructions-150e-MFI-only.pickle
+save_reconstructions_online: true
 run_sampling: true
 samples_file: samples-150e-MFI-only.pickle 
+save_samples_online: true
 
 defaults:
   - encoder: gemnet_encoder

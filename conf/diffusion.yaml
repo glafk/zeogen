@@ -2,7 +2,7 @@ expname: train_and_sample_150_epochs_MFI_only
 
 # metadata specialised for each experiment
 core:
-  version: 0.0.1
+  version: 1.0.0
   tags:
     - ${now:%Y-%m-%d}
 

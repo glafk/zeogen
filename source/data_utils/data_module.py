@@ -58,14 +58,15 @@ class CrystDataModule(pl.LightningDataModule):
         # Load once to compute property scaler
         if scaler_path is None:
             # temporarily change this to the test dataset to generate the scaling factors
-            # test_dataset = hydra.utils.instantiate(self.datasets.test)
-            train_dataset = hydra.utils.instantiate(self.datasets.train)
+            print("Generating scaling factors")
+            test_dataset = hydra.utils.instantiate(self.datasets.test)
+            # train_dataset = hydra.utils.instantiate(self.datasets.train)
             self.lattice_scaler = get_scaler_from_data_list(
-                train_dataset.cached_data,
+                test_dataset.cached_data,
                 key='scaled_lattice')
             self.scaler = get_scaler_from_data_list(
-                train_dataset.cached_data,
-                key=train_dataset.prop)
+                test_dataset.cached_data,
+                key=test_dataset.prop)
         else:
             self.lattice_scaler = torch.load(
                 Path(scaler_path) / 'lattice_scaler.pt')
@@ -98,9 +99,6 @@ class CrystDataModule(pl.LightningDataModule):
             self.predict_dataset.scaler = self.scaler 
 
     def train_dataloader(self) -> DataLoader:
-        with open("train_dataloader.txt", "w+") as f:
-            f.writelines(["train dataloader accessed"])
-
         return DataLoader(
             self.train_dataset,
             shuffle=True,
@@ -111,10 +109,6 @@ class CrystDataModule(pl.LightningDataModule):
         )
 
     def val_dataloader(self) -> Sequence[DataLoader]:
-
-        with open("val_dataloader.txt", "w+") as f:
-            f.writelines(["val dataloader accessed"])
-
         return DataLoader(
                 self.val_dataset,
                 shuffle=False,
@@ -125,8 +119,6 @@ class CrystDataModule(pl.LightningDataModule):
             )
 
     def test_dataloader(self) -> Sequence[DataLoader]:
-        with open("test_dataloader.txt", "w+") as f:
-            f.writelines(["test dataloader accessed"])
         return DataLoader(
                 self.test_dataset,
                 shuffle=False,
@@ -137,8 +129,6 @@ class CrystDataModule(pl.LightningDataModule):
             )
 
     def predict_dataloader(self) -> Sequence[DataLoader]:
-        with open("predict_dataloader.txt", "w+") as f:
-            f.writelines(["predict dataloader accessed"])
         return DataLoader(
                 self.predict_dataset,
                 shuffle=False,
@@ -162,10 +152,6 @@ def main(cfg: DictConfig):
         cfg.data.datamodule, _recursive_=False
     )
     datamodule.setup('fit')
-    # TODO: Look into this. Don't know what this is
-    # import pdb
-    # pdb.set_trace()
-
 
 if __name__ == "__main__":
     main()
