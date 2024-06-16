@@ -86,7 +86,7 @@ class CrystDataModule(pl.LightningDataModule):
             self.val_dataset.lattice_scaler = self.lattice_scaler
             self.val_dataset.scaler = self.scaler
 
-        if stage == "test" or stage == "predict":
+        if stage == "test":
             self.test_dataset = hydra.utils.instantiate(self.datasets.test)
             print("Instantiating test dataset") 
             self.test_dataset.lattice_scaler = self.lattice_scaler

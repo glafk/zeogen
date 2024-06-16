@@ -30,13 +30,14 @@ predict_property: False
 load_model: False
 model_location: local
 ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model-150-epochs-MFI-only.ckpt
-experiment_name_to_load: model-150-epochs-MFI-only
-run_training: false
+experiment_name_to_load: test_new_wandb_setup
+run_training: true
 run_reconstruction: true
-reconstructions_file: reconstructions-150e-MFI-only.pickle
+reconstructions_file: reconstructions-${expname}.pickle
 save_reconstructions_online: true
 run_sampling: true
-samples_file: samples-150e-MFI-only.pickle 
+num_samples: 5
+samples_file: samples-${expname}.pickle
 save_samples_online: true
 
 defaults:

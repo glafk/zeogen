@@ -13,7 +13,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 from torch_scatter import scatter
 from tqdm import tqdm
-import pickle
+import wandb
 
 from utils import add_object, log_config_to_wandb
 from data_utils.crystal_utils import frac_to_cart_coords, cart_to_frac_coords, min_distance_sqr_pbc, mard, lengths_angles_to_volume
@@ -385,7 +385,7 @@ class DiffusionModel(BaseModule):
 
         return output_dict
 
-    def sample(self, num_samples, ld_kwargs, save_samples=False, samples_file="samples.pickle", wandb_run=None):
+    def sample(self, num_samples, ld_kwargs, kwargs_conf_name):
         """
         Samples crystals and optionally saves them.
 
@@ -394,34 +394,21 @@ class DiffusionModel(BaseModule):
             ld_kwargs (dict): Keyword arguments for the Langevin dynamics method.
             save_samples (bool, optional): Whether to save the samples. Defaults to False.
             samples_file (str, optional): The file name to save the samples. Defaults to "samples.pickle".
-            wandb_run (wandb.Run, optional): The wandb run object. Defaults to None.
+            save_to_wandb (bool, optional): Whether to save the samples to wandb. Defaults to False.
 
         Returns:
             samples (torch.Tensor): The generated samples.
         """
         # Log the LD configuration
-        log_config_to_wandb(ld_kwargs, "samples_ld_kwargs", auxiliary_config=True)
+        log_config_to_wandb(ld_kwargs, kwargs_conf_name, auxiliary_config=True)
         # Here in the sampling part I will need to figure out how to force the model to sample from the part of the distribution where the representations of the "high-capacity" crystals lie
         print(f"Sampling {num_samples} crystals.")
         z = torch.randn(num_samples, self.hparams.hidden_dim, device=self.device)
         samples = self.langevin_dynamics(z, ld_kwargs)
 
-        if save_samples:
-            print(f"Saving samples to {samples_file}.")
-            samples_path = os.path.join(f"{PROJECT_ROOT}/samples", samples_file)
-            add_object(samples, samples_path)
-
-            if wandb_run is not None:
-                artifact = wandb_run.Artifact('samples', type='dataset')
-                artifact.add_file(samples_path)
-                wandb_run.log_artifact(artifact)
-
-                # Clean up the file so that it doesn't hang around
-                os.remove(samples_path)
-
         return samples   
 
-    def reconstruct(self, batch, ld_kwargs, reconstructions_file="reconstructions.pickle", wandb_run=None):
+    def reconstruct(self, batch, ld_kwargs, reconstructions_path, ground_truth_path, kwargs_conf_name):
         """
         Reconstructs materials from a dataset sample using the Langevin dynamics method.
 
@@ -429,36 +416,20 @@ class DiffusionModel(BaseModule):
             batch (torch.Tensor): The input batch of data.
             ld_kwargs (dict): The keyword arguments for the langeevin dynamics method.
             reconstructions_file (str, optional): The file name to save the reconstructions. Defaults to "reconstructions.pickle".
-            wandb_run (wandb.Run, optional): The wandb run object. Defaults to None.
+            save_to_wandb (bool, optional): Whether to save the reconstructions to wandb. Defaults to False.
 
         Returns:
             None
         """
         # Log the LD configuration
-        log_config_to_wandb(ld_kwargs, "reconstructions_ld_kwargs", auxiliary_config=True)
+        log_config_to_wandb(ld_kwargs, kwargs_conf_name, auxiliary_config=True)
         # Reconstruct materials from dataset sample
         mu, log_var, z = self.encode(batch)
 
         reconstruction = self.langevin_dynamics(z, ld_kwargs)
 
-        print(f"Saving reconstructions to {reconstructions_file}.")
-
-        reconstructions_path = os.path.join(f"{PROJECT_ROOT}/reconstructions", reconstructions_file)
-        ground_truth_path = os.path.join(f"{PROJECT_ROOT}/reconstructions", reconstructions_file.split('.')[0] + "_gt.pickle")
-
         add_object(reconstruction, reconstructions_path)
         add_object(batch, ground_truth_path)
-
-        if wandb_run is not None:
-            artifact = wandb_run.Artifact('reconstructions', type='dataset')
-            artifact.add_file(reconstructions_path)
-            artifact.add_file(ground_truth_path)
-            
-            wandb_run.log_artifact(artifact)
-
-            # Clean up the file so that it doesn't hang around
-            os.remove(reconstructions_path)
-            os.remove(ground_truth_path)
 
     def num_atom_loss(self, pred_num_atoms, batch):
         return F.cross_entropy(pred_num_atoms, batch.num_atoms)

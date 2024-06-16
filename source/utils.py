@@ -6,6 +6,7 @@ import json
 import wandb
 from wandb.apis import InternalApi
 import torch
+from omegaconf import OmegaConf
 
 # Function to load the list from the pickle file
 def load_objects(pickle_file):
@@ -25,7 +26,6 @@ def add_object(new_object, pickle_file):
     objects = load_objects(pickle_file)
     objects.append(new_object)
     save_objects(objects, pickle_file)
-    print(f"Added object: {new_object}")
 
 
 def load_from_wandb(experiment_name):
@@ -67,8 +67,9 @@ def load_from_wandb(experiment_name):
 
 
 def log_config_to_wandb(config, artifact_name="experiment_config", auxiliary_config=False):
+    config = OmegaConf.to_container(config, resolve=True)
     if not auxiliary_config:
-        wandb.config.update(config)
+        wandb.config.update(config, allow_val_change=True)
 
     # Save the configuration to a file
     config_dir = "temp"

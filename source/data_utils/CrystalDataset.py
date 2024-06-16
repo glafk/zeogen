@@ -94,7 +94,7 @@ class TensorCrystDataset(Dataset):
         # Read the tensors from path to crystal_array_list
         crystal_array_list = pickle.load(open(path, 'rb'))
         print(f"Pickle file {path} was loaded successfully.")
-        print(len(crystal_array_list))
+        print(f"Number of crystals: {len(crystal_array_list)}")
         self.cached_data = preprocess_tensors(
             crystal_array_list,
             graph_method=self.graph_method,

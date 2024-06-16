@@ -4,7 +4,7 @@ import json
 
 import torch
 import hydra
-import omegaconf
+from omegaconf import OmegaConf, DictConfig
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from hydra.core.hydra_config import HydraConfig
@@ -12,7 +12,7 @@ from pytorch_lightning.loggers import WandbLogger
 from diffusion_model import DiffusionModel
 import wandb
 
-from utils import load_from_wandb, log_config_to_wandb
+from utils import load_from_wandb, log_config_to_wandb, add_object
 
 import env
 
@@ -28,7 +28,7 @@ assert (
 os.chdir(PROJECT_ROOT)
 
 
-def run_training(cfg: omegaconf.DictConfig):
+def run_training(cfg: DictConfig):
     if cfg.train.deterministic:
         seed_everything(cfg.train.random_seed)
     
@@ -76,7 +76,7 @@ def run_training(cfg: omegaconf.DictConfig):
 
     # Log the current config used for the experiment
     # Convert OmegaConf object to a dictionary
-    config_dict = omegaconf.to_container(cfg, resolve=True)
+    config_dict = OmegaConf.to_container(cfg, resolve=True)
 
     # Define the filename for saving the config
     config_filename = f'config_{cfg.expname}.json'
@@ -86,7 +86,7 @@ def run_training(cfg: omegaconf.DictConfig):
         json.dump(config_dict, f, indent=4)
 
     # Create a wandb artifact and add the config file
-    artifact = wandb.Artifact('config', type='configuration')
+    artifact = wandb.Artifact(config_filename.split('.')[0], type='configuration')
     artifact.add_file(config_filename)
 
     # Log the artifact to the current run
@@ -112,20 +112,18 @@ def run_training(cfg: omegaconf.DictConfig):
     trainer.test(datamodule=datamodule)
 
     # Logger closing to release resources/avoid multi-run conflicts
-    if wandb_logger is not None:
-        wandb_logger.experiment.finish()
+    # if wandb_logger is not None:
+    #    wandb_logger.experiment.finish()
     
     return model
 
 
-def run_reconstruction(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
+def run_reconstruction(cfg: DictConfig, model: DiffusionModel = None):
 
-    # Instantiate wandb run
-    run = wandb.init(project="zeogen", entity="glafk", name=cfg.expname)
     # Log the configuration using wandb.config
-    log_config_to_wandb(cfg)
+    log_config_to_wandb(cfg, f"recon-config-{cfg.model.experiment_name_to_load}")
 
-    if cfg.load_model:
+    if cfg.model.load_model:
         # Make sure that the model location is provided
         assert cfg.model_location is not None
 
@@ -155,30 +153,44 @@ def run_reconstruction(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
     
     model = model.to("cuda")
 
+    reconstructions_path = os.path.join(f"{PROJECT_ROOT}/reconstructions", cfg.model.reconstructions_file)
+    ground_truth_path = os.path.join(f"{PROJECT_ROOT}/reconstructions", cfg.model.reconstructions_file.split('.')[0] + "_gt.pickle")
+
     for batch in predict_dataloader:
         batch = batch.to("cuda")
         with torch.no_grad():  # No need to track gradients during inference
-            model.reconstruct(batch, omegaconf.DictConfig(
+            model.reconstruct(batch, DictConfig(
                 {"n_step_each": 100, 
                  "step_lr": 0.0001, 
                  "min_sigma": 0.01, 
                  "save_traj": True, 
                  "disable_bar": False}), 
-                 reconstructions_file=cfg.model.reconstructions_file,
-                 wandb_run=run if cfg.model.save_reconstructions_online else None)
+                 reconstructions_path, 
+                 ground_truth_path,
+                 kwargs_conf_name=f"reconstruction-config-{cfg.model.experiment_name_to_load}")
 
-    # Finish the wandb run
-    run.finish()
+    if cfg.model.save_reconstructions_online:
+        artifact_recon = wandb.Artifact(cfg.model.reconstructions_file.split('.')[0], type='dataset')
+        artifact_recon.add_file(reconstructions_path)
+        artifact_recon_gt = wandb.Artifact(cfg.model.reconstructions_file.split('.')[0] + "_gt", type='dataset')
+        artifact_recon_gt.add_file(ground_truth_path)
+        
+        wandb.log_artifact(artifact_recon)
+        wandb.log_artifact(artifact_recon_gt)
+
+        # Clean up the file so that it doesn't hang around
+        os.remove(reconstructions_path)
+        os.remove(ground_truth_path)
 
 
-def run_sampling(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
+def run_sampling(cfg: DictConfig, model: DiffusionModel = None):
 
     # Instantiate wandb run
     run = wandb.init(project="zeogen", entity="glafk", name=cfg.expname)
     # Log the configuration using wandb.config
-    log_config_to_wandb(cfg)
+    log_config_to_wandb(cfg, f"sampling-config-{cfg.model.experiment_name_to_load}")
 
-    if cfg.load_model:
+    if cfg.model.load_model:
         # Make sure that the model location is provided
         assert cfg.model_location is not None
 
@@ -209,33 +221,45 @@ def run_sampling(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
     model = model.to("cuda")
 
     with torch.no_grad():  # No need to track gradients during inference
-        model.sample(50, omegaconf.DictConfig(
+        samples = model.sample(cfg.model.num_samples, DictConfig(
             {"n_step_each": 100,
             "step_lr": 0.0001, 
             "min_sigma": 0.01, 
             "save_traj": True, 
             "disable_bar": False}), 
-            save_samples=True, 
-            samples_file=cfg.model.samples_file,
-            wandb_run=run if cfg.model.save_samples_online else None)
+            kwargs_conf_name=f"samples-kwargs-{cfg.model.experiment_name_to_load}")
 
-    # Finish the wandb run
-    run.finish()
+    print(f"Saving samples to {cfg.model.samples_file}.")
+    samples_path = os.path.join(f"{PROJECT_ROOT}/samples", cfg.model.samples_file)
+    add_object(samples, samples_path)
     
+    if cfg.model.save_samples_online:
+        artifact = wandb.Artifact(cfg.model.samples_file.split('.')[0], type='dataset')
+        artifact.add_file(samples_path)
+        wandb.log_artifact(artifact)
+
+        # Clean up the file so that it doesn't hang around
+        os.remove(samples_path)
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="diffusion")
-def main(cfg: omegaconf.DictConfig):
+def main(cfg: DictConfig):
+
+    model = None
     # Run training and sampling loop
     if cfg.model.run_training:
-        run_training(cfg)
+        model = run_training(cfg)
     
+    # If training was not run the wandb logger will not be initialized
+    if cfg.model.run_training and (cfg.model.run_sampling or cfg.model.run_reconstruction):
+        wandb.init(project="zeogen", entity="glafk", name=cfg.expname)
+
     # Run only sampling from saved model
     if cfg.model.run_sampling:
-        run_sampling(cfg)
+        run_sampling(cfg, model)
 
     # Run reconstruction from saved model
     if cfg.model.run_reconstruction:
-        run_reconstruction(cfg)
+        run_reconstruction(cfg, model)
 
 if __name__ == "__main__":
     main()

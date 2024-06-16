@@ -261,6 +261,7 @@ class GemNetT(torch.nn.Module):
         id3_ragged_idx: torch.Tensor, shape (num_triplets,)
             Indices enumerating the copies of id3_ca for creating a padded matrix
         """
+        # idx_s and idx_t stand for source and target.
         idx_s, idx_t = edge_index  # c->a (source=c, target=a)``
     
         value = torch.arange(
