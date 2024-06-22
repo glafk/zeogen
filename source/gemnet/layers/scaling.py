@@ -81,6 +81,7 @@ class AutomaticFit:
         """
         Load variable from file or set to initial value of the variable.
         """
+        print(f"Loading maybe - from {self.scale_file}.")
         value = read_value_json(self.scale_file, self._name)
         if value is None:
             logging.debug(

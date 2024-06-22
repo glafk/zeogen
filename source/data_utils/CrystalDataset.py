@@ -98,7 +98,8 @@ class TensorCrystDataset(Dataset):
         self.cached_data = preprocess_tensors(
             crystal_array_list,
             graph_method=self.graph_method,
-            num_records=self.num_records)
+            num_records=self.num_records,
+            prop_name=self.prop)
 
         add_scaled_lattice_prop(self.cached_data, lattice_scale_method)
         self.lattice_scaler = None

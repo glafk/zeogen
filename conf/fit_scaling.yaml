@@ -1,0 +1,25 @@
+expname: fit_scaling_factors
+
+# metadata specialised for each experiment
+core:
+  version: 0.0.1
+  tags:
+    - ${now:%Y-%m-%d}
+
+hydra:
+  run:
+    dir: ${oc.env:HYDRA_JOBS}/singlerun/${now:%Y-%m-%d}/${expname}/
+
+# fitting process parameters
+fit:
+  scaling_factors_file: ${oc.env:PROJECT_ROOT}/source/scaling_factors/scaling_factors_zeonet_dataset.json
+  lattice_scaler_file: ${oc.env:PROJECT_ROOT}/source/scaling_factors/lattice_scaler_zeonet_dataset.pt
+  prop_scaler_file: ${oc.env:PROJECT_ROOT}/source/scaling_factors/prop_scaler_zeonet_dataset.pt
+  num_batches: 16
+  comment: "gemnet scaling factors for combined dataset gen_data"
+
+defaults:
+  - data: data_combined
+  - model: diffusion
+  - optim: optim
+  - train: train

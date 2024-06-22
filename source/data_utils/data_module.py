@@ -54,23 +54,23 @@ class CrystDataModule(pl.LightningDataModule):
         # download only
         pass
 
-    def get_scaler(self, scaler_path):
+    def get_scaler(self, scaler_path, lattice_scaler="lattice_scaler.pt", prop_scaler="prop_scaler.pt"):
         # Load once to compute property scaler
         if scaler_path is None:
             # temporarily change this to the test dataset to generate the scaling factors
             print("Generating scaling factors")
-            test_dataset = hydra.utils.instantiate(self.datasets.test)
-            # train_dataset = hydra.utils.instantiate(self.datasets.train)
+            # test_dataset = hydra.utils.instantiate(self.datasets.test)
+            train_dataset = hydra.utils.instantiate(self.datasets.train)
             self.lattice_scaler = get_scaler_from_data_list(
-                test_dataset.cached_data,
+                train_dataset.cached_data,
                 key='scaled_lattice')
             self.scaler = get_scaler_from_data_list(
-                test_dataset.cached_data,
-                key=test_dataset.prop)
+                train_dataset.cached_data,
+                key=train_dataset.prop)
         else:
             self.lattice_scaler = torch.load(
-                Path(scaler_path) / 'lattice_scaler.pt')
-            self.scaler = torch.load(Path(scaler_path) / 'prop_scaler.pt')
+                Path(scaler_path) / lattice_scaler)
+            self.scaler = torch.load(Path(scaler_path) / prop_scaler)
 
     def setup(self, stage: Optional[str] = None):
         """
@@ -146,12 +146,12 @@ class CrystDataModule(pl.LightningDataModule):
             f"{self.batch_size=})"
         )
 
-@hydra.main(config_path="C:/TUE/thesis/zeogen/conf", config_name="test")
-def main(cfg: DictConfig):
-    datamodule: pl.LightningDataModule = hydra.utils.instantiate(
-        cfg.data.datamodule, _recursive_=False
-    )
-    datamodule.setup('fit')
+# @hydra.main(config_path="C:/TUE/thesis/zeogen/conf", config_name="fit_scaling")
+# def main(cfg: DictConfig):
+#     datamodule: pl.LightningDataModule = hydra.utils.instantiate(
+#         cfg.data.datamodule, _recursive_=False
+#     )
+#     datamodule.setup('fit')
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

@@ -430,7 +430,7 @@ class DiffusionModel(BaseModule):
 
         add_object(reconstruction, reconstructions_path)
         add_object(batch, ground_truth_path)
-
+    # region losses
     def num_atom_loss(self, pred_num_atoms, batch):
         return F.cross_entropy(pred_num_atoms, batch.num_atoms)
 
@@ -489,7 +489,9 @@ class DiffusionModel(BaseModule):
         kld_loss = torch.mean(
             -0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1), dim=0)
         return kld_loss
+    # endregion
 
+    # region pytorch_lightning hooks
     def training_step(self, batch: Any, batch_idx: int) -> torch.Tensor:
         teacher_forcing = (
             self.current_epoch <= self.hparams.teacher_forcing_max_epoch)
@@ -521,6 +523,8 @@ class DiffusionModel(BaseModule):
             log_dict,
         )
         return loss
+
+    # endregion
 
     def compute_stats(self, batch, outputs, prefix):
         num_atom_loss = outputs['num_atom_loss']

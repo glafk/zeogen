@@ -594,6 +594,7 @@ def get_scaler_from_data_list(data_list, key):
     return scaler
 
 
+# This is for loading data straigth from CIF files, so I'll ignore it for now
 def preprocess(input_files, num_workers, niggli, primitive, graph_method,
                prop_list):
     # Currently this method would not work
@@ -634,13 +635,13 @@ def preprocess(input_files, num_workers, niggli, primitive, graph_method,
 # Array shape
 # arr = [{frac_coords: [list], atom_types: [list], lengths: [list], angles: [list], adsorption_cap: float]}]
 # lengths = [a,b,c]; angles = [alpha, beta, gamma)
-def preprocess_tensors(crystal_dict_list, graph_method, num_records=None):
-    def process_one(batch_idx, crystal_dict, graph_method):
+def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, prop_name='adsorption_cap'):
+    def process_one(batch_idx, crystal_dict, graph_method, prop_name):
         frac_coords = crystal_dict['frac_coords']
         atom_types = crystal_dict['atom_types']
         lengths = crystal_dict['lengths']
         angles = crystal_dict['angles']
-        hoa = crystal_dict['hoa']
+        hoa = crystal_dict[prop_name]
         crystal = Structure(
             lattice=Lattice.from_parameters(
                 *(lengths + angles)),
@@ -664,6 +665,7 @@ def preprocess_tensors(crystal_dict_list, graph_method, num_records=None):
         list(range(len(crystal_dict_list))),
         crystal_dict_list,
         [graph_method] * len(crystal_dict_list),
+        [prop_name] * len(crystal_dict_list),
         num_cpus=4
     )
     ordered_results = list(

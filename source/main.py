@@ -123,7 +123,7 @@ def run_reconstruction(cfg: DictConfig, model: DiffusionModel = None):
     # Log the configuration using wandb.config
     log_config_to_wandb(cfg, f"recon-config-{cfg.model.experiment_name_to_load}")
 
-    if cfg.model.load_model:
+    if cfg.model.load_model and model is None:
         # Make sure that the model location is provided
         assert cfg.model_location is not None
 
@@ -135,6 +135,8 @@ def run_reconstruction(cfg: DictConfig, model: DiffusionModel = None):
         elif cfg.model_location == "wandb":
             assert cfg.model.experiment_name_to_load is not None, "Please provide an experiment name"
             model = load_from_wandb(cfg.model.experiment_name_to_load)
+    else:
+        raise ValueError("Both load model and arguments model were provided. Ambuguious use of the script")
 
     # Instantiate datamodule
     hydra.utils.log.info(f"Instantiating <{cfg.data.datamodule._target_}>")
@@ -190,7 +192,7 @@ def run_sampling(cfg: DictConfig, model: DiffusionModel = None):
     # Log the configuration using wandb.config
     log_config_to_wandb(cfg, f"sampling-config-{cfg.model.experiment_name_to_load}")
 
-    if cfg.model.load_model:
+    if cfg.model.load_model and model is None:
         # Make sure that the model location is provided
         assert cfg.model_location is not None
 
@@ -202,6 +204,8 @@ def run_sampling(cfg: DictConfig, model: DiffusionModel = None):
         elif cfg.model_location == "wandb":
             assert cfg.model.experiment_name_to_load is not None, "Please provide an experiment name"
             model = load_from_wandb(cfg.model.experiment_name_to_load)
+    else:
+        raise ValueError("Both load model and arguments model were provided. Ambuguious use of the script")
 
     # Instantiate datamodule
     # Here we instantiate the datamodule because we need to pass the scaler

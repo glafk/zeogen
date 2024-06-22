@@ -1,4 +1,4 @@
-expname: test_new_wandb_setup
+expname: test_new_dataset
 
 # metadata specialised for each experiment
 core:
