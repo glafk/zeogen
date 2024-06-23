@@ -49,7 +49,7 @@ def load_from_wandb(experiment_name):
     artifact = run.use_artifact(f"{artifact_name}:latest")
     artifact_dir = artifact.download()
 
-    # Assuming the model file is named 'model.pth'
+    # Assuming the model file is named 'model.ckpt'
     model_path = os.path.join(artifact_dir, 'model.ckpt')
 
     model = torch.load_from_checkpoint(model_path)
