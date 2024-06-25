@@ -96,6 +96,9 @@ def fit_scaling():
             cfg.model, data=cfg.data, _convert_="partial", _recursive_=False
         )
 
+        # Transfer model to cuda
+        model = model.to("cuda")
+
         # Pass scaler from datamodule to model
         hydra.utils.log.info(f"Passing scaler from datamodule to model <{datamodule.scaler}>")
         model.lattice_scaler = datamodule.lattice_scaler.copy()
@@ -117,7 +120,7 @@ def fit_scaling():
             progress_bar = trange(len(AutomaticFit.queue) + 1)
             for _ in progress_bar:
                 for batch_idx, batch in enumerate(islice(train_dataloader, num_batches)):
-    
+                    batch = batch.to("cuda")
                     # Perform forward pass
                     predictions = model(
                         batch

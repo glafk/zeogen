@@ -48,7 +48,8 @@ class CrystDataModule(pl.LightningDataModule):
         self.val_datasets: Optional[Sequence[Dataset]] = None
         self.test_datasets: Optional[Sequence[Dataset]] = None
 
-        self.get_scaler(scaler_path)
+        # TODO: Change this to be parametrizable
+        self.get_scaler(scaler_path, lattice_scaler="lattice_scaler_total_dataset.pt", prop_scaler="prop_scaler_total_dataset.pt")
 
     def prepare_data(self) -> None:
         # download only

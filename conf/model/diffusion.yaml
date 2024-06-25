@@ -3,7 +3,7 @@ _target_: diffusion_model.DiffusionModel
 # Model parameters
 hidden_dim: 256
 latent_dim: 256
-fc_num_layers: 1
+fc_num_layers: 2
 max_atoms: ${data.max_atoms}
 cost_natom: 1.
 cost_coord: 10.
@@ -19,10 +19,10 @@ teacher_forcing_lattice: true
 teacher_forcing_max_epoch: ${data.teacher_forcing_max_epoch}
 max_neighbors: 20  # maximum number of neighbors for OTF graph bulding in decoder
 radius: 7.  # maximum search radius for OTF graph building in decoder
-sigma_begin: 10.
-sigma_end: 0.01
-type_sigma_begin: 10.
-type_sigma_end: 0.01
+sigma_begin: 5.
+sigma_end: 0.05
+type_sigma_begin: 5.
+type_sigma_end: 0.05
 num_noise_level: 50
 predict_property: False
 
@@ -36,7 +36,7 @@ run_reconstruction: true
 reconstructions_file: reconstructions-${expname}.pickle
 save_reconstructions_online: true
 run_sampling: true
-num_samples: 5
+num_samples: 50
 samples_file: samples-${expname}.pickle
 save_samples_online: true
 

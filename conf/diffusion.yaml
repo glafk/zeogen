@@ -1,4 +1,4 @@
-expname: test_new_dataset
+expname: reconstuct_and_sample_total_dataset_max_teacher_forcing
 
 # metadata specialised for each experiment
 core:

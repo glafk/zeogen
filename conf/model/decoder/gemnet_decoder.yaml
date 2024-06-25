@@ -3,4 +3,4 @@ hidden_dim: 128
 latent_dim: ${model.latent_dim}
 max_neighbors: ${model.max_neighbors}
 radius: ${model.radius}
-scale_file: ${oc.env:PROJECT_ROOT}/source/scaling_factors/scaling_factors_gemnet_total_dataset.json
+scale_file: ${oc.env:PROJECT_ROOT}/source/scaling_factors/scaling_factors_total_dataset.json

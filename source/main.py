@@ -254,7 +254,7 @@ def main(cfg: DictConfig):
         model = run_training(cfg)
     
     # If training was not run the wandb logger will not be initialized
-    if cfg.model.run_training and (cfg.model.run_sampling or cfg.model.run_reconstruction):
+    if not cfg.model.run_training and (cfg.model.run_sampling or cfg.model.run_reconstruction):
         wandb.init(project="zeogen", entity="glafk", name=cfg.expname)
 
     # Run only sampling from saved model
