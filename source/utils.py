@@ -32,21 +32,34 @@ def load_from_wandb(experiment_name):
     api = wandb.Api()
 
     # Define the project and optionally the entity
-    project_name = 'zeogen'
-    entity_name = 'glafk'  # Optional, leave as None if not using
+    project = 'zeogen'
+    entity = 'glafk'  # Optional, leave as None if not using
 
-    # Search for the run by its name
-    runs = api.runs(f"{entity_name}/{project_name}" if entity_name else project_name)
-    run = next((run for run in runs if run.name == experiment_name), None)
+    # Get all runs in the project
+    runs = api.runs(f"{entity}/{project}")
+
+    # Search for the run by name
+    matched_run = None
+    for run in runs:
+        if run.name == experiment_name:
+            matched_run = run
+            break
+
+    if matched_run:
+        run_id = matched_run.id
+        print(f"Run ID for experiment '{experiment_name}' is: {run_id}")
 
     if run is None:
         raise ValueError(f"No run found with the name '{experiment_name}'")
 
-    # Example artifact name and type
-    artifact_name = 'model'
+    # List artifacts associated with the run
+    artifacts = run.logged_artifacts()
+    artifact_name = 'model:latest'
 
-    # Download the latest version of the artifact
-    artifact = run.use_artifact(f"{artifact_name}:latest")
+    # Retrieve the artifact
+    artifact = api.artifact(f"{run.entity}/{run.project}/{artifact_name}")
+
+    # Download the artifact
     artifact_dir = artifact.download()
 
     # Assuming the model file is named 'model.ckpt'

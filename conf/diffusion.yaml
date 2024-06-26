@@ -1,4 +1,4 @@
-expname: reconstuct_and_sample_total_dataset_max_teacher_forcing
+expname: sample_an_reconstruct_after_50_epochs_total_dataset
 
 # metadata specialised for each experiment
 core:
