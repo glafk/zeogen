@@ -5,7 +5,7 @@ wandb:
   name: ${expname}
   project: zeogen
   entity: null
-  log_model: True
+  log_model: 'all'
   mode: 'online'
   group: ${expname}
 

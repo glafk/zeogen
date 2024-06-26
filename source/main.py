@@ -9,6 +9,7 @@ import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from hydra.core.hydra_config import HydraConfig
 from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.callbacks import ModelCheckpoint
 from diffusion_model import DiffusionModel
 import wandb
 
@@ -63,6 +64,7 @@ def run_training(cfg: DictConfig):
     if "wandb" in cfg.logging:
         hydra.utils.log.info("Instantiating <WandbLogger>")
         wandb_config = cfg.logging.wandb
+        checkpoint_callback = ModelCheckpoint(monitor="val_accuracy", mode="max")
         wandb_logger = WandbLogger(
             **wandb_config,
             tags=cfg.core.tags,
