@@ -130,12 +130,12 @@ def run_reconstruction(cfg: DictConfig, model: DiffusionModel = None):
         # Make sure that the model location is provided
         assert cfg.model.model_location is not None
 
-        if cfg.model_location == "local":
+        if cfg.model.model_location == "local":
             assert cfg.model.ckpt_path is not None, "Please provide a path to the model checkpoint"
             # Load model
             hydra.utils.log.info(f"Loading model <{cfg.model._target_}>")
             model = DiffusionModel.load_from_checkpoint(cfg.model.ckpt_path)
-        elif cfg.model_location == "wandb":
+        elif cfg..model.model_location == "wandb":
             assert cfg.model.experiment_name_to_load is not None, "Please provide an experiment name"
             model_path, model_dir = load_from_wandb(cfg.model.experiment_name_to_load)
             model = DiffusionModel.load_from_checkpoint(model_path)
