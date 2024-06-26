@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import json
+import shutil
 
 import torch
 import hydra
@@ -136,7 +137,11 @@ def run_reconstruction(cfg: DictConfig, model: DiffusionModel = None):
             model = DiffusionModel.load_from_checkpoint(cfg.model.ckpt_path)
         elif cfg.model_location == "wandb":
             assert cfg.model.experiment_name_to_load is not None, "Please provide an experiment name"
-            model = load_from_wandb(cfg.model.experiment_name_to_load)
+            model_path, model_dir = load_from_wandb(cfg.model.experiment_name_to_load)
+            model = DiffusionModel.load_from_checkpoint(model_path)
+
+            # Clean up downloaded files
+            shutil.rmtree(model_dir)
     else:
         raise ValueError("Both load model and arguments model were provided. Ambuguious use of the script")
 
@@ -190,7 +195,7 @@ def run_reconstruction(cfg: DictConfig, model: DiffusionModel = None):
 def run_sampling(cfg: DictConfig, model: DiffusionModel = None):
 
     # Instantiate wandb run
-    run = wandb.init(project="zeogen", entity="glafk", name=cfg.expname)
+    wandb.init(project="zeogen", entity="glafk", name=cfg.expname)
     # Log the configuration using wandb.config
     log_config_to_wandb(cfg, f"sampling-config-{cfg.model.experiment_name_to_load}")
 
@@ -205,7 +210,11 @@ def run_sampling(cfg: DictConfig, model: DiffusionModel = None):
             model = DiffusionModel.load_from_checkpoint(cfg.model.ckpt_path)
         elif cfg.model.model_location == "wandb":
             assert cfg.model.experiment_name_to_load is not None, "Please provide an experiment name"
-            model = load_from_wandb(cfg.model.experiment_name_to_load)
+            model_path, model_dir = load_from_wandb(cfg.model.experiment_name_to_load)
+            model = DiffusionModel.load_from_checkpoint(model_path)
+
+            # Clean up downloaded files
+            shutil.rmtree(model_dir)
     else:
         raise ValueError("Both load model and arguments model were provided. Ambuguious use of the script")
 

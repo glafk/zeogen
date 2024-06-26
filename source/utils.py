@@ -1,11 +1,8 @@
 import pickle
 import os
-import shutil
 import json
 
 import wandb
-from wandb.apis import InternalApi
-import torch
 from omegaconf import OmegaConf
 
 # Function to load the list from the pickle file
@@ -26,6 +23,10 @@ def add_object(new_object, pickle_file):
     objects = load_objects(pickle_file)
     objects.append(new_object)
     save_objects(objects, pickle_file)
+
+
+def is_best_model(item):
+    return item.type == "model" and "best" in item.aliases
 
 
 def load_from_wandb(experiment_name):
@@ -54,29 +55,19 @@ def load_from_wandb(experiment_name):
 
     # List artifacts associated with the run
     artifacts = run.logged_artifacts()
-    artifact_name = 'model:latest'
+    artifact_list = list(artifacts)
 
-    # Retrieve the artifact
-    artifact = api.artifact(f"{run.entity}/{run.project}/{artifact_name}")
+    best_model = next(filter(is_best_model, artifact_list))
+
+    assert best_model is not None
 
     # Download the artifact
-    artifact_dir = artifact.download()
+    model_dir = best_model.download()
 
     # Assuming the model file is named 'model.ckpt'
-    model_path = os.path.join(artifact_dir, 'model.ckpt')
+    model_path = os.path.join(model_dir, 'model.ckpt')
 
-    model = torch.load_from_checkpoint(model_path)
-
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = model.to(device)
-
-    print(f"Loaded model from run {run.experiment.name}.")
-
-    wandb.finish()
-    # Clean up downloaded files
-    shutil.rmtree(artifact_dir)
-
-    return model
+    return model_path, model_dir
 
 
 def log_config_to_wandb(config, artifact_name="experiment_config", auxiliary_config=False):
