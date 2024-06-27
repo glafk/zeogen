@@ -108,8 +108,6 @@ def run_training(cfg: DictConfig):
         assert cfg.model.experiment_name_to_load is not None, "Please provide an experiment name"
         model_path, model_dir = load_from_wandb(cfg.model.experiment_name_to_load)
 
-        # Clean up downloaded files
-        shutil.rmtree(model_dir)
          
         trainer = pl.Trainer(
             default_root_dir=hydra_dir,
@@ -119,6 +117,15 @@ def run_training(cfg: DictConfig):
             accelerator="gpu",
             callbacks=[checkpoint_callback]
         )
+
+        hydra.utils.log.info("Starting training!")
+        trainer.fit(model=model, datamodule=datamodule, ckpt_path=model_path)
+
+        hydra.utils.log.info("Starting testing!")
+        trainer.test(datamodule=datamodule)
+
+        # Clean up downloaded files
+        shutil.rmtree(model_dir)
     else:
         trainer = pl.Trainer(
             default_root_dir=hydra_dir,
@@ -129,15 +136,11 @@ def run_training(cfg: DictConfig):
             callbacks=[checkpoint_callback]
         )
 
-    hydra.utils.log.info("Starting training!")
-    trainer.fit(model=model, datamodule=datamodule, ckpt_path=model_path)
+        hydra.utils.log.info("Starting training!")
+        trainer.fit(model=model, datamodule=datamodule)
 
-    hydra.utils.log.info("Starting testing!")
-    trainer.test(datamodule=datamodule)
-
-    # Logger closing to release resources/avoid multi-run conflicts
-    # if wandb_logger is not None:
-    #    wandb_logger.experiment.finish()
+        hydra.utils.log.info("Starting testing!")
+        trainer.test(datamodule=datamodule)
     
     return model
 
