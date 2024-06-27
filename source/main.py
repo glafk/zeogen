@@ -65,7 +65,10 @@ def run_training(cfg: DictConfig):
     if "wandb" in cfg.logging:
         hydra.utils.log.info("Instantiating <WandbLogger>")
         wandb_config = cfg.logging.wandb
-        checkpoint_callback = ModelCheckpoint(monitor="val_accuracy", mode="max")
+
+        # Enable version counter false allows us to overwrite models so that
+        # we don't have too many artifacts at the end of the run 
+        checkpoint_callback = ModelCheckpoint(monitor="val_accuracy", mode="max", enable_version_counter=False)
         wandb_logger = WandbLogger(
             **wandb_config,
             tags=cfg.core.tags,
@@ -113,7 +116,8 @@ def run_training(cfg: DictConfig):
             deterministic=cfg.train.deterministic,
             logger=wandb_logger,
             **cfg.train.pl_trainer,
-            accelerator="gpu"
+            accelerator="gpu",
+            callbacks=[checkpoint_callback]
         )
     else:
         trainer = pl.Trainer(
@@ -121,7 +125,8 @@ def run_training(cfg: DictConfig):
             deterministic=cfg.train.deterministic,
             logger=wandb_logger,
             **cfg.train.pl_trainer,
-            accelerator="gpu"
+            accelerator="gpu",
+            callbacks=[checkpoint_callback]
         )
 
     hydra.utils.log.info("Starting training!")
@@ -140,7 +145,7 @@ def run_training(cfg: DictConfig):
 def run_reconstruction(cfg: DictConfig, model: DiffusionModel = None):
 
     # Log the configuration using wandb.config
-    log_config_to_wandb(cfg, f"recon-config-{cfg.model.experiment_name_to_load}")
+    log_config_to_wandb(cfg, f"reconstruction-config-{cfg.model.experiment_name_to_load}")
 
     if cfg.model.load_model and model is None:
         # Make sure that the model location is provided

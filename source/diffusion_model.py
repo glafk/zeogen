@@ -421,8 +421,6 @@ class DiffusionModel(BaseModule):
         Returns:
             None
         """
-        # Log the LD configuration
-        log_config_to_wandb(ld_kwargs, kwargs_conf_name, auxiliary_config=True)
         # Reconstruct materials from dataset sample
         mu, log_var, z = self.encode(batch)
 
