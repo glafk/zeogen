@@ -1,6 +1,4 @@
-import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 MAX_ATOMIC_NUM = 100
 from gemnet.gemnet import GemNetT
@@ -17,6 +15,19 @@ class GemNetTDecoder(nn.Module):
         radius=6.,
         scale_file=None,
     ):
+        """
+        Initializes the GemNetTDecoder class.
+
+        Args:
+            hidden_dim (int, optional): The hidden dimension of the model. Defaults to 128.
+            latent_dim (int, optional): The latent dimension of the model. Defaults to 256.
+            max_neighbors (int, optional): The maximum number of neighbors. Defaults to 20.
+            radius (float, optional): The cutoff radius. Defaults to 6.0.
+            scale_file (str, optional): The file path to the scale file. Defaults to None.
+
+        Returns:
+            None
+        """
         super(GemNetTDecoder, self).__init__()
         self.cutoff = radius
         self.max_num_neighbors = max_neighbors
@@ -63,4 +74,5 @@ class GemNetTDecoder(nn.Module):
             num_bonds=None,
         )
         pred_atom_types = self.fc_atom(h)
+
         return pred_cart_coord_diff, pred_atom_types

@@ -29,13 +29,23 @@ predict_property: False
 # Logging and loading parameters
 load_model: True
 model_location: wandb
-ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model-150-epochs-MFI-only.ckpt
+ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model-150-epochs-MFI-only.ckpt # not applicable if model is on WandB
+
+# From which experiment the model should be loaded for continuted training, sampling and reconstruction
 experiment_name_to_load: reconstuct_and_sample_total_dataset_max_teacher_forcing
-run_training: false
-run_reconstruction: true
+
+# Training
+run_training: true
+resume_from_checkpoint: true
+
+# Reconstruction
+run_reconstruction: false
+num_reconstructions: 20
 reconstructions_file: reconstructions-${expname}.pickle
 save_reconstructions_online: true
-run_sampling: true
+
+# Sampling
+run_sampling: false
 num_samples: 50
 samples_file: samples-${expname}.pickle
 save_samples_online: true

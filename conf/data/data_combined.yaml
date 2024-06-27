@@ -66,7 +66,7 @@ datamodule:
       graph_method: ${data.graph_method}
       lattice_scale_method: ${data.lattice_scale_method}
       preprocess_workers: ${data.preprocess_workers}
-      num_records: 20
+      num_records: ${model.num_reconstructions}
 
   # Comment out the scaler_path to fit to the new dataset. To be added in the future 
   scaler_path: ${oc.env:PROJECT_ROOT}/source/scaling_factors

@@ -1,4 +1,4 @@
-expname: sample_an_reconstruct_after_50_epochs_total_dataset
+expname: cont_training_50_100_epochs_total_dataset
 
 # metadata specialised for each experiment
 core:
@@ -16,3 +16,5 @@ defaults:
   - optim: optim
   - train: train
   - logging: wandb_logging
+  - override hydra/job_logging: colorlog
+  - override hydra/hydra_logging: colorlog

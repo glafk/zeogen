@@ -100,16 +100,32 @@ def run_training(cfg: DictConfig):
     os.remove(config_filename)
 
     hydra.utils.log.info("Instantiating the Trainer")
-    trainer = pl.Trainer(
-        default_root_dir=hydra_dir,
-        deterministic=cfg.train.deterministic,
-        logger=wandb_logger,
-        **cfg.train.pl_trainer,
-        accelerator="gpu"
-    )
+    
+    if cfg.model.resume_from_checkpoint:
+        assert cfg.model.experiment_name_to_load is not None, "Please provide an experiment name"
+        model_path, model_dir = load_from_wandb(cfg.model.experiment_name_to_load)
+
+        # Clean up downloaded files
+        shutil.rmtree(model_dir)
+         
+        trainer = pl.Trainer(
+            default_root_dir=hydra_dir,
+            deterministic=cfg.train.deterministic,
+            logger=wandb_logger,
+            **cfg.train.pl_trainer,
+            accelerator="gpu"
+        )
+    else:
+        trainer = pl.Trainer(
+            default_root_dir=hydra_dir,
+            deterministic=cfg.train.deterministic,
+            logger=wandb_logger,
+            **cfg.train.pl_trainer,
+            accelerator="gpu"
+        )
 
     hydra.utils.log.info("Starting training!")
-    trainer.fit(model=model, datamodule=datamodule)
+    trainer.fit(model=model, datamodule=datamodule, ckpt_path=model_path)
 
     hydra.utils.log.info("Starting testing!")
     trainer.test(datamodule=datamodule)
@@ -135,7 +151,7 @@ def run_reconstruction(cfg: DictConfig, model: DiffusionModel = None):
             # Load model
             hydra.utils.log.info(f"Loading model <{cfg.model._target_}>")
             model = DiffusionModel.load_from_checkpoint(cfg.model.ckpt_path)
-        elif cfg..model.model_location == "wandb":
+        elif cfg.model.model_location == "wandb":
             assert cfg.model.experiment_name_to_load is not None, "Please provide an experiment name"
             model_path, model_dir = load_from_wandb(cfg.model.experiment_name_to_load)
             model = DiffusionModel.load_from_checkpoint(model_path)
