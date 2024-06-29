@@ -68,7 +68,7 @@ def run_training(cfg: DictConfig):
 
         # Enable version counter false allows us to overwrite models so that
         # we don't have too many artifacts at the end of the run 
-        checkpoint_callback = ModelCheckpoint(monitor="val_accuracy", mode="max", enable_version_counter=False)
+        checkpoint_callback = ModelCheckpoint(monitor="val_loss", mode="min", enable_version_counter=False)
         wandb_logger = WandbLogger(
             **wandb_config,
             tags=cfg.core.tags,

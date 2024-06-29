@@ -106,7 +106,7 @@ class CrystDataModule(pl.LightningDataModule):
             batch_size=self.batch_size.train,
             num_workers=self.num_workers.train,
             worker_init_fn=worker_init_fn,
-            persistent_workers=True
+            persistent_workers=False
         )
 
     def val_dataloader(self) -> Sequence[DataLoader]:
@@ -116,7 +116,7 @@ class CrystDataModule(pl.LightningDataModule):
                 batch_size=self.batch_size.val,
                 num_workers=self.num_workers.val,
                 worker_init_fn=worker_init_fn,
-                persistent_workers=True
+                persistent_workers=False
             )
 
     def test_dataloader(self) -> Sequence[DataLoader]:
@@ -126,7 +126,7 @@ class CrystDataModule(pl.LightningDataModule):
                 batch_size=self.batch_size.test,
                 num_workers=self.num_workers.test,
                 worker_init_fn=worker_init_fn,
-                persistent_workers=True
+                persistent_workers=False
             )
 
     def predict_dataloader(self) -> Sequence[DataLoader]:
@@ -136,7 +136,7 @@ class CrystDataModule(pl.LightningDataModule):
                 batch_size=self.batch_size.predict,
                 num_workers=self.num_workers.predict,
                 worker_init_fn=worker_init_fn,
-                persistent_workers=True
+                persistent_workers=False
             )
 
     def __repr__(self) -> str:

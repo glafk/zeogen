@@ -12,7 +12,7 @@ otf_graph: false
 eval_model_name: diffusion
 
 
-train_max_epochs: 50
+train_max_epochs: 100
 early_stopping_patience: 100
 teacher_forcing_max_epoch: 50
 
@@ -72,13 +72,13 @@ datamodule:
   scaler_path: ${oc.env:PROJECT_ROOT}/source/scaling_factors
 
   num_workers:
-    train: 4
-    val: 4
-    test: 4
-    predict: 4
+    train: 0
+    val: 0
+    test: 0
+    predict: 0
 
   batch_size:
-    train: 32
-    val: 32
-    test: 32
+    train: 48
+    val: 48
+    test: 48
     predict: 1
