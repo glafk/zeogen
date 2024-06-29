@@ -5,6 +5,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import pickle
 from typing import Optional
 
 import numpy as np
@@ -356,13 +357,29 @@ class GemNetT(torch.nn.Module):
             batch_edge, minlength=neighbors.size(0)
         )
 
+        # There is a weird exception being thrown here. Recording the batch
         # Create indexing array
-        edge_reorder_idx = repeat_blocks(
-            neighbors_new // 2,
-            repeats=2,
-            continuous_indexing=True,
-            repeat_inc=edge_index_new.size(1),
-        )
+        try:
+            edge_reorder_idx = repeat_blocks(
+                neighbors_new // 2,
+                repeats=2,
+                continuous_indexing=True,
+                repeat_inc=edge_index_new.size(1),
+            )
+        except Exception as e:
+            batch = {
+                "edge_index": edge_index_new,
+                "neighbors": neighbors_new,
+                "cell_offsets": cell_offsets,
+                "edge_dist": edge_dist,
+                "edge_vector": edge_vector
+            }
+
+            # Save the batch
+            with open("problem_batch.pkl", "wb") as f:
+                pickle.dump(batch, f)
+
+            raise e
 
         # Reorder everything so the edges of every image are consecutive
         edge_index_new = edge_index_cat[:, edge_reorder_idx]
@@ -515,7 +532,6 @@ class GemNetT(torch.nn.Module):
         batch = torch.arange(num_atoms.size(0),
                              device=num_atoms.device).repeat_interleave(
                                  num_atoms, dim=0)
-        atomic_numbers = atom_types
 
         (
             edge_index,
@@ -538,7 +554,7 @@ class GemNetT(torch.nn.Module):
         rbf = self.radial_basis(D_st)
 
         # Embedding block
-        h = self.atom_emb(atomic_numbers)
+        h = self.atom_emb(atom_types)
         # Merge z and atom embedding
         if z is not None:
             z_per_atom = z.repeat_interleave(num_atoms, dim=0)
