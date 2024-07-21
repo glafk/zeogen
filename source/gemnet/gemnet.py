@@ -376,7 +376,7 @@ class GemNetT(torch.nn.Module):
             }
 
             # Save the batch
-            with open("problem_batch.pkl", "wb") as f:
+            with open("/home/TUE/20220787/zeogen/problem_batch.pkl", "wb") as f:
                 pickle.dump(batch, f)
 
             raise e
@@ -490,14 +490,31 @@ class GemNetT(torch.nn.Module):
 
         # Indices for swapping c->a and a->c (for symmetric MP)
         block_sizes = neighbors // 2
-        id_swap = repeat_blocks(
-            block_sizes,
-            repeats=2,
-            continuous_indexing=False,
-            start_idx=block_sizes[0],
-            block_inc=block_sizes[:-1] + block_sizes[1:],
-            repeat_inc=-block_sizes,
-        )
+        
+        try:
+            id_swap = repeat_blocks(
+                block_sizes,
+                repeats=2,
+                continuous_indexing=False,
+                start_idx=block_sizes[0],
+                block_inc=block_sizes[:-1] + block_sizes[1:],
+                repeat_inc=-block_sizes
+            )
+        except Exception as e:
+            print("Logging exception")
+            batch = {
+                "cart_coords": cart_coords,
+                "lengths": lengths,
+                "angles": angles,
+                "edge_index": edge_index,
+                "to_jimages": to_jimages
+            }
+
+            # Save the batch
+            with open("/home/TUE/20220787/zeogen/problem_batch.pkl", "wb") as f:
+                pickle.dump(batch, f)
+
+            raise e
 
         id3_ba, id3_ca, id3_ragged_idx = self.get_triplets(
             edge_index, num_atoms=num_atoms.sum(),

@@ -1,4 +1,4 @@
-expname: cont_training_50_100_epochs_total_dataset
+expname: cont_training_100_150_epochs_total_dataset
 
 # metadata specialised for each experiment
 core:
