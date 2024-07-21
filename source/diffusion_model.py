@@ -159,6 +159,7 @@ class DiffusionModel(BaseModule):
 
         # THIS BIT IS IMPORTANT. WILL NEED THIS FOR MY INITIAL DIFFUSION PROCESS DEVELOPMENT
         # add noise to atom types and sample atom types.
+        # TODO: Rework this to predict the overall ratio of Si/Al instead of individual atom types to avoid the error with negative probabilities error
         pred_composition_probs = F.softmax(
             pred_composition_per_atom.detach(), dim=-1)
         atom_type_probs = (
