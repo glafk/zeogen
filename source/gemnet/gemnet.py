@@ -528,6 +528,10 @@ class GemNetT(torch.nn.Module):
             atom_frac_coords: (N_atoms, 3)
             atom_types: (N_atoms, MAX_ATOMIC_NUM)
         """
+        
+        # assert that all angles in the batch are > 0 and < 180
+        assert torch.all(angles > 0) and  torch.all(angles < 180)
+
         pos = frac_to_cart_coords(frac_coords, lengths, angles, num_atoms)
         batch = torch.arange(num_atoms.size(0),
                              device=num_atoms.device).repeat_interleave(

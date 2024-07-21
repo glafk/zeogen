@@ -4,7 +4,8 @@ import numpy as np
 from pymatgen.core.structure import Structure
 from pymatgen.core.composition import Composition
 from pymatgen.core.lattice import Lattice
-from pymatgen.analysis.structure_matcher import StructureMatcher
+
+from evaluation.eval_utils import structure_validity
 """
 This code snippet imports featurizers for site fingerprint and composition, then
 initializes specific fingerprint presets for crystal structures and elemental
@@ -39,12 +40,12 @@ CompFP = ElementProperty.from_preset('magpie')
 
 class Crystal(object):
 
-    def __init__(self, crys_array_dict):
-        self.frac_coords = crys_array_dict['frac_coords']
-        self.atom_types = crys_array_dict['atom_types']
-        self.lengths = crys_array_dict['lengths']
-        self.angles = crys_array_dict['angles']
-        self.dict = crys_array_dict
+    def __init__(self, crys_dict):
+        self.frac_coords = crys_dict['frac_coords'].detach().cpu()
+        self.atom_types = crys_dict['atom_types'].detach().cpu()
+        self.lengths = crys_dict['lengths'].detach().cpu()
+        self.angles = crys_dict['angles'].detach().cpu()
+        self.dict = crys_dict
 
         self.get_structure()
         self.get_composition()
@@ -52,17 +53,20 @@ class Crystal(object):
         self.get_fingerprints()
 
     def get_structure(self):
-        if min(self.lengths.tolist()) < 0:
+        self.lengths = self.lengths.tolist()[0]
+        self.angles = self.angles.tolist()[0]
+        if min(self.lengths) < 0:
             self.constructed = False
             self.invalid_reason = 'non_positive_lattice'
         else:
             try:
                 self.structure = Structure(
                     lattice=Lattice.from_parameters(
-                        *(self.lengths.tolist() + self.angles.tolist())),
+                        *(self.lengths + self.angles)),
                     species=self.atom_types, coords=self.frac_coords, coords_are_cartesian=False)
                 self.constructed = True
-            except Exception:
+            except Exception as e:
+                print(e)
                 self.constructed = False
                 self.invalid_reason = 'construction_raises_exception'
             if self.structure.volume < 0.1:
@@ -81,12 +85,14 @@ class Crystal(object):
 
     def get_validity(self):
         # Question? Do we need smact validity if we don't care about charge neutrality
-        self.comp_valid = smact_validity(self.elems, self.comps)
+        # self.comp_valid = smact_validity(self.elems, self.comps)
+        # Getting rid of smact validity for now. Not very applicable in this case
         if self.constructed:
             self.struct_valid = structure_validity(self.structure)
         else:
             self.struct_valid = False
-        self.valid = self.comp_valid and self.struct_valid
+        self.valid = self.struct_valid
+        # self.valid = self.comp_valid and self.struct_valid
 
     def get_fingerprints(self):
         """

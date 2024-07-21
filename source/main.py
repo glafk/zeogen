@@ -254,7 +254,7 @@ def run_sampling(cfg: DictConfig, model: DiffusionModel = None):
     model.lattice_scaler = datamodule.lattice_scaler.copy()
     model.scaler = datamodule.scaler.copy()
 
-    datamodule.setup(stage="predict")
+    # datamodule.setup(stage="predict")
     model.eval()
 
     model = model.to("cuda")

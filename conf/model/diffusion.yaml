@@ -27,7 +27,7 @@ num_noise_level: 50
 predict_property: False
 
 # Logging and loading parameters
-load_model: True
+load_model: False
 model_location: wandb
 ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model-150-epochs-MFI-only.ckpt # not applicable if model is on WandB
 
@@ -36,7 +36,7 @@ experiment_name_to_load: reconstuct_and_sample_total_dataset_max_teacher_forcing
 
 # Training
 run_training: true
-resume_from_checkpoint: true
+resume_from_checkpoint: False
 
 # Reconstruction
 run_reconstruction: false

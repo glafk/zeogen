@@ -1,5 +1,5 @@
 import numpy as np
-import tqdm
+from tqdm import tqdm
 
 from pymatgen.analysis.structure_matcher import StructureMatcher
 
@@ -22,7 +22,8 @@ class RecEval(object):
                     pred.structure, gt.structure)
                 rms_dist = None if rms_dist is None else rms_dist[0]
                 return rms_dist
-            except Exception:
+            except Exception as e:
+                print(e)
                 return None
         validity = [c.valid for c in self.preds]
 
