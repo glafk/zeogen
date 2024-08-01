@@ -178,4 +178,7 @@ samples/
 source/*.out
 source/cluster_logs
 
-
+# Ignore preprocessed dataloaders as they are too big for git repo
+data/combined_dataset_total/combined_train_preprocessed.pt
+data/combined_dataset_total/combined_train_preprocessed.pt
+data/combined_dataset_total/combined_test_preprocessed.pt
