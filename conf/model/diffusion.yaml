@@ -39,13 +39,13 @@ run_training: true
 resume_from_checkpoint: False
 
 # Reconstruction
-run_reconstruction: true
+run_reconstruction: false
 num_reconstructions: 10
 reconstructions_file: reconstructions-${expname}.pickle
 save_reconstructions_online: true
 
 # Sampling
-run_sampling: true`
+run_sampling: false
 num_samples: 30
 samples_file: samples-${expname}.pickle
 save_samples_online: true
