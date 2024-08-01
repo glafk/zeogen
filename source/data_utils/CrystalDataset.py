@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 from torch_geometric.data import Data
 
 from data_utils.crystal_utils import (
-    preprocess, preprocess_tensors, add_scaled_lattice_prop)
+    preprocess, preprocess_tensors, add_scaled_lengths_prop)
 
 
 class CrystDataset(Dataset):
@@ -41,7 +41,7 @@ class CrystDataset(Dataset):
             graph_method=self.graph_method,
             prop_list=[prop])
 
-        add_scaled_lattice_prop(self.cached_data, lattice_scale_method)
+        add_scaled_lengths_prop(self.cached_data, lattice_scale_method)
         self.lattice_scaler = None
         self.scaler = None
 
@@ -101,7 +101,7 @@ class TensorCrystDataset(Dataset):
             num_records=self.num_records,
             prop_name=self.prop)
 
-        add_scaled_lattice_prop(self.cached_data, lattice_scale_method)
+        add_scaled_lengths_prop(self.cached_data, lattice_scale_method)
         self.lattice_scaler = None
         self.scaler = None
 

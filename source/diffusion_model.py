@@ -24,11 +24,19 @@ env.load_envs()
 MAX_ATOMIC_NUM = 100
 PROJECT_ROOT = Path(env.get_env("PROJECT_ROOT"))
 
-def build_mlp(in_dim, hidden_dim, fc_num_layers, out_dim):
+def build_mlp(in_dim, hidden_dim, fc_num_layers, out_dim, final_activation="sigmoid"):
     mods = [nn.Linear(in_dim, hidden_dim), nn.ReLU()]
     for i in range(fc_num_layers-1):
         mods += [nn.Linear(hidden_dim, hidden_dim), nn.ReLU()]
     mods += [nn.Linear(hidden_dim, out_dim)]
+
+    if final_activation == "sigmoid":
+        mods.append(nn.Sigmoid())
+    elif final_activation == "relu":
+        mods.append(nn.ReLU())
+    elif final_activation == "hard_sigmoid":
+        mods.append(nn.Hardsigmoid())
+
     return nn.Sequential(*mods)
 
 
@@ -69,10 +77,12 @@ class DiffusionModel(BaseModule):
 
         self.fc_num_atoms = build_mlp(self.hparams.latent_dim, self.hparams.hidden_dim,
                                       self.hparams.fc_num_layers, self.hparams.max_atoms+1)
-        self.fc_lattice = build_mlp(self.hparams.latent_dim, self.hparams.hidden_dim,
-                                    self.hparams.fc_num_layers, 6)
+        self.fc_lengths = build_mlp(self.hparams.latent_dim, self.hparams.hidden_dim,
+                                    self.hparams.fc_num_layers, 3, final_activation="relu")
+        self.fc_angles = build_mlp(self.hparams.latent_dim, self.hparams.hidden_dim,
+                                   self.hparams.fc_num_layers, 3, final_activation='sigmoid')
         self.fc_composition = build_mlp(self.hparams.latent_dim, self.hparams.hidden_dim,
-                                        self.hparams.fc_num_layers, MAX_ATOMIC_NUM)
+                                        self.hparams.fc_num_layers, 1, final_activation="hard_sigmoid")
 
         sigmas = torch.tensor(np.exp(np.linspace(
             np.log(self.hparams.sigma_begin),
@@ -89,7 +99,7 @@ class DiffusionModel(BaseModule):
         self.type_sigmas = nn.Parameter(type_sigmas, requires_grad=False)
 
         # These are passed from the datamodule after both it and the model have been initialized
-        self.lattice_scaler = None
+        self.lengths_scaler = None
         self.scaler = None
 
     def reparameterize(self, mu, logvar):
@@ -119,29 +129,34 @@ class DiffusionModel(BaseModule):
         """
         decode key stats from latent embeddings.
         batch is input during training for teach-forcing.
+        TODO: Rework the prediction of lattice parameters and composition
         """
         if gt_num_atoms is not None:
             num_atoms = self.predict_num_atoms(z)
-            lengths_and_angles, lengths, angles = (
-                self.predict_lattice(z, gt_num_atoms))
+            lengths = self.predict_lenghts(z, gt_num_atoms)
+            angles = self.predict_angles(z)
             composition_per_atom = self.predict_composition(z, gt_num_atoms)
             if self.hparams.teacher_forcing_lattice and teacher_forcing:
                 lengths = gt_lengths
                 angles = gt_angles
         else:
             num_atoms = self.predict_num_atoms(z).argmax(dim=-1)
-            lengths_and_angles, lengths, angles = (
-                self.predict_lattice(z, num_atoms))
+            lengths = self.predict_lenghts(z, num_atoms)
+            angles = self.predict_angles(z)
             composition_per_atom = self.predict_composition(z, num_atoms)
+
+        lengths_and_angles = torch.cat([lengths, angles], dim=-1)
         return num_atoms, lengths_and_angles, lengths, angles, composition_per_atom
 
     def forward(self, batch, teacher_forcing=False, training=False):
-        # hacky way to resolve the NaN issue. Will need more careful debugging later.
         mu, log_var, z = self.encode(batch)
 
         (pred_num_atoms, pred_lengths_and_angles, pred_lengths, pred_angles,
-         pred_composition_per_atom) = self.decode_stats(
+         pred_composition_ratio) = self.decode_stats(
             z, batch.num_atoms, batch.lengths, batch.angles, teacher_forcing)
+
+        # Expand the predicted composition ratio to match the number of atoms per crystal in the batch
+        pred_composition_per_crystal = pred_composition_ratio[batch.batch.squeeze()]
 
         # sample noise levels.
         noise_level = torch.randint(0, self.sigmas.size(0),
@@ -161,12 +176,13 @@ class DiffusionModel(BaseModule):
         # add noise to atom types and sample atom types.
         # TODO: Rework this to predict the overall ratio of Si/Al instead of individual atom types to avoid the error with negative probabilities error
         pred_composition_probs = F.softmax(
-            pred_composition_per_atom.detach(), dim=-1)
+            pred_composition_per_crystal.detach(), dim=-1)
         atom_type_probs = (
-            F.one_hot(batch.atom_types - 1, num_classes=MAX_ATOMIC_NUM) +
+            F.one_hot(batch.atom_types - 13, num_classes=2) +
             pred_composition_probs * used_type_sigmas_per_atom[:, None])
+        # Adjust with 13 to end up with only Al and Si atoms
         rand_atom_types = torch.multinomial(
-            atom_type_probs, num_samples=1).squeeze(1) + 1
+            atom_type_probs, num_samples=1).squeeze(1) + 13
 
         # add noise to the cart coords
         # TODO: Investigate: is it needed to add noise to the cart coords?
@@ -193,7 +209,7 @@ class DiffusionModel(BaseModule):
         num_atom_loss = self.num_atom_loss(pred_num_atoms, batch)
         lattice_loss = self.lattice_loss(pred_lengths_and_angles, batch)
         composition_loss = self.composition_loss(
-            pred_composition_per_atom, batch.atom_types, batch)
+            pred_composition_per_crystal, batch.atom_types, batch)
         coord_loss = self.coord_loss(
             pred_cart_coord_diff, noisy_frac_coords, used_sigmas_per_atom, batch)
         type_loss = self.type_loss(pred_atom_types, batch.atom_types,
@@ -220,7 +236,7 @@ class DiffusionModel(BaseModule):
             'pred_angles': pred_angles,
             'pred_cart_coord_diff': pred_cart_coord_diff,
             'pred_atom_types': pred_atom_types,
-            'pred_composition_per_atom': pred_composition_per_atom,
+            'pred_composition_per_atom': pred_composition_per_crystal,
             'target_frac_coords': batch.frac_coords,
             'target_atom_types': batch.atom_types,
             'rand_frac_coords': noisy_frac_coords,
@@ -285,22 +301,23 @@ class DiffusionModel(BaseModule):
         self.scaler.match_device(z)
         return self.scaler.inverse_transform(self.fc_property(z))
 
-    def predict_lattice(self, z, num_atoms):
-        self.lattice_scaler.match_device(z)
-        pred_lengths_and_angles = self.fc_lattice(z)  # (N, 6)
-        scaled_preds = self.lattice_scaler.inverse_transform(
-            pred_lengths_and_angles)
-        pred_lengths = scaled_preds[:, :3]
-        pred_angles = scaled_preds[:, 3:]
-        # TODO: Reverser the changes so that lattice_scale_method is an attribute and not an indexer
+    def predict_lenghts(self, z, num_atoms):
+        self.lengths_scaler.match_device(z)
+        pred_lengths = self.fc_lengths(z)
+        pred_lengths = self.lengths_scaler.inverse_transform(pred_lengths)
         if self.hparams.data["lattice_scale_method"] == 'scale_length':
             pred_lengths = pred_lengths * num_atoms.view(-1, 1).float()**(1/3)
-        # <pred_lengths_and_angles> is scaled.
-        return pred_lengths_and_angles, pred_lengths, pred_angles
+
+        return pred_lengths
+        
+    def predict_angles(self, z):
+        pred_angles = self.fc_angles(z)
+        # Multiply each angles by 180
+        pred_angles = pred_angles * 180
+        return pred_angles
 
     def predict_composition(self, z, num_atoms):
-        z_per_atom = z.repeat_interleave(num_atoms, dim=0)
-        pred_composition_per_atom = self.fc_composition(z_per_atom)
+        pred_composition_per_atom = self.fc_composition(z)
         return pred_composition_per_atom
 
 
@@ -437,20 +454,22 @@ class DiffusionModel(BaseModule):
         return F.mse_loss(self.fc_property(z), batch.y)
 
     def lattice_loss(self, pred_lengths_and_angles, batch):
-        self.lattice_scaler.match_device(pred_lengths_and_angles)
+        self.lengths_scaler.match_device(pred_lengths_and_angles)
         # TODO: Here as well
         if self.hparams.data["lattice_scale_method"] == 'scale_length':
             target_lengths = batch.lengths / \
                 batch.num_atoms.view(-1, 1).float()**(1/3)
+
+        scaled_target_lengths = self.lengths_scaler.transform(target_lengths)
         target_lengths_and_angles = torch.cat(
-            [target_lengths, batch.angles], dim=-1)
-        target_lengths_and_angles = self.lattice_scaler.transform(
-            target_lengths_and_angles)
+            [scaled_target_lengths, batch.angles], dim=-1)
         return F.mse_loss(pred_lengths_and_angles, target_lengths_and_angles)
 
     def composition_loss(self, pred_composition_per_atom, target_atom_types, batch):
-        target_atom_types = target_atom_types - 1
-        loss = F.cross_entropy(pred_composition_per_atom,
+        target_atom_types = target_atom_types - 13
+        # Cast target atom types to float
+        target_atom_types = target_atom_types.float()
+        loss = F.binary_cross_entropy(pred_composition_per_atom.squeeze(),
                                target_atom_types, reduction='none')
         return scatter(loss, batch.batch, reduce='mean').mean()
 
@@ -566,10 +585,9 @@ class DiffusionModel(BaseModule):
 
             # evalute lattice prediction.
             pred_lengths_and_angles = outputs['pred_lengths_and_angles']
-            scaled_preds = self.lattice_scaler.inverse_transform(
-                pred_lengths_and_angles)
-            pred_lengths = scaled_preds[:, :3]
-            pred_angles = scaled_preds[:, 3:]
+            scaled_lengths = self.lengths_scaler.inverse_transform(pred_lengths_and_angles[:, :3])
+            pred_lengths = scaled_lengths
+            pred_angles = pred_lengths_and_angles[:, 3:]
 
             if self.hparams.data.lattice_scale_method == 'scale_length':
                 pred_lengths = pred_lengths * \

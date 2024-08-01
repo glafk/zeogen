@@ -673,7 +673,7 @@ def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, prop_n
     return ordered_results
 
 
-def add_scaled_lattice_prop(data_list, lattice_scale_method):
+def add_scaled_lengths_prop(data_list, lattice_scale_method):
     for dict in data_list:
         graph_arrays = dict['graph_arrays']
         # the indexes are brittle if more objects are returned
@@ -686,7 +686,7 @@ def add_scaled_lattice_prop(data_list, lattice_scale_method):
         if lattice_scale_method == 'scale_length':
             lengths = lengths / float(num_atoms)**(1/3)
 
-        dict['scaled_lattice'] = np.concatenate([lengths, angles])
+        dict['scaled_lengths'] = lengths
 
 
 def mard(targets, preds):

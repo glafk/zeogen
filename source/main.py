@@ -55,9 +55,9 @@ def run_training(cfg: DictConfig):
 
     # Pass scaler from datamodule to model
     hydra.utils.log.info(f"Passing scaler from datamodule to model <{datamodule.scaler}>")
-    model.lattice_scaler = datamodule.lattice_scaler.copy()
+    model.lengths_scaler = datamodule.lengths_scaler.copy()
     model.scaler = datamodule.scaler.copy()
-    torch.save(datamodule.lattice_scaler, hydra_dir / 'lattice_scaler.pt')
+    torch.save(datamodule.lengths_scaler, hydra_dir / 'lengths_scaler.pt')
     torch.save(datamodule.scaler, hydra_dir / 'prop_scaler.pt')
 
     # Logger instantiation/configuration
@@ -177,7 +177,7 @@ def run_reconstruction(cfg: DictConfig, model: DiffusionModel = None):
 
     # Pass scaler from datamodule to model
     hydra.utils.log.info(f"Passing scaler from datamodule to model <{datamodule.scaler}>")
-    model.lattice_scaler = datamodule.lattice_scaler.copy()
+    model.lengths_scaler = datamodule.lengths_scaler.copy()
     model.scaler = datamodule.scaler.copy()
 
     datamodule.setup(stage="predict")
@@ -251,7 +251,7 @@ def run_sampling(cfg: DictConfig, model: DiffusionModel = None):
 
     # Pass scaler from datamodule to model
     hydra.utils.log.info(f"Passing scaler from datamodule to model <{datamodule.scaler}>")
-    model.lattice_scaler = datamodule.lattice_scaler.copy()
+    model.lengths_scaler = datamodule.lengths_scaler.copy()
     model.scaler = datamodule.scaler.copy()
 
     # datamodule.setup(stage="predict")

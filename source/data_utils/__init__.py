@@ -1,1 +1,3 @@
 from .crystal_utils import save_samples_as_cifs, save_reconstructions_as_cifs, visualize_trajectory
+
+from .CrystalDataset import TensorCrystDataset

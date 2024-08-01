@@ -50,28 +50,28 @@ class CrystDataModule(pl.LightningDataModule):
         self.test_datasets: Optional[Sequence[Dataset]] = None
 
         # TODO: Change this to be parametrizable
-        self.get_scaler(scaler_path, lattice_scaler="lattice_scaler_total_dataset.pt", prop_scaler="prop_scaler_total_dataset.pt")
+        self.get_scaler(scaler_path, lengths_scaler="lengths_scaler_total_dataset.pt", prop_scaler="prop_scaler_total_dataset.pt")
 
     def prepare_data(self) -> None:
         # download only
         pass
 
-    def get_scaler(self, scaler_path, lattice_scaler="lattice_scaler.pt", prop_scaler="prop_scaler.pt"):
+    def get_scaler(self, scaler_path, lengths_scaler="lengths_scaler.pt", prop_scaler="prop_scaler.pt"):
         # Load once to compute property scaler
         if scaler_path is None:
             # temporarily change this to the test dataset to generate the scaling factors
             print("Generating scaling factors")
             # test_dataset = hydra.utils.instantiate(self.datasets.test)
             train_dataset = hydra.utils.instantiate(self.datasets.train)
-            self.lattice_scaler = get_scaler_from_data_list(
+            self.lengths_scaler = get_scaler_from_data_list(
                 train_dataset.cached_data,
-                key='scaled_lattice')
+                key='scaled_lengths')
             self.scaler = get_scaler_from_data_list(
                 train_dataset.cached_data,
                 key=train_dataset.prop)
         else:
-            self.lattice_scaler = torch.load(
-                Path(scaler_path) / lattice_scaler)
+            self.lengths_scaler = torch.load(
+                Path(scaler_path) / lengths_scaler)
             self.scaler = torch.load(Path(scaler_path) / prop_scaler)
 
     def setup(self, stage: Optional[str] = None):
@@ -93,9 +93,9 @@ class CrystDataModule(pl.LightningDataModule):
                 torch.save(self.train_dataset, train_preprocessed_path)
                 torch.save(self.val_dataset, val_preprocessed_path)
 
-            self.train_dataset.lattice_scaler = self.lattice_scaler
+            self.train_dataset.lengths_scaler = self.lengths_scaler
             self.train_dataset.scaler = self.scaler
-            self.val_dataset.lattice_scaler = self.lattice_scaler
+            self.val_dataset.lengths_scaler = self.lengths_scaler
             self.val_dataset.scaler = self.scaler
 
         if stage == "test":
@@ -109,7 +109,7 @@ class CrystDataModule(pl.LightningDataModule):
                 torch.save(self.test_dataset, test_preprocessed_path)
 
             print("Instantiating test dataset") 
-            self.test_dataset.lattice_scaler = self.lattice_scaler
+            self.test_dataset.lengths_scaler = self.lengths_scaler
             self.test_dataset.scaler = self.scaler
 
         if stage == "predict":
@@ -123,7 +123,7 @@ class CrystDataModule(pl.LightningDataModule):
                 torch.save(self.predict_dataset, predict_preprocessed_path)
 
             print("Instantiating predict dataset")
-            self.predict_dataset.lattice_scaler = self.lattice_scaler
+            self.predict_dataset.lengths_scaler = self.lengths_scaler
             self.predict_dataset.scaler = self.scaler 
 
     def train_dataloader(self) -> DataLoader:
