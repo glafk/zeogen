@@ -29,7 +29,6 @@ assert (
 
 os.chdir(PROJECT_ROOT)
 
-
 def run_training(cfg: DictConfig):
     if cfg.train.deterministic:
         seed_everything(cfg.train.random_seed)
@@ -57,8 +56,8 @@ def run_training(cfg: DictConfig):
     hydra.utils.log.info(f"Passing scaler from datamodule to model <{datamodule.scaler}>")
     model.lengths_scaler = datamodule.lengths_scaler.copy()
     model.scaler = datamodule.scaler.copy()
-    torch.save(datamodule.lengths_scaler, hydra_dir / 'lengths_scaler.pt')
-    torch.save(datamodule.scaler, hydra_dir / 'prop_scaler.pt')
+    torch.save(datamodule.lengths_scaler, hydra_dir / 'lengths_scaler_total_dataset.pt')
+    torch.save(datamodule.scaler, hydra_dir / 'prop_scaler_total_dataset.pt')
 
     # Logger instantiation/configuration
     wandb_logger = None
