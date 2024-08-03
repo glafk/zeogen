@@ -155,9 +155,6 @@ class DiffusionModel(BaseModule):
          pred_composition_ratio) = self.decode_stats(
             z, batch.num_atoms, batch.lengths, batch.angles, teacher_forcing)
 
-        # Expand the predicted composition ratio to match the number of atoms per crystal in the batch
-        pred_composition_per_crystal = pred_composition_ratio[batch.batch.squeeze()]
-
         # sample noise levels.
         noise_level = torch.randint(0, self.sigmas.size(0),
                                     (batch.num_atoms.size(0),),
@@ -165,24 +162,27 @@ class DiffusionModel(BaseModule):
         used_sigmas_per_atom = self.sigmas[noise_level].repeat_interleave(
             batch.num_atoms, dim=0)
 
+        # Select a random noise level for the atom types per crystal in the batch
         type_noise_level = torch.randint(0, self.type_sigmas.size(0),
                                          (batch.num_atoms.size(0),),
                                          device=self.device)
-        used_type_sigmas_per_atom = (
-            self.type_sigmas[type_noise_level].repeat_interleave(
-                batch.num_atoms, dim=0))
+        type_noise = self.type_sigmas[type_noise_level]
+        # Generate random noise signs to ensure noise does not only increase the probabilit of Al atoms
+        random_signs = (torch.rand(batch.num_atoms.size(0), device=self.device) - 0.5).sign()
 
-        # THIS BIT IS IMPORTANT. WILL NEED THIS FOR MY INITIAL DIFFUSION PROCESS DEVELOPMENT
-        # add noise to atom types and sample atom types.
-        # TODO: Rework this to predict the overall ratio of Si/Al instead of individual atom types to avoid the error with negative probabilities error
-        pred_composition_probs = F.softmax(
-            pred_composition_per_crystal.detach(), dim=-1)
-        atom_type_probs = (
-            F.one_hot(batch.atom_types - 13, num_classes=2) +
-            pred_composition_probs * used_type_sigmas_per_atom[:, None])
+        type_noise = type_noise * random_signs
+
+        # Add noise to predicted ratios and clamp to [0, 1]
+        adjusted_ratios = torch.clamp(pred_composition_ratio.squeeze() + type_noise, 0.0, 1.0)
+        # Expand the predicted composition ratio to match the number of atoms per crystal in the batch
+        pred_composition_per_crystal = adjusted_ratios[batch.batch.squeeze()]
+        #used_type_sigmas_per_atom = (
+        #    self.type_sigmas[type_noise_level].repeat_interleave(
+        #        batch.num_atoms, dim=0))
+
         # Adjust with 13 to end up with only Al and Si atoms
-        rand_atom_types = torch.multinomial(
-            atom_type_probs, num_samples=1).squeeze(1) + 13
+        rand_atom_types = torch.multinomial(torch.stack(
+            (pred_composition_per_crystal, 1-pred_composition_per_crystal), dim=1), num_samples=1).squeeze(1) + 13
 
         # add noise to the cart coords
         # TODO: Investigate: is it needed to add noise to the cart coords?
@@ -213,7 +213,7 @@ class DiffusionModel(BaseModule):
         coord_loss = self.coord_loss(
             pred_cart_coord_diff, noisy_frac_coords, used_sigmas_per_atom, batch)
         type_loss = self.type_loss(pred_atom_types, batch.atom_types,
-                                   used_type_sigmas_per_atom, batch)
+                                   type_noise, batch)
 
         kld_loss = self.kld_loss(mu, log_var)
 
@@ -495,12 +495,13 @@ class DiffusionModel(BaseModule):
         return scatter(loss_per_atom, batch.batch, reduce='mean').mean()
 
     def type_loss(self, pred_atom_types, target_atom_types,
-                  used_type_sigmas_per_atom, batch):
+                  type_noise, batch):
         target_atom_types = target_atom_types - 1
         loss = F.cross_entropy(
             pred_atom_types, target_atom_types, reduction='none')
         # rescale loss according to noise
-        loss = loss / used_type_sigmas_per_atom
+        loss = loss / torch.abs(type_noise.repeat_interleave(batch.num_atoms, dim=0))
+
         return scatter(loss, batch.batch, reduce='mean').mean()
 
     def kld_loss(self, mu, log_var):

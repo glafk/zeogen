@@ -30,7 +30,7 @@ datamodule:
       graph_method: ${data.graph_method}
       lattice_scale_method: ${data.lattice_scale_method}
       preprocess_workers: ${data.preprocess_workers}
-      # num_records: 16
+      # num_records: 32
 
     val:
       _target_: data_utils.CrystalDataset.TensorCrystDataset
@@ -42,7 +42,7 @@ datamodule:
       graph_method: ${data.graph_method}
       lattice_scale_method: ${data.lattice_scale_method}
       preprocess_workers: ${data.preprocess_workers}
-      # num_records: 16
+      # num_records: 32
 
     test:
       _target_: data_utils.CrystalDataset.TensorCrystDataset
@@ -69,7 +69,7 @@ datamodule:
       num_records: ${model.num_reconstructions}
 
   # Comment out the scaler_path to fit to the new dataset. To be added in the future 
-  # scaler_path: ${oc.env:PROJECT_ROOT}/source/scaling_factors
+  scaler_path: ${oc.env:PROJECT_ROOT}/source/scaling_factors
 
   num_workers:
     train: 0
