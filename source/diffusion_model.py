@@ -7,6 +7,7 @@ import env
 import hydra
 import numpy as np
 import omegaconf
+import pickle
 import torch
 import pytorch_lightning as pl
 import torch.nn as nn
@@ -161,28 +162,45 @@ class DiffusionModel(BaseModule):
                                     device=self.device)
         used_sigmas_per_atom = self.sigmas[noise_level].repeat_interleave(
             batch.num_atoms, dim=0)
+        try:
+            # Select a random noise level for the atom types per crystal in the batch
+            type_noise_level = torch.randint(0, self.type_sigmas.size(0),
+                                            (batch.num_atoms.size(0),),
+                                            device=self.device)
+            type_noise = self.type_sigmas[type_noise_level]
+            # Generate random noise signs to ensure noise does not only increase the probabilit of Al atoms
+            random_signs = (torch.rand(batch.num_atoms.size(0), device=self.device) - 0.5).sign()
 
-        # Select a random noise level for the atom types per crystal in the batch
-        type_noise_level = torch.randint(0, self.type_sigmas.size(0),
-                                         (batch.num_atoms.size(0),),
-                                         device=self.device)
-        type_noise = self.type_sigmas[type_noise_level]
-        # Generate random noise signs to ensure noise does not only increase the probabilit of Al atoms
-        random_signs = (torch.rand(batch.num_atoms.size(0), device=self.device) - 0.5).sign()
+            type_noise = type_noise * random_signs
 
-        type_noise = type_noise * random_signs
+            # Add noise to predicted ratios and clamp to [0, 1]
+            adjusted_ratios = torch.clamp(pred_composition_ratio.squeeze() + type_noise, 0.0, 1.0)
+            # Expand the predicted composition ratio to match the number of atoms per crystal in the batch
+            pred_composition_per_crystal = adjusted_ratios[batch.batch.squeeze()]
+            #used_type_sigmas_per_atom = (
+            #    self.type_sigmas[type_noise_level].repeat_interleave(
+            #        batch.num_atoms, dim=0))
 
-        # Add noise to predicted ratios and clamp to [0, 1]
-        adjusted_ratios = torch.clamp(pred_composition_ratio.squeeze() + type_noise, 0.0, 1.0)
-        # Expand the predicted composition ratio to match the number of atoms per crystal in the batch
-        pred_composition_per_crystal = adjusted_ratios[batch.batch.squeeze()]
-        #used_type_sigmas_per_atom = (
-        #    self.type_sigmas[type_noise_level].repeat_interleave(
-        #        batch.num_atoms, dim=0))
+            # Adjust with 13 to end up with only Al and Si atoms
+            rand_atom_types = torch.multinomial(torch.stack(
+                (pred_composition_per_crystal, 1-pred_composition_per_crystal), dim=1), num_samples=1).squeeze(1) + 13
+        except Exception as e:
+            batch = {
+                "teacher_forcing": teacher_forcing,
+                "z": z,
+                "type_noise_level": type_noise_level,
+                "type_noise": type_noise,
+                "adjusted_ratios": adjusted_ratios,
+                "pred_composition_per_crystal": pred_composition_per_crystal,
+                "pred_composition_ratio": pred_composition_ratio
+            }
 
-        # Adjust with 13 to end up with only Al and Si atoms
-        rand_atom_types = torch.multinomial(torch.stack(
-            (pred_composition_per_crystal, 1-pred_composition_per_crystal), dim=1), num_samples=1).squeeze(1) + 13
+            # Save the batch
+            with open("/home/TUE/20220787/zeogen/problem_batch_rand_atom_types.pkl", "wb") as f:
+                pickle.dump(batch, f)
+
+            raise e
+
 
         # add noise to the cart coords
         # TODO: Investigate: is it needed to add noise to the cart coords?
