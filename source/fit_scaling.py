@@ -101,9 +101,9 @@ def fit_scaling():
 
         # Pass scaler from datamodule to model
         hydra.utils.log.info(f"Passing scaler from datamodule to model <{datamodule.scaler}>")
-        model.lattice_scaler = datamodule.lattice_scaler.copy()
+        model.lengths_scaler = datamodule.lengths_scaler.copy()
         model.scaler = datamodule.scaler.copy()
-        torch.save(datamodule.lattice_scaler, cfg.fit.lattice_scaler_file)
+        torch.save(datamodule.lengths_scaler, cfg.fit.lengths_scaler_file)
         torch.save(datamodule.scaler, cfg.fit.prop_scaler_file)
 
         # Get the train dataloader from the datamodule

@@ -103,7 +103,7 @@ class DiffusionModel(BaseModule):
         self.lengths_scaler = None
         self.scaler = None
 
-    def reparameterize(self, mu, logvar):
+    def reparameterize(self, mu, log_var):
         """
         Reparameterization trick to sample from N(mu, var) from
         N(0,1).
@@ -111,7 +111,7 @@ class DiffusionModel(BaseModule):
         :param logvar: (Tensor) Standard deviation of the latent Gaussian [B x D]
         :return: (Tensor) [B x D]
         """
-        std = torch.exp(0.5 * logvar)
+        std = torch.exp(0.5 * log_var)
         # Add 1.0e-5 to std to avoid numerical issues
         std = std + 1.0e-5
         eps = torch.randn_like(std)
@@ -190,6 +190,9 @@ class DiffusionModel(BaseModule):
             batch = {
                 "teacher_forcing": teacher_forcing,
                 "z": z,
+                "mu": mu,
+                "log_var": log_var,
+                "std": torch.exp(0.5 * log_var),
                 "type_noise_level": type_noise_level,
                 "type_noise": type_noise,
                 "noisy_ratios": noisy_ratios,
@@ -198,7 +201,7 @@ class DiffusionModel(BaseModule):
             }
 
             # Save the batch
-            with open("/home/TUE/20220787/zeogen/problem_batch_rand_atom_types.pkl", "wb") as f:
+            with open("/home/TUE/20220787/zeogen/problem_batch_mu_sig_std.pkl", "wb") as f:
                 pickle.dump(batch, f)
 
             raise e
