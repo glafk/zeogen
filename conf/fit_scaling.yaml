@@ -13,7 +13,7 @@ hydra:
 # fitting process parameters
 fit:
   scaling_factors_file: ${oc.env:PROJECT_ROOT}/source/scaling_factors/scaling_factors_total_dataset.json
-  lattice_scaler_file: ${oc.env:PROJECT_ROOT}/source/scaling_factors/lattice_scaler_total_dataset.pt
+  lengths_scaler_file: ${oc.env:PROJECT_ROOT}/source/scaling_factors/lengths_scaler_total_dataset.pt
   prop_scaler_file: ${oc.env:PROJECT_ROOT}/source/scaling_factors/prop_scaler_total_dataset.pt
   num_batches: 496
   comment: "gemnet scaling factors for combined total dataset"

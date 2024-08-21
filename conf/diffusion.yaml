@@ -1,4 +1,4 @@
-expname: test_new_compositon_setup
+expname: record_mu_log_var_std
 
 # metadata specialised for each experiment
 core:
