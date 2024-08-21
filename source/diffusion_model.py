@@ -125,7 +125,8 @@ class DiffusionModel(BaseModule):
         mu = self.fc_mu(hidden)
         log_var = self.fc_var(hidden)
         z = self.reparameterize(mu, log_var)
-        return mu, log_var, z
+        # Temporarily save the hidden layer for debugging
+        return mu, log_var, z, hidden
 
     def decode_stats(self, z, gt_num_atoms=None, gt_lengths=None, gt_angles=None,
                      teacher_forcing=False):
@@ -152,7 +153,7 @@ class DiffusionModel(BaseModule):
         return num_atoms, lengths_and_angles, lengths, angles, composition_per_atom
 
     def forward(self, batch, teacher_forcing=False, training=False):
-        mu, log_var, z = self.encode(batch)
+        mu, log_var, z, hidden = self.encode(batch)
 
         (pred_num_atoms, pred_lengths_and_angles, pred_lengths, pred_angles,
          pred_composition_ratio) = self.decode_stats(
@@ -189,6 +190,7 @@ class DiffusionModel(BaseModule):
         except Exception as e:
             batch = {
                 "teacher_forcing": teacher_forcing,
+                "hidden": hidden,
                 "z": z,
                 "mu": mu,
                 "log_var": log_var,
