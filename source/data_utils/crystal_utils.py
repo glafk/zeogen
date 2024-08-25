@@ -652,7 +652,8 @@ def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, prop_n
         result_dict = {
             'batch_idx': batch_idx,
             'graph_arrays': graph_arrays,
-            'hoa': hoa
+            'hoa': hoa,
+            'zeolite_code': crystal_dict['zeolite_code']
         }
         return result_dict
 

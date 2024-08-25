@@ -199,12 +199,16 @@ class DiffusionModel(BaseModule):
                 "type_noise": type_noise,
                 "noisy_ratios": noisy_ratios,
                 "pred_composition_per_crystal": pred_composition_per_atom,
-                "pred_composition_ratio": pred_composition_ratio
+                "pred_composition_ratio": pred_composition_ratio,
+                "zeolite_code": batch.zeolite_code
             }
 
             # Save the batch
             with open("/home/TUE/20220787/zeogen/problem_batch_mu_sig_std.pkl", "wb") as f:
                 pickle.dump(batch, f)
+
+            # Save the model weights
+            torch.save(self.state_dict(), "/home/TUE/20220787/zeogen/model_weights_mu_sig_std.pth")
 
             raise e
 
