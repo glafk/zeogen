@@ -200,6 +200,8 @@ class DiffusionModel(BaseModule):
                 "noisy_ratios": noisy_ratios,
                 "pred_composition_per_crystal": pred_composition_per_atom,
                 "pred_composition_ratio": pred_composition_ratio,
+                "pred_lengths": pred_lengths,
+                "pred_angles": pred_angles,
                 "zeolite_code": batch.zeolite_code
             }
 

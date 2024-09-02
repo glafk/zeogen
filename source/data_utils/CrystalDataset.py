@@ -129,6 +129,7 @@ class TensorCrystDataset(Dataset):
             num_atoms=num_atoms,
             num_bonds=edge_indices.shape[0],
             num_nodes=num_atoms,  # special attribute used for batching in pytorch geometric
+            zeolite_code=data_dict["zeolite_code"],
             y=prop.view(1, -1)
         )
         return data

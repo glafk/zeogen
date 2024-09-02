@@ -1,4 +1,4 @@
-expname: debug_atom_type_loss
+expname: non_zero_std_debug_activations
 
 # metadata specialised for each experiment
 core:

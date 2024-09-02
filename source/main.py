@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import json
 import shutil
+from datetime import datetime
 
 import torch
 import hydra
@@ -67,7 +68,7 @@ def run_training(cfg: DictConfig):
 
         # Enable version counter false allows us to overwrite models so that
         # we don't have too many artifacts at the end of the run 
-        checkpoint_callback = ModelCheckpoint(monitor="val_loss", mode="min", enable_version_counter=False)
+        checkpoint_callback = ModelCheckpoint(monitor="val_loss", mode="min", enable_version_counter=True, filename=f"model_{cfg.expname}_{datetime.now().strftime("%Y-%m-%d_%H:%M:%S")}")
         wandb_logger = WandbLogger(
             **wandb_config,
             tags=cfg.core.tags,
@@ -102,6 +103,9 @@ def run_training(cfg: DictConfig):
     os.remove(config_filename)
 
     hydra.utils.log.info("Instantiating the Trainer")
+    
+    # Enable anomaly detection to see where the nan issue comes from
+    torch.autograd.set_detect_anomaly(True)
     
     if cfg.model.resume_from_checkpoint:
         assert cfg.model.experiment_name_to_load is not None, "Please provide an experiment name"
