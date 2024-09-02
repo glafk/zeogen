@@ -104,9 +104,6 @@ def run_training(cfg: DictConfig):
 
     hydra.utils.log.info("Instantiating the Trainer")
     
-    # Enable anomaly detection to see where the nan issue comes from
-    torch.autograd.set_detect_anomaly(True)
-    
     if cfg.model.resume_from_checkpoint:
         assert cfg.model.experiment_name_to_load is not None, "Please provide an experiment name"
         model_path, model_dir = load_from_wandb(cfg.model.experiment_name_to_load)
@@ -118,7 +115,8 @@ def run_training(cfg: DictConfig):
             logger=wandb_logger,
             **cfg.train.pl_trainer,
             accelerator="gpu",
-            callbacks=[checkpoint_callback]
+            callbacks=[checkpoint_callback],
+            detect_anomaly=True
         )
 
         hydra.utils.log.info("Starting training!")
@@ -136,7 +134,8 @@ def run_training(cfg: DictConfig):
             logger=wandb_logger,
             **cfg.train.pl_trainer,
             accelerator="gpu",
-            callbacks=[checkpoint_callback]
+            callbacks=[checkpoint_callback],
+            detect_anomaly=True
         )
 
         hydra.utils.log.info("Starting training!")
