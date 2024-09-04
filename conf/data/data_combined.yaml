@@ -1,0 +1,84 @@
+root_path: ${oc.env:PROJECT_ROOT}/data/combined_dataset_total
+prop: hoa
+num_targets: 1
+niggli: false
+primitive: true
+graph_method: crystalnn
+lattice_scale_method: scale_length
+preprocess_workers: 4
+readout: mean
+max_atoms: 1024
+otf_graph: false
+eval_model_name: diffusion
+
+
+train_max_epochs: 300
+early_stopping_patience: 100
+teacher_forcing_max_epoch: 100
+
+datamodule:
+  _target_: data_utils.data_module.CrystDataModule
+
+  datasets:
+    train:
+      _target_: data_utils.CrystalDataset.TensorCrystDataset
+      name: HOA train
+      path: ${data.root_path}/combined_train.pickle
+      prop: ${data.prop}
+      niggli: ${data.niggli}
+      primitive: ${data.primitive}
+      graph_method: ${data.graph_method}
+      lattice_scale_method: ${data.lattice_scale_method}
+      preprocess_workers: ${data.preprocess_workers}
+      # num_records: 32
+
+    val:
+      _target_: data_utils.CrystalDataset.TensorCrystDataset
+      name: HOA val
+      path: ${data.root_path}/combined_val.pickle
+      prop: ${data.prop}
+      niggli: ${data.niggli}
+      primitive: ${data.primitive}
+      graph_method: ${data.graph_method}
+      lattice_scale_method: ${data.lattice_scale_method}
+      preprocess_workers: ${data.preprocess_workers}
+      # num_records: 32
+
+    test:
+      _target_: data_utils.CrystalDataset.TensorCrystDataset
+      name: HOA test
+      path: ${data.root_path}/combined_test.pickle
+      prop: ${data.prop}
+      niggli: ${data.niggli}
+      primitive: ${data.primitive}
+      graph_method: ${data.graph_method}
+      lattice_scale_method: ${data.lattice_scale_method}
+      preprocess_workers: ${data.preprocess_workers}
+      # num_records: 16
+
+    predict:
+      _target_: data_utils.CrystalDataset.TensorCrystDataset
+      name: HOA predict
+      path: ${data.root_path}/combined_test.pickle
+      prop: ${data.prop}
+      niggli: ${data.niggli}
+      primitive: ${data.primitive}
+      graph_method: ${data.graph_method}
+      lattice_scale_method: ${data.lattice_scale_method}
+      preprocess_workers: ${data.preprocess_workers}
+      num_records: ${model.num_reconstructions}
+
+  # Comment out the scaler_path to fit to the new dataset. To be added in the future 
+  scaler_path: ${oc.env:PROJECT_ROOT}/source/scaling_factors
+
+  num_workers:
+    train: 0
+    val: 0
+    test: 0
+    predict: 0
+
+  batch_size:
+    train: 32
+    val: 32
+    test: 32
+    predict: 1

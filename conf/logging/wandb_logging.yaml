@@ -1,0 +1,18 @@
+val_check_interval: 5
+progress_bar_refresh_rate: 20
+
+wandb:
+  name: ${expname}
+  project: zeogen
+  entity: null
+  log_model: 'all'
+  mode: 'online'
+  group: ${expname}
+
+wandb_watch:
+  log: 'all'
+  log_freq: 5
+
+lr_monitor:
+  logging_interval: "step"
+  log_momentum: False

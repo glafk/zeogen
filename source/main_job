@@ -1,0 +1,5 @@
+#!/bin/bash
+source /home/TUE/20220787/miniconda3/etc/profile.d/conda.sh
+source activate thesis
+python main.py
+source deactivate
