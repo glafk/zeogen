@@ -454,9 +454,12 @@ class GemNetT(torch.nn.Module):
         )
 
         edge_index = out["edge_index"]
+        # D_st is the distance between atoms s(ource) and t(target)
+        # D_st is the norm of the vector
         D_st = out["distances"]
         # These vectors actually point in the opposite direction.
         # But we want to use col as idx_t for efficient aggregation.
+        # V_st is the distance in terms of vector, i.e the distance in each direction
         V_st = -out["distance_vec"] / D_st[:, None]
         # offsets_ca = -out["offsets"]  # a - c + offset
 

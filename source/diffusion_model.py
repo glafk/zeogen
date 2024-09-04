@@ -189,6 +189,7 @@ class DiffusionModel(BaseModule):
                 (pred_composition_per_atom, 1-pred_composition_per_atom), dim=1), num_samples=1).squeeze(1) + 13
         except Exception as e:
             batch = {
+                "original_batch": batch,
                 "teacher_forcing": teacher_forcing,
                 "hidden": hidden,
                 "z": z,

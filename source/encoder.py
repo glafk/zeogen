@@ -30,6 +30,8 @@ class GemNetTEncoder(nn.Module):
             max_neighbors=self.max_num_neighbors,
             otf_graph=self.otf_graph,
             scale_file=scale_file,
+            # Setting the activation to tanh to prevent range of latent representation being too large
+            activation="tanh"
         )
 
     def forward(self, data):

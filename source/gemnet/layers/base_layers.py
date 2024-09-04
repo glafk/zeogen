@@ -38,6 +38,8 @@ class Dense(torch.nn.Module):
             self._activation = ScaledSiLU()
         elif activation == "siqu":
             self._activation = SiQU()
+        elif activation == "tanh":
+            self._activation = torch.nn.Tanh()
         elif activation is None:
             self._activation = torch.nn.Identity()
         else:
