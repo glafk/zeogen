@@ -620,6 +620,7 @@ class GemNetT(torch.nn.Module):
         nMolecules = torch.max(batch) + 1
 
         # always use mean aggregation
+        # TODO: Maybe try summation to carry information about the size of the zeolite
         E_t = scatter(
             E_t, batch, dim=0, dim_size=nMolecules, reduce="mean"
         )  # (nMolecules, num_targets)
