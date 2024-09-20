@@ -94,10 +94,11 @@ def read_cif_files(root_dir):
         if 'data' not in basename:
             zeolite_code = os.path.basename(root)
             dirname = os.path.dirname(root)
+            lines = []
             with open(f"{dirname}/hoa_{zeolite_code}.dat", 'rb') as f:
-                lines = f.readlines()
+                lines_in_file = f.readlines()
                 # Ignore first line (Header)
-                lines = lines[1:]
+                lines = lines_in_file[1:]
 
             hoa = np.array([float(line.split()[1]) for line in lines])
             for file in files:
