@@ -3,6 +3,8 @@ import os
 import pickle
 import random
 from pymatgen.io.cif import CifParser
+import pandas
+import numpy as np
 
 
 ATOM_TYPES = {
@@ -10,7 +12,7 @@ ATOM_TYPES = {
     'Al': 14
 }
 
-def parse_cif_manually(file_path):
+def parse_cif_manually(file_path, hoa=0.0):
     with open(file_path, 'r') as file:
         lines = file.readlines()
 
@@ -57,11 +59,11 @@ def parse_cif_manually(file_path):
         "atom_types": atom_types,
         "lengths": lengths,
         "angles": angles,
-        "hoa": 0.0
+        "hoa": hoa
     }
 
 
-def parse_cif(file_path):
+def parse_cif(file_path, hoa=0.0):
     print(f"Parsing {file_path}.")
     parser = CifParser(file_path)
     structure = parser.parse_structures()[0]
@@ -81,24 +83,36 @@ def parse_cif(file_path):
         "atom_types": atom_types,
         "lengths": lengths,
         "angles": angles,
-        "adsorption_cap": 0.0
+        "hoa": hoa
     }
 
 def read_cif_files(root_dir):
     zeolite_data = {}
 
     for root, dirs, files in os.walk(root_dir):
-        for file in files:
-            if file.endswith('.cif'):
-                zeolite_code = os.path.basename(os.path.dirname(root))
-                
-                if zeolite_code not in zeolite_data:
-                    zeolite_data[zeolite_code] = []
+        basename = os.path.basename(root)
+        if 'data' not in basename:
+            zeolite_code = os.path.basename(root)
+            dirname = os.path.dirname(root)
+            with open(f"{dirname}/hoa_{zeolite_code}.dat", 'rb') as f:
+                lines = f.readlines()
+                # Ignore first line (Header)
+                lines = lines[1:]
 
-                file_path = os.path.join(root, file)
-                cif_data = parse_cif_manually(file_path)
-                zeolite_data[zeolite_code].append(cif_data)
+            hoa = np.array([float(line.split()[1]) for line in lines])
+            for file in files:
+                if file.endswith('.cif'):
+                    dirname = os.path.dirname(root)
+                    zeolite_index = int(file.split('_')[1])
+
+                    if zeolite_code not in zeolite_data:
+                        zeolite_data[zeolite_code] = []
+
+                    file_path = os.path.join(root, file)
+                    cif_data = parse_cif_manually(file_path, hoa[zeolite_index])
+                    zeolite_data[zeolite_code].append(cif_data)
     
+    print(zeolite_data.keys()) 
     return zeolite_data
 
 def split_data(data, train_ratio=0.6, val_ratio=0.2, test_ratio=0.2):
@@ -140,12 +154,13 @@ def clean_cif(input_file, output_file):
         f.writelines(cleaned_cif_data)
 
 def clean_all_in_directory(directory):
-    for filename in os.listdir(directory):
-        if filename.endswith(".cif"):
-            input_cif_file = os.path.join(directory, filename)
-            output_cif_file = input_cif_file.split('.')[0] + '_clean.' + input_cif_file.split('.')[1]
-            clean_cif(input_cif_file, output_cif_file)
-            print(f"File '{input_cif_file}' has been cleaned and saved as '{output_cif_file}'.")
+    for root, dirs, files in os.walk(directory):
+        for filename in files:
+            if filename.endswith(".cif"):
+                input_cif_file = os.path.join(directory, root, filename)
+                output_cif_file = input_cif_file.split('.')[0] + '_clean.' + input_cif_file.split('.')[1]
+                clean_cif(input_cif_file, output_cif_file)
+                print(f"File '{input_cif_file}' has been cleaned and saved as '{output_cif_file}'.")
 
 def convert_cif_to_txt(input_file, output_file):
     # Open the input CIF file

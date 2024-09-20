@@ -2,7 +2,7 @@ _target_: diffusion_model.DiffusionModel
 
 # Model parameters
 hidden_dim: 256
-latent_dim: 256
+total_latent_dim: 256
 fc_num_layers: 2
 max_atoms: ${data.max_atoms}
 cost_natom: 1.

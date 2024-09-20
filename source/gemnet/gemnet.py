@@ -140,7 +140,8 @@ class GemNetT(torch.nn.Module):
         self.regress_forces = regress_forces
         self.otf_graph = otf_graph
 
-        AutomaticFit.reset()  # make sure that queue is empty (avoid potential error)
+        # Temporarily remove this to allows for fitting of multiple GemNet factors at once
+        # AutomaticFit.reset()  # make sure that queue is empty (avoid potential error)
 
         ### ---------------------------------- Basis Functions ---------------------------------- ###
         self.radial_basis = RadialBasis(
@@ -514,7 +515,7 @@ class GemNetT(torch.nn.Module):
             }
 
             # Save the batch
-            with open("/home/TUE/20220787/zeogen/problem_batch.pkl", "wb") as f:
+            with open("C:/TUE/Thesis/zeogen/problem_batch.pkl", "wb") as f:
                 pickle.dump(batch, f)
 
             raise e

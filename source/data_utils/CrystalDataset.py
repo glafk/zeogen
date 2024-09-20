@@ -9,6 +9,7 @@ from torch_geometric.data import Data
 from data_utils.crystal_utils import (
     preprocess, preprocess_tensors, add_scaled_lengths_prop)
 
+ZEOLITE_CODES_MAPPING = {'LTL': 0, 'TON3': 1, 'CHA': 2, 'MER': 3, 'TONch': 4, 'BEC': 5, 'RHO': 6, 'MOR': 7, 'ERI': 8, 'MEL': 9, 'FAUch': 10, 'MFI': 11, 'TON4': 12, 'HEU': 13, 'MTW': 14, 'FAU': 15, 'ITW': 16, 'TON2': 17, 'TON': 18, 'YFI': 19, 'DDRch1': 20, 'FER': 21, 'DDRch2': 22, 'NAT': 23, 'MELch': 24, 'LTA': 25}
 
 class TensorCrystDataset(Dataset):
     def __init__(self, path, niggli, primitive,
@@ -45,7 +46,7 @@ class TensorCrystDataset(Dataset):
 
         (frac_coords, atom_types, lengths, angles, edge_indices,
          to_jimages, num_atoms) = data_dict['graph_arrays']
-        
+
         prop = self.scaler.transform(data_dict[self.prop])
         # atom_coords are fractional coordinates
         # edge_index is incremented during batching
@@ -62,7 +63,10 @@ class TensorCrystDataset(Dataset):
             num_bonds=edge_indices.shape[0],
             num_nodes=num_atoms,  # special attribute used for batching in pytorch geometric
             zeolite_code=data_dict["zeolite_code"],
-            y=prop.view(1, -1)
+            zeolite_code_enc=torch.Tensor(ZEOLITE_CODES_MAPPING[data_dict["zeolite_code"]]),
+            hoa=torch.Tensor(prop).view(1, -1),
+            # TODO: Refactor the normalization to match what we discussed with Marko
+            norm_hoa=(torch.max(prop) / prop).float().view(1, -1)
         )
         return data
 

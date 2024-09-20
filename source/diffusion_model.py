@@ -67,22 +67,22 @@ class DiffusionModel(BaseModule):
         super().__init__(*args, **kwargs)
 
         self.encoder = hydra.utils.instantiate(
-            self.hparams.encoder, num_targets=self.hparams.latent_dim)
+            self.hparams.encoder, num_targets=self.hparams.total_latent_dim)
         
         self.decoder = hydra.utils.instantiate(self.hparams.decoder)
 
-        self.fc_mu = nn.Linear(self.hparams.latent_dim,
-                               self.hparams.latent_dim)
-        self.fc_var = nn.Linear(self.hparams.latent_dim,
-                                self.hparams.latent_dim)
+        self.fc_mu = nn.Linear(self.hparams.total_latent_dim,
+                               self.hparams.total_latent_dim)
+        self.fc_var = nn.Linear(self.hparams.total_latent_dim,
+                                self.hparams.total_latent_dim)
 
-        self.fc_num_atoms = build_mlp(self.hparams.latent_dim, self.hparams.hidden_dim,
+        self.fc_num_atoms = build_mlp(self.hparams.total_latent_dim, self.hparams.hidden_dim,
                                       self.hparams.fc_num_layers, self.hparams.max_atoms+1)
-        self.fc_lengths = build_mlp(self.hparams.latent_dim, self.hparams.hidden_dim,
+        self.fc_lengths = build_mlp(self.hparams.total_latent_dim, self.hparams.hidden_dim,
                                     self.hparams.fc_num_layers, 3, final_activation="relu")
-        self.fc_angles = build_mlp(self.hparams.latent_dim, self.hparams.hidden_dim,
+        self.fc_angles = build_mlp(self.hparams.total_latent_dim, self.hparams.hidden_dim,
                                    self.hparams.fc_num_layers, 3, final_activation='sigmoid')
-        self.fc_composition = build_mlp(self.hparams.latent_dim, self.hparams.hidden_dim,
+        self.fc_composition = build_mlp(self.hparams.total_latent_dim, self.hparams.hidden_dim,
                                         self.hparams.fc_num_layers, 1, final_activation="hard_sigmoid")
 
         sigmas = torch.tensor(np.exp(np.linspace(
@@ -134,7 +134,6 @@ class DiffusionModel(BaseModule):
         decode key stats from latent embeddings.
         batch is input during training for teach-forcing.
         """
-        #TODO: Add condition for teacher forcing
         if gt_num_atoms is not None and teacher_forcing:
             num_atoms = self.predict_num_atoms(z)
             lengths = self.predict_lenghts(z, gt_num_atoms)
@@ -217,8 +216,6 @@ class DiffusionModel(BaseModule):
 
 
         # add noise to the cart coords
-        # TODO: Investigate: is it needed to add noise to the cart coords?
-        # Can we just add noise to the frac coords?
         # Then we wouldn't need the predictions for angles and lengths
         cart_noises_per_atom = (
             torch.randn_like(batch.frac_coords) *
@@ -232,8 +229,6 @@ class DiffusionModel(BaseModule):
         # THIS IS WHERE THE DECODER IS CALLED AS PART OF THE FORWARD PASS
         # THE pred_cart_coord_diff is the prediction for the difference in the atom coords based on the noise that is added
         # SO HERE I NEED TO SETUP A NETWORK WITH THIS MODEL'S DECODER SO THAT I CAN REPLICATE THE DIFFUSION PROCESS, BUT WITHOUT ANYTHING ELSE FROM THIS MODEL FOR NOW
-        # TODO: Ask at the meeting: Can we pass the angles and lengths from the ground truth to the decoder?
-        # Would that make the training better?
         pred_cart_coord_diff, pred_atom_types = self.decoder(
             z, noisy_frac_coords, rand_atom_types, batch.num_atoms, pred_lengths, pred_angles)
 

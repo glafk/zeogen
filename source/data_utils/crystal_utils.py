@@ -52,6 +52,8 @@ OFFSET_LIST = [
     [1, 1, 1],
 ]
 
+ZEOLITE_CODES_MAPPING = {'LTL': 0, 'TON3': 1, 'CHA': 2, 'MER': 3, 'TONch': 4, 'BEC': 5, 'RHO': 6, 'MOR': 7, 'ERI': 8, 'MEL': 9, 'FAUch': 10, 'MFI': 11, 'TON4': 12, 'HEU': 13, 'MTW': 14, 'FAU': 15, 'ITW': 16, 'TON2': 17, 'TON': 18, 'YFI': 19, 'DDRch1': 20, 'FER': 21, 'DDRch2': 22, 'NAT': 23, 'MELch': 24, 'LTA': 25}
+
 EPSILON = 1e-5
 
 def lattice_params_to_matrix(a, b, c, alpha, beta, gamma):
@@ -635,7 +637,7 @@ def preprocess(input_files, num_workers, niggli, primitive, graph_method,
 # Array shape
 # arr = [{frac_coords: [list], atom_types: [list], lengths: [list], angles: [list], adsorption_cap: float]}]
 # lengths = [a,b,c]; angles = [alpha, beta, gamma)
-def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, prop_name='adsorption_cap'):
+def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, prop_name='hoa'):
     def process_one(batch_idx, crystal_dict, graph_method, prop_name):
         frac_coords = crystal_dict['frac_coords']
         atom_types = crystal_dict['atom_types']
@@ -653,14 +655,51 @@ def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, prop_n
             'batch_idx': batch_idx,
             'graph_arrays': graph_arrays,
             'hoa': hoa,
-            'zeolite_code': crystal_dict['zeolite_code']
+            'norm_hoa': crystal_dict['norm_hoa'],
+            'zeolite_code': crystal_dict['zeolite_code'],
+            'zeolite_code_enc': crystal_dict['zeolite_code_enc'],
         }
         return result_dict
 
-    # Limit number of items temporarily for testing purporses
-    if num_records is not None:
-        crystal_dict_list = crystal_dict_list[:num_records]
-    
+    # # Add integer encoding for the zeolite code
+    # for entry in crystal_dict_list:
+    #     entry["zeolite_code_enc"] = ZEOLITE_CODES_MAPPING[entry["zeolite_code"]]
+
+    # # Cast hoa to float
+    # for entry in crystal_dict_list:
+    #     entry["hoa"] = float(entry["hoa"])
+    #     entry["zeolite_code_enc"] = float(entry["zeolite_code_enc"])
+
+
+    # Add scaled hoa property values per zeolite code
+    # Group by zeolite_code to find max hoa per zeolite type
+
+    # Extract HOA and zeolite codes
+    hoa = np.array([entry['hoa'] for entry in crystal_dict_list])
+    zeo_code = np.array([entry['zeolite_code'] for entry in crystal_dict_list])
+
+    # Find unique zeolite codes
+    unique_zeo_codes = np.unique(zeo_code)
+
+    # Find the maximum HOA for each zeolite type
+    mean_hoa_per_zeo_code = {}
+    std_hoa_per_zeo_code = {}
+    for code in unique_zeo_codes:
+        # Get the HOA values corresponding to the current zeolite code
+        hoa_values_for_code = np.array([entry['hoa'] for entry in crystal_dict_list if entry['zeolite_code'] == code])
+        mean_hoa_per_zeo_code[code] = np.mean(hoa_values_for_code)
+        std_hoa_per_zeo_code[code] = np.std(hoa_values_for_code)
+
+    # Add normalized HOA
+    for entry in crystal_dict_list:
+        mean_hoa = mean_hoa_per_zeo_code[entry['zeolite_code']]
+        std_hoa = std_hoa_per_zeo_code[entry['zeolite_code']]
+        entry['norm_hoa'] = (entry['hoa'] - mean_hoa) / std_hoa
+
+    # Optionally clean up if needed
+    del hoa
+    del zeo_code
+
     unordered_results = p_umap(
         process_one,
         list(range(len(crystal_dict_list))),

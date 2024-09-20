@@ -35,11 +35,11 @@ class GemNetTEncoderExt(nn.Module):
         )
 
         self.fc_mu = nn.Linear(num_targets, num_targets)
-        self.fc_var = nn.Linear(num_targets, num_targets)
+        self.fc_var = nn.Sequential(nn.Linear(num_targets, num_targets), nn.Softplus())
 
     def forward(self, data):
         # (num_crysts, num_targets)
-        output = self.gemnet(
+        hidden = self.gemnet(
             z=None,
             frac_coords=data.frac_coords,
             atom_types=data.atom_types,
@@ -50,4 +50,9 @@ class GemNetTEncoderExt(nn.Module):
             to_jimages=data.to_jimages,
             num_bonds=data.num_bonds
         )
-        return output
+
+        mu = self.fc_mu(hidden)
+        log_var = self.fc_var(hidden) + 1e-5
+
+        # Here hidden is returned for debugging purposes
+        return mu, log_var, hidden

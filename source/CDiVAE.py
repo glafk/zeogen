@@ -1,7 +1,5 @@
 from pathlib import Path
 from typing import Any, Dict
-import os
-
 
 import env
 import hydra
@@ -14,7 +12,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 from torch_scatter import scatter
 from tqdm import tqdm
-import wandb
+import torch.distributions as dist
 
 from utils import add_object, log_config_to_wandb
 from data_utils.crystal_utils import frac_to_cart_coords, cart_to_frac_coords, min_distance_sqr_pbc, mard, lengths_angles_to_volume
@@ -36,8 +34,31 @@ def build_mlp(in_dim, hidden_dim, fc_num_layers, out_dim, final_activation=None)
         mods.append(nn.ReLU())
     elif final_activation == "hard_sigmoid":
         mods.append(nn.Hardsigmoid())
+    elif final_activation == "softmax":
+        mods.append(nn.Softmax())
 
     return nn.Sequential(*mods)
+
+
+class CondPrior(nn.Module):
+    def __init__(self, cond_dim, z_dim):
+        super(CondPrior, self).__init__()
+        self.fc1 = nn.Sequential(nn.Linear(cond_dim, z_dim, bias=False), nn.BatchNorm1d(z_dim), nn.ReLU())
+        self.fc21 = nn.Sequential(nn.Linear(z_dim, z_dim))
+        self.fc22 = nn.Sequential(nn.Linear(z_dim, z_dim), nn.Softplus())
+
+        torch.nn.init.xavier_uniform_(self.fc1[0].weight)
+        torch.nn.init.xavier_uniform_(self.fc21[0].weight)
+        self.fc21[0].bias.data.zero_()
+        torch.nn.init.xavier_uniform_(self.fc22[0].weight)
+        self.fc22[0].bias.data.zero_()
+
+    def forward(self, condition):
+        hidden = self.fc1(condition)
+        z_loc = self.fc21(hidden)
+        z_scale = self.fc22(hidden) + 1e-7
+
+        return z_loc, z_scale
 
 
 # This class code is repeated in the GEMNet file. TODO: Remove repetition
@@ -66,28 +87,50 @@ class CDiVAE(BaseModule):
         super().__init__(*args, **kwargs)
 
         self.zd_encoder = hydra.utils.instantiate(
-            self.hparams.zd_encoder, num_targets=self.hparams.zd_latent_dim)
+            self.hparams.domain_encoder, num_targets=self.hparams.domain_latent_dim) # DIVA -> self.qzd
         
         self.zy_encoder = hydra.utils.instantiate(
-            self.hparams.zy_encoder, num_targets=self.hparams.zy_latent_dim)
+            self.hparams.class_encoder, num_targets=self.hparams.class_latent_dim) # DIVA -> self.qzy
         
         self.zx_encoder = hydra.utils.instantiate(
-            self.hparams.zx_encoder, num_targets=self.hparams.zx_latent_dim)
+            self.hparams.residual_encoder, num_targets=self.hparams.residual_latent_dim) # DIVA -> self.qzx
+
+        self.pzd = CondPrior(1, self.hparams.domain_latent_dim)
+
+        # Hard code one as y in this case would be the HOA which is just a scalar
+        self.pzy = CondPrior(1, self.hparams.class_latent_dim)
         
         self.decoder = hydra.utils.instantiate(self.hparams.decoder)
 
-        self.fc_mu = nn.Linear(self.hparams.latent_dim,
-                               self.hparams.latent_dim)
-        self.fc_var = nn.Linear(self.hparams.latent_dim,
-                                self.hparams.latent_dim)
+        # DIVA - > self.fc_d -> self.qd. Predictor for the zeolite type from zd
+        self.domain_predictor = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
+                                          self.hparams.fc_num_layers, self.hparams.num_zeolite_types,
+                                          final_activation="softmax")
 
-        self.fc_num_atoms = build_mlp(self.hparams.latent_dim, self.hparams.hidden_dim,
+        # Used to predict the mean of the HOA from the zd latent vector
+        # Needed because the distribution of the HOA is different for different zeolite types
+        # Actually I'm starting to question the need for this.
+        # I may not need to predict neither the mu not the std
+        # I can keep the generation of the zy latent space from the scaled hoa
+        # separate from the zd latent space, while also generating the final
+        # HOA prediction from the zd latent space and the zy latent space but not backpropagating through it.
+        # so as to keep the learning on the scaled HOA which I will later need for the sampling
+        # self.fc_y_mu = build_mlp(self.hparams.zd_latent_dim, self.hparams.hidden_dim,
+        #                           self.hparams.fc_num_layers, 1, final_activation="relu")
+
+        # self.fc_y_std = build_mlp(self.hparams.zd_latent_dim, self.hparams.hidden_dim,
+        #                           self.hparams.fc_num_layers, 1, final_activation="relu")        
+
+        self.norm_hoa_predictor = build_mlp(self.hparams.class_latent_dim, self.hparams.hidden_dim,
+                                            self.hparams.fc_num_layers, 1, final_activation="sigmoid")
+
+        self.fc_num_atoms = build_mlp(self.hparams.total_latent_dim, self.hparams.hidden_dim,
                                       self.hparams.fc_num_layers, self.hparams.max_atoms+1)
-        self.fc_lengths = build_mlp(self.hparams.latent_dim, self.hparams.hidden_dim,
+        self.fc_lengths = build_mlp(self.hparams.total_latent_dim, self.hparams.hidden_dim,
                                     self.hparams.fc_num_layers, 3, final_activation="relu")
-        self.fc_angles = build_mlp(self.hparams.latent_dim, self.hparams.hidden_dim,
+        self.fc_angles = build_mlp(self.hparams.total_latent_dim, self.hparams.hidden_dim,
                                    self.hparams.fc_num_layers, 3, final_activation='sigmoid')
-        self.fc_composition = build_mlp(self.hparams.latent_dim, self.hparams.hidden_dim,
+        self.fc_composition = build_mlp(self.hparams.total_latent_dim, self.hparams.hidden_dim,
                                         self.hparams.fc_num_layers, 1, final_activation="hard_sigmoid")
 
         sigmas = torch.tensor(np.exp(np.linspace(
@@ -108,6 +151,7 @@ class CDiVAE(BaseModule):
         self.lengths_scaler = None
         self.scaler = None
 
+    # region ENCODE HELPERS
     def reparameterize(self, mu, log_var):
         """
         Reparameterization trick to sample from N(mu, var) from
@@ -116,22 +160,35 @@ class CDiVAE(BaseModule):
         :param logvar: (Tensor) Standard deviation of the latent Gaussian [B x D]
         :return: (Tensor) [B x D]
         """
-        std = torch.exp(0.5 * log_var)
-        # Add 1.0e-5 to std to avoid numerical issues
-        std = std + 1.0e-5
-        eps = torch.randn_like(std)
-        return eps * std + mu
+        q = dist.Normal(mu, log_var)
+
+        return q
 
     def encode(self, batch):
         """
         encode crystal structures to latents.
         """
-        hidden = self.encoder(batch)
-        mu = self.fc_mu(hidden)
-        log_var = self.fc_var(hidden)
-        z = self.reparameterize(mu, log_var)
+        # Comments providing mapping between the variables in this implementation
+        # and the original DIVA implementation
+        # DIVA - mu_d -> zd_q_loc, log_var_d -> zd_q_scale 
+        mu_d, log_var_d, hidden_d = self.zd_encoder(batch)
+        qzd = self.reparameterize(mu_d, log_var_d)
+        zd = qzd.rsample() # DIVA -> zd_q
+
+        # DIVA - mu_y -> zy_q_loc, log_var_y -> zy_q_scale
+        mu_y, log_var_y, hidden_y = self.zy_encoder(batch)
+        qzy = self.reparameterize(mu_y, log_var_y)
+        zy = qzy.rsample() # DIVA -> zy_q
+
+        # DIVA - mu_x -> zx_q_loc, log_var_x -> zx_q_scale
+        mu_x, log_var_x, hidden_x = self.zx_encoder(batch)
+        qzx = self.reparameterize(mu_x, log_var_x)
+        zx = qzx.rsample() # DIVA -> zx_q
+
+        z = torch.cat([zd, zy, zx], dim=-1)
+
         # Temporarily save the hidden layer for debugging
-        return mu, log_var, z, hidden
+        return mu_d, log_var_d, mu_y, log_var_y, mu_x, log_var_x, hidden_d, hidden_y, hidden_x, zd, zy, zx, z
 
     def decode_stats(self, z, gt_num_atoms=None, gt_lengths=None, gt_angles=None,
                      teacher_forcing=False):
@@ -139,7 +196,6 @@ class CDiVAE(BaseModule):
         decode key stats from latent embeddings.
         batch is input during training for teach-forcing.
         """
-        #TODO: Add condition for teacher forcing
         if gt_num_atoms is not None and teacher_forcing:
             num_atoms = self.predict_num_atoms(z)
             lengths = self.predict_lenghts(z, gt_num_atoms)
@@ -157,13 +213,30 @@ class CDiVAE(BaseModule):
         lengths_and_angles = torch.cat([lengths, angles], dim=-1)
         return num_atoms, lengths_and_angles, lengths, angles, composition_per_atom
 
+    # endregion
+
     def forward(self, batch, teacher_forcing=False, training=False):
-        mu, log_var, z, hidden = self.encode(batch)
+        # region ENCODE
+        (mu_d, 
+         log_var_d, 
+         mu_y, 
+         log_var_y, 
+         mu_x, 
+         log_var_x, 
+         hidden_d, 
+         hidden_y, 
+         hidden_x, 
+         zd, 
+         zy, 
+         zx, 
+         z) = self.encode(batch)
 
         (pred_num_atoms, pred_lengths_and_angles, pred_lengths, pred_angles,
          pred_composition_ratio) = self.decode_stats(
             z, batch.num_atoms, batch.lengths, batch.angles, teacher_forcing)
+        # endregion
 
+        # region PREDICT
         # sample noise levels.
         noise_level = torch.randint(0, self.sigmas.size(0),
                                     (batch.num_atoms.size(0),),
@@ -185,9 +258,6 @@ class CDiVAE(BaseModule):
             noisy_ratios = torch.clamp(pred_composition_ratio.squeeze() + type_noise, 0.0, 1.0)
             # Expand the predicted composition ratio to match the number of atoms per crystal in the batch
             pred_composition_per_atom = noisy_ratios[batch.batch.squeeze()]
-            #used_type_sigmas_per_atom = (
-            #    self.type_sigmas[type_noise_level].repeat_interleave(
-            #        batch.num_atoms, dim=0))
 
             # Adjust with 13 to end up with only Al and Si atoms
             rand_atom_types = torch.multinomial(torch.stack(
@@ -196,11 +266,18 @@ class CDiVAE(BaseModule):
             batch = {
                 "original_batch": batch,
                 "teacher_forcing": teacher_forcing,
-                "hidden": hidden,
-                "z": z,
-                "mu": mu,
-                "log_var": log_var,
-                "std": torch.exp(0.5 * log_var),
+                "hidden_d": hidden_d,
+                "hidden_y": hidden_y,
+                "hidden_x": hidden_x,
+                "zd": zd,
+                "zy": zy,
+                "zx": zx,
+                "mu_d": mu_d,
+                "log_var_d": log_var_d,
+                "mu_y": mu_y,
+                "log_var_y": log_var_y,
+                "mu_x": mu_x,
+                "log_var_x": log_var_x,
                 "type_noise_level": type_noise_level,
                 "type_noise": type_noise,
                 "noisy_ratios": noisy_ratios,
@@ -234,39 +311,22 @@ class CDiVAE(BaseModule):
         noisy_frac_coords = cart_to_frac_coords(
             cart_coords, pred_lengths, pred_angles, batch.num_atoms)
 
-        # THIS IS WHERE THE DECODER IS CALLED AS PART OF THE FORWARD PASS
         # THE pred_cart_coord_diff is the prediction for the difference in the atom coords based on the noise that is added
-        # SO HERE I NEED TO SETUP A NETWORK WITH THIS MODEL'S DECODER SO THAT I CAN REPLICATE THE DIFFUSION PROCESS, BUT WITHOUT ANYTHING ELSE FROM THIS MODEL FOR NOW
         # TODO: Ask at the meeting: Can we pass the angles and lengths from the ground truth to the decoder?
         # Would that make the training better?
         pred_cart_coord_diff, pred_atom_types = self.decoder(
             z, noisy_frac_coords, rand_atom_types, batch.num_atoms, pred_lengths, pred_angles)
 
-        # compute loss.
-        num_atom_loss = self.num_atom_loss(pred_num_atoms, batch)
-        lattice_loss = self.lattice_loss(pred_lengths_and_angles, batch)
-        composition_loss = self.composition_loss(
-            pred_composition_per_atom, batch.atom_types, batch)
-        coord_loss = self.coord_loss(
-            pred_cart_coord_diff, noisy_frac_coords, used_sigmas_per_atom, batch)
-        type_loss = self.type_loss(pred_atom_types, batch.atom_types,
-                                   type_noise, batch)
+        domain_pred = self.domain_predictor(zd)
+        nom_hoa_pred = self.norm_hoa_predictor(zy)        
 
-        kld_loss = self.kld_loss(mu, log_var)
-
-        if self.hparams.predict_property:
-            property_loss = self.property_loss(z, batch)
-        else:
-            property_loss = 0.
+        zd_p_mu, zd_p_var = self.pzd(batch['zeolite_code_enc'].float().view(-1, 1))
+        zy_p_mu, zy_p_var = self.pzy(batch['norm_hoa'].view(-1, 1))
+        zx_p_mu, zx_p_var = torch.zeros(zd_p_mu.size()[0], self.hparams.residual_latent_dim).cuda(),\
+                                torch.ones(zd_p_mu.size()[0], self.hparams.residual_latent_dim).cuda()
+        # endregion
 
         return {
-            'num_atom_loss': num_atom_loss,
-            'lattice_loss': lattice_loss,
-            'composition_loss': composition_loss,
-            'coord_loss': coord_loss,
-            'type_loss': type_loss,
-            'kld_loss': kld_loss,
-            'property_loss': property_loss,
             'pred_num_atoms': pred_num_atoms,
             'pred_lengths_and_angles': pred_lengths_and_angles,
             'pred_lengths': pred_lengths,
@@ -274,13 +334,66 @@ class CDiVAE(BaseModule):
             'pred_cart_coord_diff': pred_cart_coord_diff,
             'pred_atom_types': pred_atom_types,
             'pred_composition_per_atom': pred_composition_per_atom,
+            'used_sigmas_per_atom': used_sigmas_per_atom,
             'target_frac_coords': batch.frac_coords,
             'target_atom_types': batch.atom_types,
             'rand_frac_coords': noisy_frac_coords,
             'rand_atom_types': rand_atom_types,
+            'type_noise': type_noise,
+            'noisy_frac_coords': noisy_frac_coords,
+            'mu_d': mu_d,
+            'log_var_d': log_var_d,
+            'mu_y': mu_y,
+            'log_var_y': log_var_y,
+            'mu_x': mu_x,
+            'log_var_x': log_var_x,
             'z': z,
+            'zd': zd,
+            'zy': zy,
+            'zx': zx,
+            'zd_p_mu': zd_p_mu,
+            'zd_p_var': zd_p_var,
+            'zy_p_mu': zy_p_mu,
+            'zy_p_var': zy_p_var,
+            'zx_p_mu': zx_p_mu,
+            'zx_p_var': zx_p_var,
+            'domain_pred': domain_pred,
+            'norm_hoa_pred': nom_hoa_pred
         }
 
+    # region PREDICT HELPERS
+    def predict_num_atoms(self, z):
+        return self.fc_num_atoms(z)
+
+    def predict_property(self, z):
+        self.scaler.match_device(z)
+        # This scaling won't be needed when I add the scaled y to the dataset
+        # to fit the requirements of the new model
+        # TODO: refactor this
+        return self.scaler.inverse_transform(self.fc_property(z))
+
+    def predict_lenghts(self, z, num_atoms):
+        self.lengths_scaler.match_device(z)
+        pred_lengths = self.fc_lengths(z)
+        pred_lengths = self.lengths_scaler.inverse_transform(pred_lengths)
+        if self.hparams.data["lattice_scale_method"] == 'scale_length':
+            pred_lengths = pred_lengths * num_atoms.argmax(dim=-1).view(-1, 1).float()**(1/3)
+
+        return pred_lengths
+        
+    def predict_angles(self, z):
+        pred_angles = self.fc_angles(z)
+        # Multiply each angles by 180
+        pred_angles = pred_angles * 180
+        return pred_angles
+
+    def predict_composition(self, z, num_atoms):
+        pred_composition_per_atom = self.fc_composition(z)
+        return pred_composition_per_atom
+    # endregion
+
+    # region SAMPLING
+    # TODO: Rework sampling to work as intended for the CDiVAE
     def generate_rand_init(self, pred_composition_per_atom, pred_lengths,
                            pred_angles, num_atoms, batch):
         rand_frac_coords = torch.rand(num_atoms.sum(), 3,
@@ -330,33 +443,6 @@ class CDiVAE(BaseModule):
         all_sampled_comp = torch.cat(all_sampled_comp, dim=0)
         assert all_sampled_comp.size(0) == num_atoms.sum()
         return all_sampled_comp
-
-    def predict_num_atoms(self, z):
-        return self.fc_num_atoms(z)
-
-    def predict_property(self, z):
-        self.scaler.match_device(z)
-        return self.scaler.inverse_transform(self.fc_property(z))
-
-    def predict_lenghts(self, z, num_atoms):
-        self.lengths_scaler.match_device(z)
-        pred_lengths = self.fc_lengths(z)
-        pred_lengths = self.lengths_scaler.inverse_transform(pred_lengths)
-        if self.hparams.data["lattice_scale_method"] == 'scale_length':
-            pred_lengths = pred_lengths * num_atoms.argmax(dim=-1).view(-1, 1).float()**(1/3)
-
-        return pred_lengths
-        
-    def predict_angles(self, z):
-        pred_angles = self.fc_angles(z)
-        # Multiply each angles by 180
-        pred_angles = pred_angles * 180
-        return pred_angles
-
-    def predict_composition(self, z, num_atoms):
-        pred_composition_per_atom = self.fc_composition(z)
-        return pred_composition_per_atom
-
 
     @torch.no_grad()
     def langevin_dynamics(self, z, ld_kwargs, gt_num_atoms=None, gt_atom_types=None):
@@ -483,7 +569,9 @@ class CDiVAE(BaseModule):
 
         add_object(reconstruction, reconstructions_path)
         add_object(batch, ground_truth_path)
-    # region losses
+    # endregion
+    
+    # region LOSSES
     def num_atom_loss(self, pred_num_atoms, batch):
         return F.cross_entropy(pred_num_atoms, batch.num_atoms)
 
@@ -542,55 +630,65 @@ class CDiVAE(BaseModule):
 
         return scatter(loss, batch.batch, reduce='mean').mean()
 
-    def kld_loss(self, mu, log_var):
-        kld_loss = torch.mean(
-            -0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1), dim=0)
-        return kld_loss
-    # endregion
+    def kld_loss(self, mu_q, log_var_q, mu_p, log_var_p):
+        var_p = log_var_p.exp()
+        var_q = log_var_q.exp()
 
-    # region pytorch_lightning hooks
-    def training_step(self, batch: Any, batch_idx: int) -> torch.Tensor:
-        teacher_forcing = (
-            self.current_epoch <= self.hparams.teacher_forcing_max_epoch)
-        outputs = self(batch, teacher_forcing, training=True)
-        log_dict, loss = self.compute_stats(batch, outputs, prefix='train')
-        self.log_dict(
-            log_dict,
-            on_step=True,
-            on_epoch=True,
-            prog_bar=True,
+        kld = 0.5 * (
+            torch.sum(log_var_q - log_var_p, dim=1)
+            - mu_p.size(1)
+            + torch.sum(var_p / var_q, dim=1)
+            + torch.sum((mu_q - mu_p)**2 / var_q, dim=1)
         )
-        return loss
 
-    def validation_step(self, batch: Any, batch_idx: int) -> torch.Tensor:
-        outputs = self(batch, teacher_forcing=False, training=False)
-        log_dict, loss = self.compute_stats(batch, outputs, prefix='val')
-        self.log_dict(
-            log_dict,
-            on_step=False,
-            on_epoch=True,
-            prog_bar=True,
-        )
-        return loss
+        return torch.mean(kld, dim=0)
 
-    def test_step(self, batch: Any, batch_idx: int) -> torch.Tensor:
-        outputs = self(batch, teacher_forcing=False, training=False)
-        log_dict, loss = self.compute_stats(batch, outputs, prefix='test')
-        self.log_dict(
-            log_dict,
-        )
-        return loss
+    def domain_pred_loss(self, pred_domain_logits, batch):
+        return F.cross_entropy(pred_domain_logits, batch.zeolite_code_enc)
 
-    # endregion
+    def norm_hoa_pred_loss(self, pred_norm_hoa, batch):
+        return F.mse_loss(pred_norm_hoa, batch.norm_hoa)
 
-    def compute_stats(self, batch, outputs, prefix):
-        num_atom_loss = outputs['num_atom_loss']
-        lattice_loss = outputs['lattice_loss']
-        coord_loss = outputs['coord_loss']
-        type_loss = outputs['type_loss']
-        kld_loss = outputs['kld_loss']
-        composition_loss = outputs['composition_loss']
-        property_loss = outputs['property_loss']
+    def compute_loss(self, batch, outputs, prefix):
+        pred_num_atoms = outputs['pred_num_atoms']
+        pred_lengths_and_angles = outputs['pred_lengths_and_angles']
+        pred_composition_per_atom = outputs['pred_composition_per_atom']
+        pred_cart_coord_diff = outputs['pred_cart_coord_diff']
+        pred_atom_types = outputs['pred_atom_types']
+        noisy_frac_coords = outputs['noisy_frac_coords']
+        used_sigmas_per_atom = outputs['used_sigmas_per_atom']
+        type_noise = outputs['type_noise']
+        mu_d = outputs['mu_d']
+        log_var_d = outputs['log_var_d']
+        mu_y = outputs['mu_y']
+        log_var_y = outputs['log_var_y']
+        mu_x = outputs['mu_x']
+        log_var_x = outputs['log_var_x']
+        zd_p_mu = outputs['zd_p_mu']
+        zd_p_log_var = outputs['zd_p_var']
+        zy_p_mu = outputs['zy_p_mu']
+        zy_p_log_var = outputs['zy_p_var']
+        zx_p_mu = outputs['zx_p_mu']
+        zx_p_log_var = outputs['zx_p_var']
+        domain_pred = outputs['domain_pred']
+        norm_hoa_pred = outputs['norm_hoa_pred']
+
+        num_atom_loss = self.num_atom_loss(pred_num_atoms, batch)
+        lattice_loss = self.lattice_loss(pred_lengths_and_angles, batch)
+        composition_loss = self.composition_loss(
+            pred_composition_per_atom, batch.atom_types, batch)
+        coord_loss = self.coord_loss(
+            pred_cart_coord_diff, noisy_frac_coords, used_sigmas_per_atom, batch)
+        type_loss = self.type_loss(pred_atom_types, batch.atom_types,
+                                   type_noise, batch)
+
+        kld_loss_d = self.kld_loss(mu_d, log_var_d, zd_p_mu, zd_p_log_var)
+        kld_loss_y = self.kld_loss(mu_y, log_var_y, zy_p_mu, zy_p_log_var)
+        kld_loss_x = self.kld_loss(mu_x, log_var_x, zx_p_mu, zx_p_log_var)
+        kld_loss = kld_loss_d + kld_loss_y + kld_loss_x
+
+        domain_pred_loss = self.domain_pred_loss(domain_pred, batch)
+        norm_hoa_pred_loss = self.norm_hoa_pred_loss(norm_hoa_pred, batch)
 
         loss = (
             self.hparams.cost_natom * num_atom_loss +
@@ -599,7 +697,8 @@ class CDiVAE(BaseModule):
             self.hparams.cost_type * type_loss +
             self.hparams.beta * kld_loss +
             self.hparams.cost_composition * composition_loss +
-            self.hparams.cost_property * property_loss)
+            self.hparams.cost_domain * domain_pred_loss +
+            self.hparams.cost_hoa * norm_hoa_pred_loss)
 
         log_dict = {
             f'{prefix}_loss': loss,
@@ -607,8 +706,11 @@ class CDiVAE(BaseModule):
             f'{prefix}_lattice_loss': lattice_loss,
             f'{prefix}_coord_loss': coord_loss,
             f'{prefix}_type_loss': type_loss,
-            f'{prefix}_kld_loss': kld_loss,
             f'{prefix}_composition_loss': composition_loss,
+            f'{prefix}_kld_loss': kld_loss,
+            f'{prefix}_kld_loss_d': kld_loss_d,
+            f'{prefix}_kld_loss_y': kld_loss_y,
+            f'{prefix}_kld_loss_x': kld_loss_x,
         }
 
         if prefix != 'train':
@@ -648,8 +750,9 @@ class CDiVAE(BaseModule):
             ), batch.batch, dim=0, reduce='mean').mean()
 
             log_dict.update({
+                f'{prefix}_norm_hoa_pred_loss': norm_hoa_pred_loss,
+                f'{prefix}_domain_pred_loss': domain_pred_loss,
                 f'{prefix}_loss': loss,
-                f'{prefix}_property_loss': property_loss,
                 f'{prefix}_natom_accuracy': num_atom_accuracy,
                 f'{prefix}_lengths_mard': lengths_mard,
                 f'{prefix}_angles_mae': angles_mae,
@@ -658,3 +761,38 @@ class CDiVAE(BaseModule):
             })
 
         return log_dict, loss
+    # endregion
+
+    # region PYTORCH HOOKS
+    def training_step(self, batch: Any, batch_idx: int) -> torch.Tensor:
+        teacher_forcing = (
+            self.current_epoch <= self.hparams.teacher_forcing_max_epoch)
+        outputs = self(batch, teacher_forcing, training=True)
+        log_dict, loss = self.compute_loss(batch, outputs, prefix='train')
+        self.log_dict(
+            log_dict,
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+        )
+        return loss
+
+    def validation_step(self, batch: Any, batch_idx: int) -> torch.Tensor:
+        outputs = self(batch, teacher_forcing=False, training=False)
+        log_dict, loss = self.compute_loss(batch, outputs, prefix='val')
+        self.log_dict(
+            log_dict,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+        )
+        return loss
+
+    def test_step(self, batch: Any, batch_idx: int) -> torch.Tensor:
+        outputs = self(batch, teacher_forcing=False, training=False)
+        log_dict, loss = self.compute_loss(batch, outputs, prefix='test')
+        self.log_dict(
+            log_dict,
+        )
+        return loss
+    # endregion

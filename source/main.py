@@ -135,7 +135,7 @@ def run_training(cfg: DictConfig):
             **cfg.train.pl_trainer,
             accelerator="gpu",
             callbacks=[checkpoint_callback],
-            detect_anomaly=True
+            # detect_anomaly=True
         )
 
         hydra.utils.log.info("Starting training!")
@@ -282,7 +282,7 @@ def run_sampling(cfg: DictConfig, model: DiffusionModel = None):
         # Clean up the file so that it doesn't hang around
         os.remove(samples_path)
 
-@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="diffusion")
+@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="cdivae")
 def main(cfg: DictConfig):
 
     model = None

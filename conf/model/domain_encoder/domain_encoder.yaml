@@ -1,0 +1,6 @@
+_target_: encoder_extended.GemNetTEncoderExt
+hidden_size: 128
+num_targets: $(model.domain_latent_dim)
+max_neighbors: ${model.max_neighbors}
+radius: ${model.radius}
+scale_file: ${oc.env:PROJECT_ROOT}/source/scaling_factors/scaling_factors_total_dataset.json
