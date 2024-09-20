@@ -52,7 +52,7 @@ OFFSET_LIST = [
     [1, 1, 1],
 ]
 
-ZEOLITE_CODES_MAPPING = {'LTL': 0, 'TON3': 1, 'CHA': 2, 'MER': 3, 'TONch': 4, 'BEC': 5, 'RHO': 6, 'MOR': 7, 'ERI': 8, 'MEL': 9, 'FAUch': 10, 'MFI': 11, 'TON4': 12, 'HEU': 13, 'MTW': 14, 'FAU': 15, 'ITW': 16, 'TON2': 17, 'TON': 18, 'YFI': 19, 'DDRch1': 20, 'FER': 21, 'DDRch2': 22, 'NAT': 23, 'MELch': 24, 'LTA': 25}
+ZEOLITE_CODES_MAPPING = {'DDRch1': 0, 'DDRch2': 1, 'FAU': 2, 'FAUch': 3, 'ITW': 4, 'MEL': 5, 'MELch': 6, 'MFI': 7, 'MOR': 8, 'RHO': 9, 'TON': 10, 'TON2': 11, 'TON3': 12, 'TON4': 13, 'TONch': 14, 'BEC': 15, 'CHA': 16, 'ERI': 17, 'FER': 18, 'HEU': 19, 'LTA': 20, 'LTL': 21, 'MER': 22, 'MTW': 23, 'NAT': 24, 'YFI': 25}
 
 EPSILON = 1e-5
 
