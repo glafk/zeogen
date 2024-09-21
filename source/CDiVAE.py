@@ -710,8 +710,8 @@ class CDiVAE(BaseModule):
             self.hparams.cost_composition * composition_loss +
             self.hparams.cost_domain * domain_pred_loss +
             self.hparams.cost_hoa * norm_hoa_pred_loss +
-            self.hparams.cost_hoa_mu * hoa_mu_pred_loss +
-            self.hparams.cost_hoa_std * hoa_std_pred_loss
+            self.hparams.cost_hoa * hoa_mu_pred_loss +
+            self.hparams.cost_hoa * hoa_std_pred_loss
         )
 
         log_dict = {
