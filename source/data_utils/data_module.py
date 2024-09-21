@@ -62,7 +62,6 @@ class CrystDataModule(pl.LightningDataModule):
             # temporarily change this to the test dataset to generate the scaling factors
             print("Generating scaling factors")
             # test_dataset = hydra.utils.instantiate(self.datasets.test)
-            print(self.datasets.train.num_records)
             train_dataset = hydra.utils.instantiate(self.datasets.train)
             self.lengths_scaler = get_scaler_from_data_list(
                 train_dataset.cached_data,
