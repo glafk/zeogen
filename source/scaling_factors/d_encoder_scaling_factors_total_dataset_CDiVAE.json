@@ -1,3 +1,4 @@
 {
-    "comment": "gemnet scaling factors for combined total dataset based on CDivAE model"
+    "comment": "gemnet scaling factors for combined total dataset based on CDivAE model",
+    "TripInteraction_1_had_rbf": 8.738099098205566
 }

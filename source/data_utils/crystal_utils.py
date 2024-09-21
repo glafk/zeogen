@@ -661,19 +661,6 @@ def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, prop_n
         }
         return result_dict
 
-    # # Add integer encoding for the zeolite code
-    # for entry in crystal_dict_list:
-    #     entry["zeolite_code_enc"] = ZEOLITE_CODES_MAPPING[entry["zeolite_code"]]
-
-    # # Cast hoa to float
-    # for entry in crystal_dict_list:
-    #     entry["hoa"] = float(entry["hoa"])
-    #     entry["zeolite_code_enc"] = float(entry["zeolite_code_enc"])
-
-
-    # Add scaled hoa property values per zeolite code
-    # Group by zeolite_code to find max hoa per zeolite type
-
     # Extract HOA and zeolite codes
     hoa = np.array([entry['hoa'] for entry in crystal_dict_list])
     zeo_code = np.array([entry['zeolite_code'] for entry in crystal_dict_list])
@@ -699,6 +686,10 @@ def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, prop_n
     # Optionally clean up if needed
     del hoa
     del zeo_code
+
+    # Limit number of items temporarily for testing purporses
+    if num_records is not None:
+        crystal_dict_list = crystal_dict_list[:num_records]
 
     unordered_results = p_umap(
         process_one,

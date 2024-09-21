@@ -65,7 +65,7 @@ class TensorCrystDataset(Dataset):
             zeolite_code=data_dict["zeolite_code"],
             zeolite_code_enc=torch.Tensor(ZEOLITE_CODES_MAPPING[data_dict["zeolite_code"]]).float(),
             hoa=torch.Tensor(prop).view(1, -1),
-            norm_hoa=torch.Tensor(data_dict['norm_hoa'])
+            norm_hoa=torch.Tensor([data_dict['norm_hoa']]).view(1, -1),
         )
         return data
 
