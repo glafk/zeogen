@@ -1,4 +1,4 @@
-expname: cdivae_first_test
+expname: cdvae_base_run_300_epochs
 
 # metadata specialised for each experiment
 core:

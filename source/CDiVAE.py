@@ -115,10 +115,10 @@ class CDiVAE(BaseModule):
         # separate from the zd latent space, while also generating the final
         # HOA prediction from the zd latent space and the zy latent space but not backpropagating through it.
         # so as to keep the learning on the scaled HOA which I will later need for the sampling
-        self.hoa_mu = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
+        self.hoa_mu_predictor = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
                                 self.hparams.fc_num_layers, 1, final_activation="relu")
 
-        self.hoa_mu = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
+        self.hoa_std_predictor = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
                                 self.hparams.fc_num_layers, 1, final_activation="relu")        
 
         self.norm_hoa_predictor = build_mlp(self.hparams.class_latent_dim, self.hparams.hidden_dim,
@@ -314,8 +314,8 @@ class CDiVAE(BaseModule):
 
         # Predict domain and HOA
         domain_pred = self.domain_predictor(zd)
-        hoa_mu_pred = self.hoa_mu(zd)
-        hoa_std_pred = self.hoa_std(zd)
+        hoa_mu_pred = self.hoa_mu_predictor(zd)
+        hoa_std_pred = self.hoa_std_predictor(zd)
         norm_hoa_pred = self.norm_hoa_predictor(zy)       
         hoa_pred = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
 
