@@ -115,11 +115,11 @@ class CDiVAE(BaseModule):
         # separate from the zd latent space, while also generating the final
         # HOA prediction from the zd latent space and the zy latent space but not backpropagating through it.
         # so as to keep the learning on the scaled HOA which I will later need for the sampling
-        # self.fc_y_mu = build_mlp(self.hparams.zd_latent_dim, self.hparams.hidden_dim,
-        #                           self.hparams.fc_num_layers, 1, final_activation="relu")
+        self.hoa_mu = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
+                                self.hparams.fc_num_layers, 1, final_activation="relu")
 
-        # self.fc_y_std = build_mlp(self.hparams.zd_latent_dim, self.hparams.hidden_dim,
-        #                           self.hparams.fc_num_layers, 1, final_activation="relu")        
+        self.hoa_mu = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
+                                self.hparams.fc_num_layers, 1, final_activation="relu")        
 
         self.norm_hoa_predictor = build_mlp(self.hparams.class_latent_dim, self.hparams.hidden_dim,
                                             self.hparams.fc_num_layers, 1, final_activation="sigmoid")
@@ -299,9 +299,6 @@ class CDiVAE(BaseModule):
 
 
         # add noise to the cart coords
-        # TODO: Investigate: is it needed to add noise to the cart coords?
-        # Can we just add noise to the frac coords?
-        # Then we wouldn't need the predictions for angles and lengths
         cart_noises_per_atom = (
             torch.randn_like(batch.frac_coords) *
             used_sigmas_per_atom[:, None])
@@ -311,14 +308,16 @@ class CDiVAE(BaseModule):
         noisy_frac_coords = cart_to_frac_coords(
             cart_coords, pred_lengths, pred_angles, batch.num_atoms)
 
-        # THE pred_cart_coord_diff is the prediction for the difference in the atom coords based on the noise that is added
-        # TODO: Ask at the meeting: Can we pass the angles and lengths from the ground truth to the decoder?
-        # Would that make the training better?
+        # pred_cart_coord_diff is the prediction for the difference in the atom coords based on the noise that is added
         pred_cart_coord_diff, pred_atom_types = self.decoder(
             z, noisy_frac_coords, rand_atom_types, batch.num_atoms, pred_lengths, pred_angles)
 
+        # Predict domain and HOA
         domain_pred = self.domain_predictor(zd)
-        nom_hoa_pred = self.norm_hoa_predictor(zy)        
+        hoa_mu_pred = self.hoa_mu(zd)
+        hoa_std_pred = self.hoa_std(zd)
+        norm_hoa_pred = self.norm_hoa_predictor(zy)       
+        hoa_pred = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
 
         zd_p_mu, zd_p_var = self.pzd(batch['zeolite_code_enc'].float().view(-1, 1))
         zy_p_mu, zy_p_var = self.pzy(batch['norm_hoa'].view(-1, 1))
@@ -358,19 +357,15 @@ class CDiVAE(BaseModule):
             'zx_p_mu': zx_p_mu,
             'zx_p_var': zx_p_var,
             'domain_pred': domain_pred,
-            'norm_hoa_pred': nom_hoa_pred
+            'hoa_pred': hoa_pred,
+            'hoa_mu_pred': hoa_mu_pred,
+            'hoa_std_pred': hoa_std_pred,
+            'norm_hoa_pred': norm_hoa_pred
         }
 
     # region PREDICT HELPERS
     def predict_num_atoms(self, z):
         return self.fc_num_atoms(z)
-
-    def predict_property(self, z):
-        self.scaler.match_device(z)
-        # This scaling won't be needed when I add the scaled y to the dataset
-        # to fit the requirements of the new model
-        # TODO: refactor this
-        return self.scaler.inverse_transform(self.fc_property(z))
 
     def predict_lenghts(self, z, num_atoms):
         self.lengths_scaler.match_device(z)
@@ -649,6 +644,16 @@ class CDiVAE(BaseModule):
     def norm_hoa_pred_loss(self, pred_norm_hoa, batch):
         return F.mse_loss(pred_norm_hoa, batch.norm_hoa)
 
+    def hoa_mu_pred_loss(self, pred_hoa_mu, batch):
+        return F.mse_loss(pred_hoa_mu, batch.hoa_mu)
+    
+    def hoa_std_pred_loss(self, pred_hoa_std, batch):
+        return F.mse_loss(pred_hoa_std, batch.hoa_std)
+
+    @torch.no_grad()
+    def final_hoa_loss(self, pred_hoa, batch):
+        return F.mse_loss(pred_hoa, batch.hoa)
+
     def compute_loss(self, batch, outputs, prefix):
         pred_num_atoms = outputs['pred_num_atoms']
         pred_lengths_and_angles = outputs['pred_lengths_and_angles']
@@ -671,6 +676,9 @@ class CDiVAE(BaseModule):
         zx_p_mu = outputs['zx_p_mu']
         zx_p_log_var = outputs['zx_p_var']
         domain_pred = outputs['domain_pred']
+        hoa_mu_pred = outputs['hoa_mu_pred']
+        hoa_std_pred = outputs['hoa_std_pred']
+        hoa_pred = outputs['hoa_pred']
         norm_hoa_pred = outputs['norm_hoa_pred']
 
         num_atom_loss = self.num_atom_loss(pred_num_atoms, batch)
@@ -689,6 +697,9 @@ class CDiVAE(BaseModule):
 
         domain_pred_loss = self.domain_pred_loss(domain_pred, batch)
         norm_hoa_pred_loss = self.norm_hoa_pred_loss(norm_hoa_pred, batch)
+        hoa_mu_pred_loss = self.hoa_mu_pred_loss(hoa_mu_pred, batch)
+        hoa_std_pred_loss = self.hoa_std_pred_loss(hoa_std_pred, batch)
+        final_hoa_loss = self.final_hoa_loss(hoa_pred, batch)
 
         loss = (
             self.hparams.cost_natom * num_atom_loss +
@@ -698,7 +709,10 @@ class CDiVAE(BaseModule):
             self.hparams.beta * kld_loss +
             self.hparams.cost_composition * composition_loss +
             self.hparams.cost_domain * domain_pred_loss +
-            self.hparams.cost_hoa * norm_hoa_pred_loss)
+            self.hparams.cost_hoa * norm_hoa_pred_loss +
+            self.hparams.cost_hoa_mu * hoa_mu_pred_loss +
+            self.hparams.cost_hoa_std * hoa_std_pred_loss
+        )
 
         log_dict = {
             f'{prefix}_loss': loss,
@@ -752,6 +766,9 @@ class CDiVAE(BaseModule):
             log_dict.update({
                 f'{prefix}_norm_hoa_pred_loss': norm_hoa_pred_loss,
                 f'{prefix}_domain_pred_loss': domain_pred_loss,
+                f'{prefix}_hoa_mu_pred_loss': hoa_mu_pred_loss,
+                f'{prefix}_hoa_std_pred_loss': hoa_std_pred_loss,
+                f'{prefix}_final_hoa_loss': final_hoa_loss,
                 f'{prefix}_loss': loss,
                 f'{prefix}_natom_accuracy': num_atom_accuracy,
                 f'{prefix}_lengths_mard': lengths_mard,

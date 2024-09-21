@@ -681,6 +681,8 @@ def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, prop_n
     for entry in crystal_dict_list:
         mean_hoa = mean_hoa_per_zeo_code[entry['zeolite_code']]
         std_hoa = std_hoa_per_zeo_code[entry['zeolite_code']]
+        entry['hoa_mu'] = mean_hoa
+        entry['hoa_std'] = std_hoa
         entry['norm_hoa'] = (entry['hoa'] - mean_hoa) / std_hoa
 
     # Optionally clean up if needed
