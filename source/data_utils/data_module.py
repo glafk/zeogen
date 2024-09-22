@@ -112,7 +112,6 @@ class CrystDataModule(pl.LightningDataModule):
             self.train_dataset.prop_scaler = self.prop_scaler
             self.train_dataset.prop_mu_scaler = self.prop_mu_scaler
             self.train_dataset.prop_std_scaler = self.prop_std_scaler
-            self.train_dataset.scaler = self.scaler
 
             self.val_dataset.lengths_scaler = self.lengths_scaler
             self.val_dataset.prop_scaler = self.prop_scaler

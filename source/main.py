@@ -54,7 +54,7 @@ def run_training(cfg: DictConfig):
     )
 
     # Pass scaler from datamodule to model
-    hydra.utils.log.info(f"Passing scaler from datamodule to model <{datamodule.scaler}>")
+    hydra.utils.log.info(f"Passing scalers from datamodule to model>")
     model.lengths_scaler = datamodule.lengths_scaler.copy()
     model.prop_scaler = datamodule.prop_scaler.copy()
     model.prop_mu_scaler = datamodule.prop_mu_scaler.copy()
