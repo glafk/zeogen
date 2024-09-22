@@ -36,7 +36,9 @@ class TensorCrystDataset(Dataset):
 
         add_scaled_lengths_prop(self.cached_data, lattice_scale_method)
         self.lattice_scaler = None
-        self.scaler = None
+        self.prop_scaler = None
+        self.prop_mu_scaler = None
+        self.prop_std_scaler = None
 
     def __len__(self) -> int:
         return len(self.cached_data)
@@ -47,7 +49,9 @@ class TensorCrystDataset(Dataset):
         (frac_coords, atom_types, lengths, angles, edge_indices,
          to_jimages, num_atoms) = data_dict['graph_arrays']
 
-        prop = self.scaler.transform(data_dict[self.prop])
+        prop = self.prop_scaler.transform(data_dict[self.prop])
+        prop_mu = self.prop_mu_scaler.transform(data_dict[self.prop + "_mu"])
+        prop_std = self.prop_std_scaler.transform(data_dict[self.prop + "_std"])
         # atom_coords are fractional coordinates
         # edge_index is incremented during batching
         # https://pytorch-geometric.readthedocs.io/en/latest/notes/batching.html
@@ -65,8 +69,10 @@ class TensorCrystDataset(Dataset):
             zeolite_code=data_dict["zeolite_code"],
             zeolite_code_enc=ZEOLITE_CODES_MAPPING[data_dict["zeolite_code"]],
             hoa=torch.Tensor(prop).view(1, -1),
-            hoa_mu=torch.Tensor([data_dict['hoa_mu']]).view(1, -1),
-            hoa_std=torch.Tensor([data_dict['hoa_std']]).view(1, -1),
+            hoa_mu=torch.Tensor(prop_mu).view(1, -1),
+            hoa_std=torch.Tensor(prop_std).view(1, -1),
+            # The normalized HOA here is not the same as the standardized HOA
+            # as this one is normalized per zeolite type instead of averaged in general
             norm_hoa=torch.Tensor([data_dict['norm_hoa']]).view(1, -1),
         )
         return data

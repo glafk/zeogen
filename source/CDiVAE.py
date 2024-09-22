@@ -122,7 +122,7 @@ class CDiVAE(BaseModule):
                                 self.hparams.fc_num_layers, 1, final_activation="relu")        
 
         self.norm_hoa_predictor = build_mlp(self.hparams.class_latent_dim, self.hparams.hidden_dim,
-                                            self.hparams.fc_num_layers, 1, final_activation="sigmoid")
+                                            self.hparams.fc_num_layers, 1)
 
         self.fc_num_atoms = build_mlp(self.hparams.total_latent_dim, self.hparams.hidden_dim,
                                       self.hparams.fc_num_layers, self.hparams.max_atoms+1)
@@ -149,7 +149,9 @@ class CDiVAE(BaseModule):
 
         # These are passed from the datamodule after both it and the model have been initialized
         self.lengths_scaler = None
-        self.scaler = None
+        self.prop_scaler = None
+        self.prop_mu_scaler = None
+        self.prop_std_scaler = None
 
     # region ENCODE HELPERS
     def reparameterize(self, mu, log_var):
@@ -257,11 +259,12 @@ class CDiVAE(BaseModule):
             # Add noise to predicted ratios and clamp to [0, 1]
             noisy_ratios = torch.clamp(pred_composition_ratio.squeeze() + type_noise, 0.0, 1.0)
             # Expand the predicted composition ratio to match the number of atoms per crystal in the batch
-            pred_composition_per_atom = noisy_ratios[batch.batch.squeeze()]
+            pred_composition_per_atom = pred_composition_ratio.squeeze()[batch.batch.squeeze()]
+            noisy_composition_per_atom = noisy_ratios[batch.batch.squeeze()]
 
             # Adjust with 13 to end up with only Al and Si atoms
             rand_atom_types = torch.multinomial(torch.stack(
-                (pred_composition_per_atom, 1-pred_composition_per_atom), dim=1), num_samples=1).squeeze(1) + 13
+                (noisy_composition_per_atom, 1-pred_composition_per_atom), dim=1), num_samples=1).squeeze(1) + 13
         except Exception as e:
             batch = {
                 "original_batch": batch,
@@ -370,8 +373,10 @@ class CDiVAE(BaseModule):
     def predict_lenghts(self, z, num_atoms):
         self.lengths_scaler.match_device(z)
         pred_lengths = self.fc_lengths(z)
+        # Perform inverse transform to get the original lengths
         pred_lengths = self.lengths_scaler.inverse_transform(pred_lengths)
         if self.hparams.data["lattice_scale_method"] == 'scale_length':
+            # Scale according to number of atoms
             pred_lengths = pred_lengths * num_atoms.argmax(dim=-1).view(-1, 1).float()**(1/3)
 
         return pred_lengths
@@ -383,14 +388,13 @@ class CDiVAE(BaseModule):
         return pred_angles
 
     def predict_composition(self, z, num_atoms):
-        pred_composition_per_atom = self.fc_composition(z)
-        return pred_composition_per_atom
+        pred_composition_ratio = self.fc_composition(z)
+        return pred_composition_ratio
     # endregion
 
     # region SAMPLING
     # TODO: Rework sampling to work as intended for the CDiVAE
-    def generate_rand_init(self, pred_composition_per_atom, pred_lengths,
-                           pred_angles, num_atoms, batch):
+    def generate_rand_init(self, pred_composition_per_atom, num_atoms):
         rand_frac_coords = torch.rand(num_atoms.sum(), 3,
                                       device=num_atoms.device)
         pred_composition_per_atom = F.softmax(pred_composition_per_atom,
@@ -521,22 +525,28 @@ class CDiVAE(BaseModule):
 
         return output_dict
 
-    def sample(self, num_samples, ld_kwargs, kwargs_conf_name):
+    def sample(self, num_samples, ld_kwargs, kwargs_conf_name, domains, norm_hoas):
         """
         Samples crystals and optionally saves them.
 
         Args:
             num_samples (int): Number of samples to generate.
             ld_kwargs (dict): Keyword arguments for the Langevin dynamics method.
-            save_samples (bool, optional): Whether to save the samples. Defaults to False.
-            samples_file (str, optional): The file name to save the samples. Defaults to "samples.pickle".
-            save_to_wandb (bool, optional): Whether to save the samples to wandb. Defaults to False.
+            kwargs_conf_name (str, optional): Name for the WandB artifact for the config.
+            domains (list): Domains for which to generate samples
+            norm_hoas (list): Conditional normalized HOA for each samples 
+                to be taken for each domain. Length should be equal to num_samples  
 
         Returns:
-            samples (torch.Tensor): The generated samples.
+            samples (Tensor): The generated samples.
         """
         # Log the LD configuration
         log_config_to_wandb(ld_kwargs, kwargs_conf_name, auxiliary_config=True)
+
+        # Make sure norm_hoas has the same length as num_samples
+        # This way for each generated sample per zeolite type we can have different HOAs
+        assert len(norm_hoas) == num_samples
+
         # Here in the sampling part I will need to figure out how to force the model to sample from the part of the distribution where the representations of the "high-capacity" crystals lie
         print(f"Sampling {num_samples} crystals.")
         z = torch.randn(num_samples, self.hparams.hidden_dim, device=self.device)
@@ -575,14 +585,17 @@ class CDiVAE(BaseModule):
 
     def lattice_loss(self, pred_lengths_and_angles, batch):
         self.lengths_scaler.match_device(pred_lengths_and_angles)
-        # TODO: Here as well
+        # TODO: Perhaps we don't need this scaling either when calculating the loss
+        # for the same reason described below
         if self.hparams.data["lattice_scale_method"] == 'scale_length':
             target_lengths = batch.lengths / \
                 batch.num_atoms.view(-1, 1).float()**(1/3)
-
-        scaled_target_lengths = self.lengths_scaler.transform(target_lengths)
+        # Since we already transform the predictions with inverse transform
+        # This scaleing here my not be necessary
+        # scaled_target_lengths = self.lengths_scaler.transform(target_lengths)
+        # Let's ty like that and see if it gets better
         target_lengths_and_angles = torch.cat(
-            [scaled_target_lengths, batch.angles], dim=-1)
+            [target_lengths, batch.angles], dim=-1)
         return F.mse_loss(pred_lengths_and_angles, target_lengths_and_angles)
 
     def composition_loss(self, pred_composition_per_atom, target_atom_types, batch):
@@ -738,15 +751,14 @@ class CDiVAE(BaseModule):
             num_atom_accuracy = (
                 pred_num_atoms == batch.num_atoms).sum() / batch.num_graphs
 
-            # evalute lattice prediction.
-            pred_lengths_and_angles = outputs['pred_lengths_and_angles']
-            scaled_lengths = self.lengths_scaler.inverse_transform(pred_lengths_and_angles[:, :3])
-            pred_lengths = scaled_lengths
+            # scaled_lengths = self.lengths_scaler.inverse_transform(pred_lengths_and_angles[:, :3])
+            pred_lengths = pred_lengths_and_angles[:, :3]
             pred_angles = pred_lengths_and_angles[:, 3:]
 
-            if self.hparams.data.lattice_scale_method == 'scale_length':
-                pred_lengths = pred_lengths * \
-                    batch.num_atoms.view(-1, 1).float()**(1/3)
+            # The lengths are already scaled during the prediction step
+            # if self.hparams.data.lattice_scale_method == 'scale_length':
+            #     pred_lengths = pred_lengths * \
+            #         batch.num_atoms.view(-1, 1).float()**(1/3)
             lengths_mard = mard(batch.lengths, pred_lengths)
             angles_mae = torch.mean(torch.abs(pred_angles - batch.angles))
 

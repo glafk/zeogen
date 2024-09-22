@@ -50,13 +50,13 @@ class CrystDataModule(pl.LightningDataModule):
         self.test_datasets: Optional[Sequence[Dataset]] = None
 
         # TODO: Change this to be parametrizable
-        self.get_scaler(scaler_path, lengths_scaler="lengths_scaler_total_dataset.pt", prop_scaler="prop_scaler_total_dataset.pt")
+        self.get_scaler(scaler_path, lengths_scaler="lengths_scaler_total_dataset.pt", prop_scaler="prop_scaler_total_dataset.pt", prop_mu_scaler="prop_mu_scaler_total_dataset.pt", prop_std_scaler="prop_std_scaler_total_dataset.pt")
 
     def prepare_data(self) -> None:
         # download only
         pass
 
-    def get_scaler(self, scaler_path, lengths_scaler="lengths_scaler.pt", prop_scaler="prop_scaler.pt"):
+    def get_scaler(self, scaler_path, lengths_scaler="lengths_scaler.pt", prop_scaler="prop_scaler.pt", prop_mu_scaler: str = "prop_mu_scaler.pt", prop_std_scaler: str = "prop_std_scaler.pt"):
         # Load once to compute property scaler
         if scaler_path is None:
             # temporarily change this to the test dataset to generate the scaling factors
@@ -66,13 +66,28 @@ class CrystDataModule(pl.LightningDataModule):
             self.lengths_scaler = get_scaler_from_data_list(
                 train_dataset.cached_data,
                 key='scaled_lengths')
-            self.scaler = get_scaler_from_data_list(
+            self.prop_scaler = get_scaler_from_data_list(
                 train_dataset.cached_data,
                 key=train_dataset.prop)
+            self.prop_mu_scaler = get_scaler_from_data_list(
+                train_dataset.cached_data,
+                key=train_dataset.prop + "_mu")
+            self.prop_std_scaler = get_scaler_from_data_list(
+                train_dataset.cached_data,
+                key=train_dataset.prop + "_std")
+
+            # Save scalers
+            torch.save(self.lengths_scaler, lengths_scaler)
+            torch.save(self.prop_scaler, prop_scaler)
+            torch.save(self.prop_mu_scaler, prop_mu_scaler)
+            torch.save(self.prop_std_scaler, prop_std_scaler)
+            
         else:
             self.lengths_scaler = torch.load(
                 Path(scaler_path) / lengths_scaler)
-            self.scaler = torch.load(Path(scaler_path) / prop_scaler)
+            self.prop_scaler = torch.load(Path(scaler_path) / prop_scaler)
+            self.prop_mu_scaler = torch.load(Path(scaler_path) / prop_mu_scaler)
+            self.prop_std_scaler = torch.load(Path(scaler_path) / prop_std_scaler)
 
     def setup(self, stage: Optional[str] = None):
         """
@@ -94,9 +109,15 @@ class CrystDataModule(pl.LightningDataModule):
                 torch.save(self.val_dataset, val_preprocessed_path)
 
             self.train_dataset.lengths_scaler = self.lengths_scaler
+            self.train_dataset.prop_scaler = self.prop_scaler
+            self.train_dataset.prop_mu_scaler = self.prop_mu_scaler
+            self.train_dataset.prop_std_scaler = self.prop_std_scaler
             self.train_dataset.scaler = self.scaler
+
             self.val_dataset.lengths_scaler = self.lengths_scaler
-            self.val_dataset.scaler = self.scaler
+            self.val_dataset.prop_scaler = self.prop_scaler
+            self.val_dataset.prop_mu_scaler = self.prop_mu_scaler
+            self.val_dataset.prop_std_scaler = self.prop_std_scaler
 
         if stage == "test":
             test_preprocessed_path = self.datasets.test.path.split('.')[0] + '_preprocessed.pt'
@@ -110,7 +131,9 @@ class CrystDataModule(pl.LightningDataModule):
 
             print("Instantiating test dataset") 
             self.test_dataset.lengths_scaler = self.lengths_scaler
-            self.test_dataset.scaler = self.scaler
+            self.test_dataset.prop_scaler = self.prop_scaler
+            self.test_dataset.prop_mu_scaler = self.prop_mu_scaler
+            self.test_dataset.prop_std_scaler = self.prop_std_scaler
 
         if stage == "predict":
             predict_preprocessed_path = self.datasets.predict.path.split('.')[0] + '_preprocessed.pt'
@@ -124,7 +147,9 @@ class CrystDataModule(pl.LightningDataModule):
 
             print("Instantiating predict dataset")
             self.predict_dataset.lengths_scaler = self.lengths_scaler
-            self.predict_dataset.scaler = self.scaler 
+            self.predict_dataset.rrop_scaler = self.prop_scaler
+            self.predict_dataset.prop_mu_scaler = self.prop_mu_scaler
+            self.predict_dataset.prop_std_scaler = self.prop_std_scaler 
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(

@@ -11,10 +11,9 @@ max_atoms: 1024
 otf_graph: false
 eval_model_name: diffusion
 
-
-train_max_epochs: 300
-early_stopping_patience: 100
-teacher_forcing_max_epoch: 100
+train_max_epochs: 150
+early_stopping_patience: 50
+teacher_forcing_max_epoch: 50
 
 datamodule:
   _target_: data_utils.data_module.CrystDataModule
@@ -69,7 +68,7 @@ datamodule:
       num_records: ${model.num_reconstructions}
 
   # Comment out the scaler_path to fit to the new dataset. To be added in the future 
-  scaler_path: ${oc.env:PROJECT_ROOT}/source/scaling_factors
+  # scaler_path: ${oc.env:PROJECT_ROOT}/source/scaling_factors
 
   num_workers:
     train: 0
@@ -78,7 +77,7 @@ datamodule:
     predict: 0
 
   batch_size:
-    train: 64
-    val: 64
-    test: 64
+    train: 16
+    val: 16
+    test: 16
     predict: 1

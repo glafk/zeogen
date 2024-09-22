@@ -56,9 +56,9 @@ def run_training(cfg: DictConfig):
     # Pass scaler from datamodule to model
     hydra.utils.log.info(f"Passing scaler from datamodule to model <{datamodule.scaler}>")
     model.lengths_scaler = datamodule.lengths_scaler.copy()
-    model.scaler = datamodule.scaler.copy()
-    torch.save(datamodule.lengths_scaler, hydra_dir / 'lengths_scaler_total_dataset.pt')
-    torch.save(datamodule.scaler, hydra_dir / 'prop_scaler_total_dataset.pt')
+    model.prop_scaler = datamodule.prop_scaler.copy()
+    model.prop_mu_scaler = datamodule.prop_mu_scaler.copy()
+    model.prop_std_scaler = datamodule.prop_std_scaler.copy()
 
     # Logger instantiation/configuration
     wandb_logger = None
