@@ -1,4 +1,4 @@
-expname: cdvae_debug_domain_predictions
+expname: cdivae_20_epochs_debug_pretrain
 
 # metadata specialised for each experiment
 core:
