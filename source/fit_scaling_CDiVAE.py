@@ -90,8 +90,6 @@ def fit_scaling():
         )
 
         datamodule.setup("fit")
-        torch.save(datamodule.lengths_scaler, cfg.fit.lengths_scaler_file)
-        torch.save(datamodule.scaler, cfg.fit.prop_scaler_file)
 
         # Change the model scale file to reflect the newly fitted file
         cfg.model.domain_encoder.scale_file = d_scale_file
@@ -108,9 +106,11 @@ def fit_scaling():
         model = model.to("cuda")
 
         # Pass scaler from datamodule to model
-        hydra.utils.log.info(f"Passing scaler from datamodule to model <{datamodule.scaler}>")
+        hydra.utils.log.info(f"Passing scalers from datamodule to model")
         model.lengths_scaler = datamodule.lengths_scaler.copy()
-        model.scaler = datamodule.scaler.copy()
+        model.prop_scaler = datamodule.prop_scaler.copy()
+        model.prop_mu_scaler = datamodule.prop_mu_scaler.copy()
+        model.prop_std_scaler = datamodule.prop_std_scaler.copy()
 
         # Get the train dataloader from the datamodule
         train_dataloader = datamodule.train_dataloader()
