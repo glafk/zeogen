@@ -1,4 +1,4 @@
-expname: cdivae_20_epochs_debug_pretrain
+expname: cdivae_150_epochs_low_beta
 
 # metadata specialised for each experiment
 core:
