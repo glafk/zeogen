@@ -1,4 +1,4 @@
-expname: cdvae_debug_domain_predictions
+expname: cdivae_150_epochs_low_beta
 
 # metadata specialised for each experiment
 core:

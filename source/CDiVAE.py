@@ -311,9 +311,15 @@ class CDiVAE(BaseModule):
         noisy_frac_coords = cart_to_frac_coords(
             cart_coords, pred_lengths, pred_angles, batch.num_atoms)
 
-        # pred_cart_coord_diff is the prediction for the difference in the atom coords based on the noise that is added
-        pred_cart_coord_diff, pred_atom_types = self.decoder(
-            z, noisy_frac_coords, rand_atom_types, batch.num_atoms, pred_lengths, pred_angles)
+        try:
+            # pred_cart_coord_diff is the prediction for the difference in the atom coords based on the noise that is added
+            pred_cart_coord_diff, pred_atom_types = self.decoder(
+                z, noisy_frac_coords, rand_atom_types, batch.num_atoms, pred_lengths, pred_angles)
+        except Exception as e:
+            # Handle the case where atoms have 0 neighors in the computational graph 
+            # and the forward pass fails
+            print(repr(e))
+            return None
 
         # Predict domain and HOA
         domain_pred = self.domain_predictor(zd)
@@ -798,6 +804,12 @@ class CDiVAE(BaseModule):
         teacher_forcing = (
             self.current_epoch <= self.hparams.teacher_forcing_max_epoch)
         outputs = self(batch, teacher_forcing, training=True)
+
+        # Check if the forward pass failed
+        if output is None:
+            self.log(f"Skipped batch {batch_idx} due to an error.")
+            return None
+
         log_dict, loss = self.compute_loss(batch, outputs, prefix='train')
         self.log_dict(
             log_dict,

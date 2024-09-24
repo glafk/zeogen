@@ -16,7 +16,7 @@ cost_composition: 1.
 cost_edge: 10.
 cost_domain: 1.
 cost_hoa: 1.
-beta: 0.01
+beta: 0.0001
 num_zeolite_types: 26
 
 # Training parameters
