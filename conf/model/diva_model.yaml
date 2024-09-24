@@ -32,16 +32,16 @@ num_noise_level: 50
 predict_property: False
 
 # Logging and loading parameters
-load_model: False
+load_model: True
 model_location: wandb
 ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model-150-epochs-MFI-only.ckpt # not applicable if model is on WandB
 
 # From which experiment the model should be loaded for continuted training, sampling and reconstruction
-experiment_name_to_load: cont_training_50_100_epochs_total_dataset
+experiment_name_to_load: cdivae_20_epochs_debug_pretrain
 
 # Training
 run_training: true
-resume_from_checkpoint: False
+resume_from_checkpoint: True
 
 # Reconstruction
 run_reconstruction: false

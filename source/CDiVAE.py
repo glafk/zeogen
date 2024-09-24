@@ -584,18 +584,19 @@ class CDiVAE(BaseModule):
         return F.mse_loss(self.fc_property(z), batch.y)
 
     def lattice_loss(self, pred_lengths_and_angles, batch):
-        self.lengths_scaler.match_device(pred_lengths_and_angles)
+        # self.lengths_scaler.match_device(pred_lengths_and_angles)
         # TODO: Perhaps we don't need this scaling either when calculating the loss
         # for the same reason described below
-        if self.hparams.data["lattice_scale_method"] == 'scale_length':
-            target_lengths = batch.lengths / \
-                batch.num_atoms.view(-1, 1).float()**(1/3)
+        # Turns out I really didn't need this scaling after all
+        # if self.hparams.data["lattice_scale_method"] == 'scale_length':
+        #     target_lengths = batch.lengths / \
+        #         batch.num_atoms.view(-1, 1).float()**(1/3)
         # Since we already transform the predictions with inverse transform
         # This scaleing here my not be necessary
         # scaled_target_lengths = self.lengths_scaler.transform(target_lengths)
         # Let's ty like that and see if it gets better
         target_lengths_and_angles = torch.cat(
-            [target_lengths, batch.angles], dim=-1)
+            [batch.lengths, batch.angles], dim=-1)
         return F.mse_loss(pred_lengths_and_angles, target_lengths_and_angles)
 
     def composition_loss(self, pred_composition_per_atom, target_atom_types, batch):
