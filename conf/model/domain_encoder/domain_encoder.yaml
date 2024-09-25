@@ -3,4 +3,4 @@ hidden_size: 128
 num_targets: $(model.domain_latent_dim)
 max_neighbors: ${model.max_neighbors}
 radius: ${model.radius}
-scale_file: ${oc.env:PROJECT_ROOT}/source/scaling_factors/scaling_factors_total_dataset.json
+scale_file: ${oc.env:PROJECT_ROOT}/source/scaling_factors/d_encoder_scaling_factors_total_dataset_CDiVAE.json
