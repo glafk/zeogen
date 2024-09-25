@@ -35,7 +35,9 @@ def build_mlp(in_dim, hidden_dim, fc_num_layers, out_dim, final_activation=None)
     elif final_activation == "hard_sigmoid":
         mods.append(nn.Hardsigmoid())
     elif final_activation == "softmax":
-        mods.append(nn.Softmax())
+        mods.append(nn.Softmax(dim=-1))  # softmax often needs a dimension argument
+    elif final_activation == "selu":
+        mods.append(nn.SELU()).append(nn.Softmax())
 
     return nn.Sequential(*mods)
 
@@ -116,10 +118,10 @@ class CDiVAE(BaseModule):
         # HOA prediction from the zd latent space and the zy latent space but not backpropagating through it.
         # so as to keep the learning on the scaled HOA which I will later need for the sampling
         self.hoa_mu_predictor = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
-                                self.hparams.fc_num_layers, 1, final_activation="relu")
+                                self.hparams.fc_num_layers, 1, final_activation="selu")
 
         self.hoa_std_predictor = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
-                                self.hparams.fc_num_layers, 1, final_activation="relu")        
+                                self.hparams.fc_num_layers, 1, final_activation="selu")        
 
         self.norm_hoa_predictor = build_mlp(self.hparams.class_latent_dim, self.hparams.hidden_dim,
                                             self.hparams.fc_num_layers, 1)
@@ -251,7 +253,7 @@ class CDiVAE(BaseModule):
                                             (batch.num_atoms.size(0),),
                                             device=self.device)
             type_noise = self.type_sigmas[type_noise_level]
-            # Generate random noise signs to ensure noise does not only increase the probabilit of Al atoms
+            # Generate random noise signs to ensure noise does not only increase the probabilit of Si atoms
             random_signs = (torch.rand(batch.num_atoms.size(0), device=self.device) - 0.5).sign()
 
             type_noise = type_noise * random_signs
@@ -302,6 +304,7 @@ class CDiVAE(BaseModule):
 
 
         # add noise to the cart coords
+        # TODO: Discuss whether it makes sense to add noise straigth to the frac coords
         cart_noises_per_atom = (
             torch.randn_like(batch.frac_coords) *
             used_sigmas_per_atom[:, None])
@@ -326,7 +329,6 @@ class CDiVAE(BaseModule):
         hoa_mu_pred = self.hoa_mu_predictor(zd)
         hoa_std_pred = self.hoa_std_predictor(zd)
         norm_hoa_pred = self.norm_hoa_predictor(zy)       
-        hoa_pred = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
 
         zd_p_mu, zd_p_var = self.pzd(batch['zeolite_code_enc'].float().view(-1, 1))
         zy_p_mu, zy_p_var = self.pzy(batch['norm_hoa'].view(-1, 1))
@@ -366,7 +368,6 @@ class CDiVAE(BaseModule):
             'zx_p_mu': zx_p_mu,
             'zx_p_var': zx_p_var,
             'domain_pred': domain_pred,
-            'hoa_pred': hoa_pred,
             'hoa_mu_pred': hoa_mu_pred,
             'hoa_std_pred': hoa_std_pred,
             'norm_hoa_pred': norm_hoa_pred
@@ -629,6 +630,7 @@ class CDiVAE(BaseModule):
         pred_cart_coord_diff = pred_cart_coord_diff / \
             used_sigmas_per_atom[:, None]
 
+        # Average the error in each dimension of 3D space
         loss_per_atom = torch.sum(
             (target_cart_coord_diff - pred_cart_coord_diff)**2, dim=1)
 
@@ -637,11 +639,11 @@ class CDiVAE(BaseModule):
 
     def type_loss(self, pred_atom_types, target_atom_types,
                   type_noise, batch):
-        target_atom_types = target_atom_types
-        loss = F.cross_entropy(
+        target_atom_types = target_atom_types - 13
+        loss = F.binary_cross_entropy(
             pred_atom_types, target_atom_types, reduction='none')
         # rescale loss according to noise
-        loss = loss / torch.abs((1 / (1 - type_noise.repeat_interleave(batch.num_atoms, dim=0))))
+        loss = loss / (1 / (1 - torch.abs(type_noise.repeat_interleave(batch.num_atoms, dim=0))))
 
         return scatter(loss, batch.batch, reduce='mean').mean()
 
@@ -665,10 +667,18 @@ class CDiVAE(BaseModule):
         return F.mse_loss(pred_norm_hoa, batch.norm_hoa)
 
     def hoa_mu_pred_loss(self, pred_hoa_mu, batch):
-        return F.mse_loss(pred_hoa_mu, batch.hoa_mu)
+        # Scale the predictions and the targets based on the standard scaler
+        # of the training set
+        target_hoa_mu = self.hoa_scaler.inverse_transform(batch.hoa_mu)
+        pred_hoa_mu = self.hoa_scaler.invserse_transform(pred_hoa_mu)
+        return F.mse_loss(pred_hoa_mu, target_hoa_mu)
     
     def hoa_std_pred_loss(self, pred_hoa_std, batch):
-        return F.mse_loss(pred_hoa_std, batch.hoa_std)
+        # Scale the predictions and the targets based on the standard scaler
+        # of the training set
+        target_hoa_std = self.hoa_std_scaler.inverse_transform(batch.hoa_std)
+        pred_hoa_std = self.hoa_std_scaler.inverse_transform(pred_hoa_std)
+        return F.mse_loss(pred_hoa_std, target_hoa_std)
 
     @torch.no_grad()
     def final_hoa_loss(self, pred_hoa, batch):
@@ -698,7 +708,6 @@ class CDiVAE(BaseModule):
         domain_pred = outputs['domain_pred']
         hoa_mu_pred = outputs['hoa_mu_pred']
         hoa_std_pred = outputs['hoa_std_pred']
-        hoa_pred = outputs['hoa_pred']
         norm_hoa_pred = outputs['norm_hoa_pred']
 
         num_atom_loss = self.num_atom_loss(pred_num_atoms, batch)
@@ -719,7 +728,6 @@ class CDiVAE(BaseModule):
         norm_hoa_pred_loss = self.norm_hoa_pred_loss(norm_hoa_pred, batch)
         hoa_mu_pred_loss = self.hoa_mu_pred_loss(hoa_mu_pred, batch)
         hoa_std_pred_loss = self.hoa_std_pred_loss(hoa_std_pred, batch)
-        final_hoa_loss = self.final_hoa_loss(hoa_pred, batch)
 
         loss = (
             self.hparams.cost_natom * num_atom_loss +
@@ -781,6 +789,10 @@ class CDiVAE(BaseModule):
                 dim=-1) == (target_atom_types - 1)
             type_accuracy = scatter(type_accuracy.float(
             ), batch.batch, dim=0, reduce='mean').mean()
+            
+            # Evaluate final HOA prediction loss
+            hoa_pred = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
+            final_hoa_loss = self.final_hoa_loss(hoa_pred, batch)
 
             log_dict.update({
                 f'{prefix}_norm_hoa_pred_loss': norm_hoa_pred_loss,
@@ -806,7 +818,7 @@ class CDiVAE(BaseModule):
         outputs = self(batch, teacher_forcing, training=True)
 
         # Check if the forward pass failed
-        if output is None:
+        if outputs is None:
             self.log(f"Skipped batch {batch_idx} due to an error.")
             return None
 

@@ -1,4 +1,4 @@
-expname: cdivae_150_epochs_low_beta
+expname: debug_losses
 
 # metadata specialised for each experiment
 core:

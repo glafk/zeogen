@@ -44,7 +44,7 @@ class GemNetTDecoder(nn.Module):
             otf_graph=True,
             scale_file=scale_file,
         )
-        self.fc_atom = nn.Linear(hidden_dim, MAX_ATOMIC_NUM)
+        self.fc_atom = nn.Sequential(nn.Linear(hidden_dim, 2), nn.Sigmoid())
 
     def forward(self, z, pred_frac_coords, pred_atom_types, num_atoms,
                 lengths, angles):
