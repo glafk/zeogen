@@ -1,4 +1,4 @@
-expname: debug_losses
+expname: debug_composition_loss
 
 # metadata specialised for each experiment
 core:

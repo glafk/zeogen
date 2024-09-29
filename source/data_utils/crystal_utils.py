@@ -571,6 +571,9 @@ class StandardScalerTorch(object):
         X = torch.tensor(X, dtype=torch.float)
         return X * self.stds + self.means
 
+    def inverse_transform_backprob_compat(self, X):
+        return X * self.stds + self.means
+
     def match_device(self, tensor):
         if self.means.device != tensor.device:
             self.means = self.means.to(tensor.device)

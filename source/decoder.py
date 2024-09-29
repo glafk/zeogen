@@ -4,6 +4,26 @@ MAX_ATOMIC_NUM = 100
 from gemnet.gemnet import GemNetT
 
 
+def build_mlp(in_dim, hidden_dim, fc_num_layers, out_dim, final_activation=None):
+    mods = [nn.Linear(in_dim, hidden_dim), nn.ReLU()]
+    for i in range(fc_num_layers-1):
+        mods += [nn.Linear(hidden_dim, hidden_dim), nn.ReLU()]
+    mods += [nn.Linear(hidden_dim, out_dim)]
+
+    if final_activation == "sigmoid":
+        mods.append(nn.Sigmoid())
+    elif final_activation == "relu":
+        mods.append(nn.ReLU())
+    elif final_activation == "hard_sigmoid":
+        mods.append(nn.Hardsigmoid())
+    elif final_activation == "softmax":
+        mods.append(nn.Softmax(dim=-1))  # softmax often needs a dimension argument
+    elif final_activation == "selu":
+        mods.append(nn.SELU())
+
+    return nn.Sequential(*mods)
+
+
 class GemNetTDecoder(nn.Module):
     """Decoder with GemNetT."""
 
@@ -44,7 +64,8 @@ class GemNetTDecoder(nn.Module):
             otf_graph=True,
             scale_file=scale_file,
         )
-        self.fc_atom = nn.Sequential(nn.Linear(hidden_dim, 2), nn.Sigmoid())
+        self.fc_atom = build_mlp(hidden_dim, hidden_dim, 3, 2)
+        # self.fc_atom = nn.Sequential(nn.Linear(hidden_dim, 2), nn.Sigmoid())
 
     def forward(self, z, pred_frac_coords, pred_atom_types, num_atoms,
                 lengths, angles):

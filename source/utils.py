@@ -5,6 +5,36 @@ import json
 import wandb
 from omegaconf import OmegaConf
 
+import torch
+import torch.nn.functional as F
+
+def masked_bce_loss(predictions, targets, num_atoms, max_atoms):
+    """
+    Computes binary cross-entropy loss with a mask based on the number of atoms in each crystal.
+    
+    Args:
+        predictions (torch.Tensor): Predicted probabilities of shape [batch_size, max_atoms].
+        targets (torch.Tensor): Ground truth values of shape [num_atoms.sum()]. 
+        num_atoms (torch.Tensor): Number of valid atoms in each crystal [batch_size].
+        max_atoms (int): Maximum number of atoms in any crystal unit cell.
+
+    Returns:
+        torch.Tensor: Scalar masked loss value.
+    """
+    batch_size = predictions.size(0)
+    
+    # Create a mask based on the number of valid atoms
+    mask = torch.arange(max_atoms).expand(batch_size, max_atoms).to(predictions.device) < num_atoms.unsqueeze(1)  # Shape: [batch_size, max_atoms]
+
+    # Filter out valid predictions (flatten predictions and mask to match the flattened target size)
+    valid_predictions = predictions[mask]  # Only take valid atoms for loss calculation
+    valid_targets = targets  # Targets already have the valid atoms only
+
+    # Compute binary cross-entropy loss on valid atoms
+    loss = F.binary_cross_entropy(valid_predictions, valid_targets, reduction='none')
+
+    return loss
+
 # Function to load the list from the pickle file
 def load_objects(pickle_file):
     if os.path.exists(pickle_file):

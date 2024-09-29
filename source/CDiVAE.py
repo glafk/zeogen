@@ -14,7 +14,7 @@ from torch_scatter import scatter
 from tqdm import tqdm
 import torch.distributions as dist
 
-from utils import add_object, log_config_to_wandb
+from utils import add_object, log_config_to_wandb, masked_bce_loss
 from data_utils.crystal_utils import frac_to_cart_coords, cart_to_frac_coords, min_distance_sqr_pbc, mard, lengths_angles_to_volume
 
 # Load environment variables
@@ -37,7 +37,7 @@ def build_mlp(in_dim, hidden_dim, fc_num_layers, out_dim, final_activation=None)
     elif final_activation == "softmax":
         mods.append(nn.Softmax(dim=-1))  # softmax often needs a dimension argument
     elif final_activation == "selu":
-        mods.append(nn.SELU()).append(nn.Softmax())
+        mods.append(nn.SELU())
 
     return nn.Sequential(*mods)
 
@@ -105,9 +105,10 @@ class CDiVAE(BaseModule):
         self.decoder = hydra.utils.instantiate(self.hparams.decoder)
 
         # DIVA - > self.fc_d -> self.qd. Predictor for the zeolite type from zd
+        # TODO: Test this domain predictor without the final softmax activation
+        # as the loss is calculated by cross_entropy which automatically applies softmax
         self.domain_predictor = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
-                                          self.hparams.fc_num_layers, self.hparams.num_zeolite_types,
-                                          final_activation="softmax")
+                                          self.hparams.fc_num_layers, self.hparams.num_zeolite_types)
 
         # Used to predict the mean of the HOA from the zd latent vector
         # Needed because the distribution of the HOA is different for different zeolite types
@@ -118,22 +119,22 @@ class CDiVAE(BaseModule):
         # HOA prediction from the zd latent space and the zy latent space but not backpropagating through it.
         # so as to keep the learning on the scaled HOA which I will later need for the sampling
         self.hoa_mu_predictor = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
-                                self.hparams.fc_num_layers, 1, final_activation="selu")
+                                self.hparams.fc_num_layers, 1)
 
         self.hoa_std_predictor = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
-                                self.hparams.fc_num_layers, 1, final_activation="selu")        
+                                self.hparams.fc_num_layers, 1)        
 
         self.norm_hoa_predictor = build_mlp(self.hparams.class_latent_dim, self.hparams.hidden_dim,
                                             self.hparams.fc_num_layers, 1)
 
-        self.fc_num_atoms = build_mlp(self.hparams.total_latent_dim, self.hparams.hidden_dim,
+        self.fc_num_atoms = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
                                       self.hparams.fc_num_layers, self.hparams.max_atoms+1)
-        self.fc_lengths = build_mlp(self.hparams.total_latent_dim, self.hparams.hidden_dim,
-                                    self.hparams.fc_num_layers, 3, final_activation="relu")
-        self.fc_angles = build_mlp(self.hparams.total_latent_dim, self.hparams.hidden_dim,
+        self.fc_lengths = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
+                                    self.hparams.fc_num_layers, 3, final_activation="selu")
+        self.fc_angles = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
                                    self.hparams.fc_num_layers, 3, final_activation='sigmoid')
-        self.fc_composition = build_mlp(self.hparams.total_latent_dim, self.hparams.hidden_dim,
-                                        self.hparams.fc_num_layers, 1, final_activation="hard_sigmoid")
+        self.fc_composition = build_mlp(self.hparams.class_latent_dim, self.hparams.hidden_dim,
+                                        self.hparams.fc_num_layers, self.hparams.max_atoms+1, final_activation="hard_sigmoid")
 
         sigmas = torch.tensor(np.exp(np.linspace(
             np.log(self.hparams.sigma_begin),
@@ -194,32 +195,45 @@ class CDiVAE(BaseModule):
         # Temporarily save the hidden layer for debugging
         return mu_d, log_var_d, mu_y, log_var_y, mu_x, log_var_x, hidden_d, hidden_y, hidden_x, zd, zy, zx, z
 
-    def decode_stats(self, z, gt_num_atoms=None, gt_lengths=None, gt_angles=None,
-                     teacher_forcing=False):
+    def decode_stats(self, zd, zy, gt_num_atoms=None, gt_lengths=None, gt_angles=None,
+                     teacher_forcing=False, num_atoms_forcing=False):
         """
         decode key stats from latent embeddings.
         batch is input during training for teach-forcing.
         """
         if gt_num_atoms is not None and teacher_forcing:
-            num_atoms = self.predict_num_atoms(z)
-            lengths = self.predict_lenghts(z, gt_num_atoms)
-            angles = self.predict_angles(z)
-            composition_per_atom = self.predict_composition(z, gt_num_atoms)
+            num_atoms = self.predict_num_atoms(zd)
+            lengths = self.predict_lenghts(zd, gt_num_atoms)
+            angles = self.predict_angles(zd)
+            lengths_and_angles = torch.cat([lengths, angles], dim=-1)
+            # The new composition prediction would predict a tensor of size
+            # [batch_size, max_atoms] so that for each crystal in the batch
+            # there will be a prediction for each individual atom_num
+            # To calculate the loss I will use a mask to take into account
+            # only the number of atoms in each crystal, either ground truth 
+            # or predicted 
+            composition_per_crystal = self.predict_composition(zy, gt_num_atoms)
             if self.hparams.teacher_forcing_lattice and teacher_forcing:
                 lengths = gt_lengths
                 angles = gt_angles
+        elif gt_num_atoms is not None and num_atoms_forcing:
+            num_atoms = self.predict_num_atoms(zd)
+            lengths = self.predict_lenghts(zd, gt_num_atoms)
+            angles = self.predict_angles(zd)
+            lengths_and_angles = torch.cat([lengths, angles], dim=-1)
+            composition_per_crystal = self.predict_composition(zy, gt_num_atoms)
         else:
-            num_atoms = self.predict_num_atoms(z)
-            lengths = self.predict_lenghts(z, num_atoms)
-            angles = self.predict_angles(z)
-            composition_per_atom = self.predict_composition(z, num_atoms)
+            num_atoms = self.predict_num_atoms(zd)
+            lengths = self.predict_lenghts(zd, num_atoms.argmax(dim=-1))
+            angles = self.predict_angles(zd)
+            lengths_and_angles = torch.cat([lengths, angles], dim=-1)
+            composition_per_crystal = self.predict_composition(zy, num_atoms.argmax(dim=-1))
 
-        lengths_and_angles = torch.cat([lengths, angles], dim=-1)
-        return num_atoms, lengths_and_angles, lengths, angles, composition_per_atom
+        return num_atoms, lengths_and_angles, lengths, angles, composition_per_crystal
 
     # endregion
 
-    def forward(self, batch, teacher_forcing=False, training=False):
+    def forward(self, batch, teacher_forcing=False, num_atoms_forcing=False, training=False):
         # region ENCODE
         (mu_d, 
          log_var_d, 
@@ -236,8 +250,8 @@ class CDiVAE(BaseModule):
          z) = self.encode(batch)
 
         (pred_num_atoms, pred_lengths_and_angles, pred_lengths, pred_angles,
-         pred_composition_ratio) = self.decode_stats(
-            z, batch.num_atoms, batch.lengths, batch.angles, teacher_forcing)
+         pred_composition_per_crystal) = self.decode_stats(
+            zd, zy , batch.num_atoms, batch.lengths, batch.angles, teacher_forcing, num_atoms_forcing)
         # endregion
 
         # region PREDICT
@@ -248,26 +262,62 @@ class CDiVAE(BaseModule):
         used_sigmas_per_atom = self.sigmas[noise_level].repeat_interleave(
             batch.num_atoms, dim=0)
         try:
-            # Select a random noise level for the atom types per crystal in the batch
+            # This variable will determine whether to sample noise according to the 
+            # ground truth or the predicted number of atoms
+            # num_atoms_for_noise = batch.num_atoms if num_atoms_forcing else pred_num_atoms
+            # Select a random noise level for the atom types per atom in the batch
             type_noise_level = torch.randint(0, self.type_sigmas.size(0),
-                                            (batch.num_atoms.size(0),),
+                                            (batch.num_atoms.sum(),),
                                             device=self.device)
+            # used_type_sigmas_per_atom = (
+            #     self.type_sigmas[type_noise_level].repeat_interleave(
+            #         batch.num_atoms, dim=0))
+
             type_noise = self.type_sigmas[type_noise_level]
+
             # Generate random noise signs to ensure noise does not only increase the probabilit of Si atoms
-            random_signs = (torch.rand(batch.num_atoms.size(0), device=self.device) - 0.5).sign()
+            random_signs = (torch.rand(batch.num_atoms.sum(), device=self.device) - 0.5).sign()
+            # random_signs = random_signs.repeat_interleave(batch.num_atoms, dim=0)
 
             type_noise = type_noise * random_signs
 
+            mask = torch.arange(self.hparams.max_atoms+1).expand(
+                batch.num_atoms.size(0), self.hparams.max_atoms+1).to(pred_composition_per_crystal.device) < batch.num_atoms.unsqueeze(1)
+
+            # Don't forget to detach to make sure the composition and type losses are independent
+            masked_pred_composition_per_crystal = pred_composition_per_crystal.detach()[mask]
+            noisy_composition_per_crystal = masked_pred_composition_per_crystal + type_noise
+
+            # Detaching the pred_composition_per_atom here is important
+            # as the pred_composition_per_atom goes into the compositon loss
+            # And the pred_composition_probs are indirectly passed to the decoder
+            # if they are not detached, the composition_loss and type_loss will not be independent
+            # which is what I have been observing so far
+
+            # composition_loss = masked_bce_loss(pred_composition_per_atom, batch.atom_types.float() - 13, batch.num_atoms, self.hparams.max_atoms+1)
+
+            # Here we add noise to the original atom types, so that the decoder can learn to
+            # push them back to the original atom types. Since the pred_compositon probs
+            # have a shape of [batch_size, max_atoms] we need to slice only the for which we have 
+            # ground truth atoms
+            atom_type_probs = (F.one_hot(batch.atom_types - 13, num_classes=2) 
+                + torch.stack([1 - noisy_composition_per_crystal, noisy_composition_per_crystal], dim=-1))
+            
+            # Clamp the atom_type_probs to ensure no probability going into the torch.multinomial sampling is negative
+            atom_type_probs = torch.clamp(atom_type_probs, min=0)
+            # used_type_sigmas_per_atom = used_type_sigmas_per_atom * random_signs
+
             # Add noise to predicted ratios and clamp to [0, 1]
-            noisy_ratios = torch.clamp(pred_composition_ratio.squeeze() + type_noise, 0.0, 1.0)
+            # pred_composition_per_atom = pred_composition_per_atom * used_type_sigmas_per_atom[:, None]
             # Expand the predicted composition ratio to match the number of atoms per crystal in the batch
-            pred_composition_per_atom = pred_composition_ratio.squeeze()[batch.batch.squeeze()]
-            noisy_composition_per_atom = noisy_ratios[batch.batch.squeeze()]
+            # pred_composition_per_atom = pred_composition_ratio.squeeze()[batch.batch.squeeze()]
+            # noisy_composition_per_atom = noisy_ratios[batch.batch.squeeze()]
+            # pred_composition_per_atom = F.softmax(pred_composition_per_atom, dim=-1)
 
             # Adjust with 13 to end up with only Al and Si atoms
-            rand_atom_types = torch.multinomial(torch.stack(
-                (noisy_composition_per_atom, 1-pred_composition_per_atom), dim=1), num_samples=1).squeeze(1) + 13
+            rand_atom_types = torch.multinomial(atom_type_probs, num_samples=1).squeeze(1) + 13
         except Exception as e:
+            print(repr(e))
             batch = {
                 "original_batch": batch,
                 "teacher_forcing": teacher_forcing,
@@ -285,14 +335,13 @@ class CDiVAE(BaseModule):
                 "log_var_x": log_var_x,
                 "type_noise_level": type_noise_level,
                 "type_noise": type_noise,
-                "noisy_ratios": noisy_ratios,
-                "pred_composition_per_crystal": pred_composition_per_atom,
-                "pred_composition_ratio": pred_composition_ratio,
+                "pred_composition_per_crystal": pred_composition_per_crystal,
                 "pred_lengths": pred_lengths,
                 "pred_angles": pred_angles,
                 "zeolite_code": batch.zeolite_code
             }
 
+            return None
             # Save the batch
             with open("/home/TUE/20220787/zeogen/problem_batch_mu_sig_std.pkl", "wb") as f:
                 pickle.dump(batch, f)
@@ -321,7 +370,8 @@ class CDiVAE(BaseModule):
         except Exception as e:
             # Handle the case where atoms have 0 neighors in the computational graph 
             # and the forward pass fails
-            print(repr(e))
+            # Pass the ground truths to the decoder
+            # pred_cart_coord_diff, pred_atom_types = self.decoder(z, noisy_frac_coords, rand_atom_types, batch.num_atoms, batch.lengths, batch.angles)
             return None
 
         # Predict domain and HOA
@@ -343,7 +393,8 @@ class CDiVAE(BaseModule):
             'pred_angles': pred_angles,
             'pred_cart_coord_diff': pred_cart_coord_diff,
             'pred_atom_types': pred_atom_types,
-            'pred_composition_per_atom': pred_composition_per_atom,
+            'pred_composition_per_crystal': pred_composition_per_crystal,
+            # 'pred_composition_ratio': pred_composition_ratio,
             'used_sigmas_per_atom': used_sigmas_per_atom,
             'target_frac_coords': batch.frac_coords,
             'target_atom_types': batch.atom_types,
@@ -381,10 +432,15 @@ class CDiVAE(BaseModule):
         self.lengths_scaler.match_device(z)
         pred_lengths = self.fc_lengths(z)
         # Perform inverse transform to get the original lengths
-        pred_lengths = self.lengths_scaler.inverse_transform(pred_lengths)
+        # This scaling operation causes the gradients to now flow
+        # through the predictions, so instead I'll scale the targets
+        # Initially it looked like this wasn't the issue as when we cat 
+        # the lengths and angles, the angles still require gradients
+        # so it looks like the entire tensor requires a gradient
+        pred_lengths = self.lengths_scaler.inverse_transform_backprob_compat(pred_lengths)
         if self.hparams.data["lattice_scale_method"] == 'scale_length':
             # Scale according to number of atoms
-            pred_lengths = pred_lengths * num_atoms.argmax(dim=-1).view(-1, 1).float()**(1/3)
+            pred_lengths = pred_lengths * num_atoms.view(-1, 1).float()**(1/3)
 
         return pred_lengths
         
@@ -395,8 +451,8 @@ class CDiVAE(BaseModule):
         return pred_angles
 
     def predict_composition(self, z, num_atoms):
-        pred_composition_ratio = self.fc_composition(z)
-        return pred_composition_ratio
+        pred_composition_per_atom = self.fc_composition(z)
+        return pred_composition_per_atom
     # endregion
 
     # region SAMPLING
@@ -587,32 +643,29 @@ class CDiVAE(BaseModule):
     def num_atom_loss(self, pred_num_atoms, batch):
         return F.cross_entropy(pred_num_atoms, batch.num_atoms)
 
-    def property_loss(self, z, batch):
-        return F.mse_loss(self.fc_property(z), batch.y)
+    # def property_loss(self, z, batch):
+    #     return F.mse_loss(self.fc_property(z), batch.y)
 
     def lattice_loss(self, pred_lengths_and_angles, batch):
-        # self.lengths_scaler.match_device(pred_lengths_and_angles)
-        # TODO: Perhaps we don't need this scaling either when calculating the loss
-        # for the same reason described below
-        # Turns out I really didn't need this scaling after all
+        self.lengths_scaler.match_device(pred_lengths_and_angles)
+        
+        # Scaling the target instead of the predictions to avoid
+        # the problem with the gradients not flowing
         # if self.hparams.data["lattice_scale_method"] == 'scale_length':
         #     target_lengths = batch.lengths / \
         #         batch.num_atoms.view(-1, 1).float()**(1/3)
-        # Since we already transform the predictions with inverse transform
-        # This scaleing here my not be necessary
         # scaled_target_lengths = self.lengths_scaler.transform(target_lengths)
-        # Let's ty like that and see if it gets better
         target_lengths_and_angles = torch.cat(
-            [batch.lengths, batch.angles], dim=-1)
+             [batch.lengths, batch.angles], dim=-1)
         return F.mse_loss(pred_lengths_and_angles, target_lengths_and_angles)
 
-    def composition_loss(self, pred_composition_per_atom, target_atom_types, batch):
-        target_atom_types = target_atom_types - 13
+    def composition_loss(self, pred_composition_per_crystal, batch):
         # Cast target atom types to float
-        target_atom_types = target_atom_types.float()
-        loss = F.binary_cross_entropy(pred_composition_per_atom.squeeze(),
-                               target_atom_types, reduction='none')
-        return scatter(loss, batch.batch, reduce='mean').mean()
+        target_atom_types = batch.atom_types.float() - 13
+    
+        loss = masked_bce_loss(pred_composition_per_crystal, target_atom_types, batch.num_atoms, self.hparams.max_atoms+1)
+
+        return scatter(loss, batch.batch, reduce="mean").mean()
 
     def coord_loss(self, pred_cart_coord_diff, noisy_frac_coords,
                    used_sigmas_per_atom, batch):
@@ -640,11 +693,14 @@ class CDiVAE(BaseModule):
     def type_loss(self, pred_atom_types, target_atom_types,
                   type_noise, batch):
         target_atom_types = target_atom_types - 13
-        loss = F.binary_cross_entropy(
+        loss = F.cross_entropy(
             pred_atom_types, target_atom_types, reduction='none')
+        # TODO: try to train without rescaling to see if it improves training
+        # Leaving it like this rn to see if the other changes I made would have an effect 
+        # on this loss
+        loss = loss / (1 / (1 - torch.abs(type_noise)))
         # rescale loss according to noise
-        loss = loss / (1 / (1 - torch.abs(type_noise.repeat_interleave(batch.num_atoms, dim=0))))
-
+        # loss = loss / used_type_sigmas_per_atom
         return scatter(loss, batch.batch, reduce='mean').mean()
 
     def kld_loss(self, mu_q, log_var_q, mu_p, log_var_p):
@@ -667,18 +723,10 @@ class CDiVAE(BaseModule):
         return F.mse_loss(pred_norm_hoa, batch.norm_hoa)
 
     def hoa_mu_pred_loss(self, pred_hoa_mu, batch):
-        # Scale the predictions and the targets based on the standard scaler
-        # of the training set
-        target_hoa_mu = self.hoa_scaler.inverse_transform(batch.hoa_mu)
-        pred_hoa_mu = self.hoa_scaler.invserse_transform(pred_hoa_mu)
-        return F.mse_loss(pred_hoa_mu, target_hoa_mu)
+        return F.mse_loss(pred_hoa_mu, batch.hoa_mu)
     
     def hoa_std_pred_loss(self, pred_hoa_std, batch):
-        # Scale the predictions and the targets based on the standard scaler
-        # of the training set
-        target_hoa_std = self.hoa_std_scaler.inverse_transform(batch.hoa_std)
-        pred_hoa_std = self.hoa_std_scaler.inverse_transform(pred_hoa_std)
-        return F.mse_loss(pred_hoa_std, target_hoa_std)
+        return F.mse_loss(pred_hoa_std, batch.hoa_std)
 
     @torch.no_grad()
     def final_hoa_loss(self, pred_hoa, batch):
@@ -687,7 +735,8 @@ class CDiVAE(BaseModule):
     def compute_loss(self, batch, outputs, prefix):
         pred_num_atoms = outputs['pred_num_atoms']
         pred_lengths_and_angles = outputs['pred_lengths_and_angles']
-        pred_composition_per_atom = outputs['pred_composition_per_atom']
+        pred_composition_per_crystal = outputs['pred_composition_per_crystal']
+        # pred_composition_ratio = outputs['pred_composition_ratio']
         pred_cart_coord_diff = outputs['pred_cart_coord_diff']
         pred_atom_types = outputs['pred_atom_types']
         noisy_frac_coords = outputs['noisy_frac_coords']
@@ -713,7 +762,7 @@ class CDiVAE(BaseModule):
         num_atom_loss = self.num_atom_loss(pred_num_atoms, batch)
         lattice_loss = self.lattice_loss(pred_lengths_and_angles, batch)
         composition_loss = self.composition_loss(
-            pred_composition_per_atom, batch.atom_types, batch)
+            pred_composition_per_crystal, batch)
         coord_loss = self.coord_loss(
             pred_cart_coord_diff, noisy_frac_coords, used_sigmas_per_atom, batch)
         type_loss = self.type_loss(pred_atom_types, batch.atom_types,
@@ -737,9 +786,9 @@ class CDiVAE(BaseModule):
             self.hparams.beta * kld_loss +
             self.hparams.cost_composition * composition_loss +
             self.hparams.cost_domain * domain_pred_loss +
-            self.hparams.cost_hoa * norm_hoa_pred_loss +
-            self.hparams.cost_hoa * hoa_mu_pred_loss +
-            self.hparams.cost_hoa * hoa_std_pred_loss
+            self.hparams.cost_norm_hoa * norm_hoa_pred_loss +
+            self.hparams.cost_hoa_mu * hoa_mu_pred_loss +
+            self.hparams.cost_hoa_std * hoa_std_pred_loss
         )
 
         log_dict = {
@@ -753,6 +802,10 @@ class CDiVAE(BaseModule):
             f'{prefix}_kld_loss_d': kld_loss_d,
             f'{prefix}_kld_loss_y': kld_loss_y,
             f'{prefix}_kld_loss_x': kld_loss_x,
+            f'{prefix}_norm_hoa_pred_loss': norm_hoa_pred_loss,
+            f'{prefix}_domain_pred_loss': domain_pred_loss,
+            f'{prefix}_hoa_mu_pred_loss': hoa_mu_pred_loss,
+            f'{prefix}_hoa_std_pred_loss': hoa_std_pred_loss
         }
 
         if prefix != 'train':
@@ -762,6 +815,7 @@ class CDiVAE(BaseModule):
                 self.hparams.cost_type * type_loss)
 
             # evaluate num_atom prediction.
+            # TODO: CHECK IF SOFTMAX IS NEEDED BEFORE ALL ARGMAX FUNCTIONS
             pred_num_atoms = outputs['pred_num_atoms'].argmax(dim=-1)
             num_atom_accuracy = (
                 pred_num_atoms == batch.num_atoms).sum() / batch.num_graphs
@@ -786,9 +840,22 @@ class CDiVAE(BaseModule):
             pred_atom_types = outputs['pred_atom_types']
             target_atom_types = outputs['target_atom_types']
             type_accuracy = pred_atom_types.argmax(
-                dim=-1) == (target_atom_types - 1)
+                dim=-1) == (target_atom_types - 13)
             type_accuracy = scatter(type_accuracy.float(
             ), batch.batch, dim=0, reduce='mean').mean()
+
+            # Evaluate aluminum atom predictions
+            al_mask = target_atom_types == 13
+
+            al_type_accuracy = pred_atom_types.argmax(dim=-1)[al_mask] == (target_atom_types[al_mask] - 13)
+
+            # Calculate the mean accuracy over the selected atoms and scatter to the batch level
+            al_type_accuracy = scatter(al_type_accuracy.float(), batch.batch[al_mask], dim=0, reduce='mean').mean()
+
+            # Evaluate predicted domains
+            domain_accuracy = domain_pred.argmax(dim=-1) == batch.zeolite_code_enc
+            domain_accuracy = domain_accuracy.float().mean()
+
             
             # Evaluate final HOA prediction loss
             hoa_pred = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
@@ -802,10 +869,12 @@ class CDiVAE(BaseModule):
                 f'{prefix}_final_hoa_loss': final_hoa_loss,
                 f'{prefix}_loss': loss,
                 f'{prefix}_natom_accuracy': num_atom_accuracy,
+                f'{prefix}_domain_accuracy': domain_accuracy,
                 f'{prefix}_lengths_mard': lengths_mard,
                 f'{prefix}_angles_mae': angles_mae,
                 f'{prefix}_volumes_mard': volumes_mard,
                 f'{prefix}_type_accuracy': type_accuracy,
+                f'{prefix}_al_type_accuracy': al_type_accuracy,
             })
 
         return log_dict, loss
@@ -815,11 +884,18 @@ class CDiVAE(BaseModule):
     def training_step(self, batch: Any, batch_idx: int) -> torch.Tensor:
         teacher_forcing = (
             self.current_epoch <= self.hparams.teacher_forcing_max_epoch)
-        outputs = self(batch, teacher_forcing, training=True)
+
+        # Allow 5 more epochs of only num atoms teacher forcing after the 
+        # teacher forcing of the lattice is done
+        # to allow the MLP for predicting atoms to adjust
+        num_atoms_forcing = (
+            self.current_epoch <= self.hparams.teacher_forcing_max_epoch + 5
+        )
+        outputs = self(batch, teacher_forcing, num_atoms_forcing, training=True)
 
         # Check if the forward pass failed
         if outputs is None:
-            self.log(f"Skipped batch {batch_idx} due to an error.")
+            print(f"Skipped batch {batch_idx} due to an error.")
             return None
 
         log_dict, loss = self.compute_loss(batch, outputs, prefix='train')
@@ -832,7 +908,16 @@ class CDiVAE(BaseModule):
         return loss
 
     def validation_step(self, batch: Any, batch_idx: int) -> torch.Tensor:
-        outputs = self(batch, teacher_forcing=False, training=False)
+        num_atoms_forcing = (
+            self.current_epoch <= self.hparams.teacher_forcing_max_epoch + 5
+        )
+        outputs = self(batch, teacher_forcing=False, num_atoms_forcing=num_atoms_forcing, training=False)
+
+        # Check if the forward pass failed
+        if outputs is None:
+            print(f"Skipped batch {batch_idx} due to an error.")
+            return None
+
         log_dict, loss = self.compute_loss(batch, outputs, prefix='val')
         self.log_dict(
             log_dict,
@@ -843,7 +928,15 @@ class CDiVAE(BaseModule):
         return loss
 
     def test_step(self, batch: Any, batch_idx: int) -> torch.Tensor:
-        outputs = self(batch, teacher_forcing=False, training=False)
+        num_atoms_forcing = (
+            self.current_epoch <= self.hparams.teacher_forcing_max_epoch + 5
+        )
+        outputs = self(batch, teacher_forcing=False, num_atoms_forcing= num_atoms_forcing, training=False)
+        # Check if the forward pass failed
+        if outputs is None:
+            print(f"Skipped batch {batch_idx} due to an error.")
+            return None
+
         log_dict, loss = self.compute_loss(batch, outputs, prefix='test')
         self.log_dict(
             log_dict,
