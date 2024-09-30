@@ -131,7 +131,7 @@ class CDiVAE_nox(BaseModule):
         self.fc_angles = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
                                    self.hparams.fc_num_layers, 3, final_activation='sigmoid')
         self.fc_composition = build_mlp(self.hparams.class_latent_dim, self.hparams.hidden_dim,
-                                        self.hparams.fc_num_layers, self.hparams.max_atoms+1, final_activation="hard_sigmoid")
+                                        self.hparams.fc_num_layers, 1, final_activation="hard_sigmoid")
 
         sigmas = torch.tensor(np.exp(np.linspace(
             np.log(self.hparams.sigma_begin),
@@ -255,44 +255,28 @@ class CDiVAE_nox(BaseModule):
             # num_atoms_for_noise = batch.num_atoms if num_atoms_forcing else pred_num_atoms
             # Select a random noise level for the atom types per atom in the batch
             type_noise_level = torch.randint(0, self.type_sigmas.size(0),
-                                            (batch.num_atoms.sum(),),
+                                            (batch.num_atoms.size(0),),
                                             device=self.device)
             # used_type_sigmas_per_atom = (
             #     self.type_sigmas[type_noise_level].repeat_interleave(
             #         batch.num_atoms, dim=0))
 
             type_noise = self.type_sigmas[type_noise_level]
+            type_noise = type_noise.repeat_interleave(batch.num_atoms, dim=0)
 
             # Generate random noise signs to ensure noise does not only increase the probabilit of Si atoms
-            random_signs = (torch.rand(batch.num_atoms.sum(), device=self.device) - 0.5).sign()
+            # random_signs = (torch.rand(batch.num_atoms.size(0), device=self.device) - 0.5).sign()
             # random_signs = random_signs.repeat_interleave(batch.num_atoms, dim=0)
-
-            type_noise = type_noise * random_signs
-
-            mask = torch.arange(self.hparams.max_atoms+1).expand(
-                batch.num_atoms.size(0), self.hparams.max_atoms+1).to(pred_composition_per_crystal.device) < batch.num_atoms.unsqueeze(1)
-
-            # Don't forget to detach to make sure the composition and type losses are independent
-            masked_pred_composition_per_crystal = pred_composition_per_crystal.detach()[mask]
-            noisy_composition_per_crystal = masked_pred_composition_per_crystal + type_noise
-
-            # Detaching the pred_composition_per_atom here is important
-            # as the pred_composition_per_atom goes into the compositon loss
-            # And the pred_composition_probs are indirectly passed to the decoder
-            # if they are not detached, the composition_loss and type_loss will not be independent
-            # which is what I have been observing so far
-
-            # composition_loss = masked_bce_loss(pred_composition_per_atom, batch.atom_types.float() - 13, batch.num_atoms, self.hparams.max_atoms+1)
 
             # Here we add noise to the original atom types, so that the decoder can learn to
             # push them back to the original atom types. Since the pred_compositon probs
             # have a shape of [batch_size, max_atoms] we need to slice only the for which we have 
             # ground truth atoms
             atom_type_probs = (F.one_hot(batch.atom_types - 13, num_classes=2) 
-                + torch.stack([1 - noisy_composition_per_crystal, noisy_composition_per_crystal], dim=-1))
+                + (torch.rand_like(type_noise.float()) * type_noise).unsqueeze(dim=1))
             
             # Clamp the atom_type_probs to ensure no probability going into the torch.multinomial sampling is negative
-            atom_type_probs = torch.clamp(atom_type_probs, min=1e-10)
+            # atom_type_probs = torch.clamp(atom_type_probs, max=1)
             # used_type_sigmas_per_atom = used_type_sigmas_per_atom * random_signs
 
             # Add noise to predicted ratios and clamp to [0, 1]
@@ -638,11 +622,12 @@ class CDiVAE_nox(BaseModule):
 
     def composition_loss(self, pred_composition_per_crystal, batch):
         # Cast target atom types to float
-        target_atom_types = batch.atom_types.float() - 13
+        targets = batch.atom_types.float() - 13
+        targets = scatter(targets, batch.batch, reduce="mean")
     
-        loss = masked_bce_loss(pred_composition_per_crystal, target_atom_types, batch.num_atoms, self.hparams.max_atoms+1)
+        loss = F.mse_loss(pred_composition_per_crystal.squeeze(), targets, reduction="mean")
 
-        return scatter(loss, batch.batch, reduce="mean").mean()
+        return loss
 
     def coord_loss(self, pred_cart_coord_diff, noisy_frac_coords,
                    used_sigmas_per_atom, batch):
@@ -675,7 +660,7 @@ class CDiVAE_nox(BaseModule):
         # TODO: try to train without rescaling to see if it improves training
         # Leaving it like this rn to see if the other changes I made would have an effect 
         # on this loss
-        loss = loss / (1 / (1 - torch.abs(type_noise)))
+        loss = loss / type_noise
         # rescale loss according to noise
         # loss = loss / used_type_sigmas_per_atom
         return scatter(loss, batch.batch, reduce='mean').mean()

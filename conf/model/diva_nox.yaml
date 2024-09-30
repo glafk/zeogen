@@ -26,9 +26,9 @@ max_neighbors: 20  # maximum number of neighbors for OTF graph bulding in decode
 radius: 6.  # maximum search radius for OTF graph building in decoder
 sigma_begin: 5.
 sigma_end: 0.05
-type_sigma_begin: 0.3
-type_sigma_end: 0.05
-num_noise_level: 25
+type_sigma_begin: 3
+type_sigma_end: 1
+num_noise_level: 20
 predict_property: False
 
 # Logging and loading parameters
