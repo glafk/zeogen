@@ -1,4 +1,4 @@
-expname: debug_composition_loss
+expname: test_cdivae_nox_small_zy
 
 # metadata specialised for each experiment
 core:
@@ -12,7 +12,7 @@ hydra:
 
 defaults:
   - data: data_combined
-  - model: diva_model
+  - model: diva_nox
   - optim: optim
   - train: train
   - logging: wandb_logging
