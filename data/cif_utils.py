@@ -8,8 +8,8 @@ import numpy as np
 
 
 ATOM_TYPES = {
-    'Si': 13,
-    'Al': 14
+    'Si': 14,
+    'Al': 13
 }
 
 def parse_cif_manually(file_path, hoa=0.0):
