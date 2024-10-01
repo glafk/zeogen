@@ -655,8 +655,11 @@ class CDiVAE_nox(BaseModule):
     def type_loss(self, pred_atom_types, target_atom_types,
                   type_noise, batch):
         target_atom_types = target_atom_types - 13
+        # Define weights for the weighted BCE loss
+        # Needed because the Al atoms are much more common in the dataset
+        atom_type_weights = torch.tensor([0.76, 0.25]).to(self.device) 
         loss = F.cross_entropy(
-            pred_atom_types, target_atom_types, reduction='none')
+            pred_atom_types, target_atom_types, weight=atom_type_weights, reduction='none')
         # TODO: try to train without rescaling to see if it improves training
         # Leaving it like this rn to see if the other changes I made would have an effect 
         # on this loss
@@ -897,4 +900,12 @@ class CDiVAE_nox(BaseModule):
             log_dict,
         )
         return loss
+
+    # def on_before_optimizer_step(self, optimizer):
+    #     print("Checking gradients before optimizer step:")
+    #     for name, param in self.named_parameters():
+    #         if param.grad is not None:
+    #             print(f"{name} | Gradients: {param.grad}")
+    #         else:
+    #             print(f"{name} | Gradients: None")
     # endregion

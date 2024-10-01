@@ -12,7 +12,7 @@ otf_graph: false
 eval_model_name: diffusion
 
 
-train_max_epochs: 25
+train_max_epochs: 30
 early_stopping_patience: 50
 teacher_forcing_max_epoch: 10
 
@@ -78,7 +78,7 @@ datamodule:
     predict: 0
 
   batch_size:
-    train: 64
-    val: 64
-    test: 64
+    train: 16
+    val: 16
+    test: 16
     predict: 1

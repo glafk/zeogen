@@ -32,16 +32,16 @@ num_noise_level: 20
 predict_property: False
 
 # Logging and loading parameters
-load_model: false
+load_model: true
 model_location: wandb
 ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model-150-epochs-MFI-only.ckpt # not applicable if model is on WandB
 
 # From which experiment the model should be loaded for continuted training, sampling and reconstruction
-experiment_name_to_load: debug_mu_std_predictions
+experiment_name_to_load: test_fixed_dataset_large_y_space
 
 # Training
 run_training: true
-resume_from_checkpoint: false
+resume_from_checkpoint: true
 
 # Reconstruction
 run_reconstruction: false
