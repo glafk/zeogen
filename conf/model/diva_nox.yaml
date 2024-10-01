@@ -3,8 +3,8 @@ _target_: CDiVAE_nox.CDiVAE_nox
 # Model parameters
 hidden_dim: 256
 domain_latent_dim: 128
-class_latent_dim: 32
-total_latent_dim: 160
+class_latent_dim: 128
+total_latent_dim: 256
 fc_num_layers: 2
 max_atoms: ${data.max_atoms}
 cost_natom: 1.

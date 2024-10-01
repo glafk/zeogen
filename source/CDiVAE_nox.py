@@ -173,7 +173,7 @@ class CDiVAE_nox(BaseModule):
         # Comments providing mapping between the variables in this implementation
         # and the original DIVA implementation
         # DIVA - mu_d -> zd_q_loc, log_var_d -> zd_q_scale 
-        mu_d, log_var_d, hidden_d = self.zd_encoder(batch)
+        mu_d, log_var_d, hidden_d = self.zd_encoder(batch, uniform_types=True)
         qzd = self.reparameterize(mu_d, log_var_d)
         zd = qzd.rsample() # DIVA -> zd_q
 

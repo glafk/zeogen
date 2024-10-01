@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch
 
 from gemnet.gemnet import GemNetT
 
@@ -37,12 +38,16 @@ class GemNetTEncoderExt(nn.Module):
         self.fc_mu = nn.Linear(num_targets, num_targets)
         self.fc_var = nn.Sequential(nn.Linear(num_targets, num_targets), nn.Softplus())
 
-    def forward(self, data):
+    def forward(self, data, uniform_types=False):
+        if uniform_types:
+            atom_types = torch.ones_like(data.atom_types)
+        else:
+            atom_types = data.atom_types
         # (num_crysts, num_targets)
         hidden = self.gemnet(
             z=None,
             frac_coords=data.frac_coords,
-            atom_types=data.atom_types,
+            atom_types=atom_types,
             num_atoms=data.num_atoms,
             lengths=data.lengths,
             angles=data.angles,
