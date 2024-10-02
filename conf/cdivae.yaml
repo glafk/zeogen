@@ -1,4 +1,4 @@
-expname: test_uniform_atom_types_in_encoder
+expname: test_large_atom_embeddings
 
 # metadata specialised for each experiment
 core:
