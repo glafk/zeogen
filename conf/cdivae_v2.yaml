@@ -1,4 +1,4 @@
-expname: non_zero_std_debug_activations
+expname: test_large_atom_embeddings
 
 # metadata specialised for each experiment
 core:
@@ -12,7 +12,7 @@ hydra:
 
 defaults:
   - data: data_combined
-  - model: cdvae
+  - model: cdivae_v2
   - optim: optim
   - train: train
   - logging: wandb_logging

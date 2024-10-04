@@ -12,7 +12,7 @@ hydra:
 
 defaults:
   - data: data_combined
-  - model: diva_nox
+  - model: cdivae_nox
   - optim: optim
   - train: train
   - logging: wandb_logging

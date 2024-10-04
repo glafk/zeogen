@@ -29,7 +29,8 @@ class GemNetTDecoder(nn.Module):
 
     def __init__(
         self,
-        hidden_dim=128,
+        hidden_dim_atom_emb=128,
+        hidden_dim_edge_emb=128,
         latent_dim=256,
         max_neighbors=20,
         radius=6.,
@@ -56,16 +57,16 @@ class GemNetTDecoder(nn.Module):
         self.gemnet = GemNetT(
             num_targets=1,
             latent_dim=latent_dim,
-            emb_size_atom=hidden_dim,
-            emb_size_edge=hidden_dim,
+            emb_size_atom=hidden_dim_atom_emb,
+            emb_size_edge=hidden_dim_edge_emb,
             regress_forces=True,
             cutoff=self.cutoff,
             max_neighbors=self.max_num_neighbors,
             otf_graph=True,
             scale_file=scale_file,
         )
-        self.fc_atom = build_mlp(hidden_dim, hidden_dim, 3, 2)
-        # self.fc_atom = nn.Sequential(nn.Linear(hidden_dim, 2), nn.Sigmoid())
+        # self.fc_atom = build_mlp(hidden_dim, hidden_dim, 3, 2)
+        self.fc_atom = nn.Linear(hidden_dim_atom_emb, 2)
 
     def forward(self, z, pred_frac_coords, pred_atom_types, num_atoms,
                 lengths, angles):

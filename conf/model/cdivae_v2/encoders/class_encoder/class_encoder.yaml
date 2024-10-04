@@ -1,0 +1,6 @@
+_target_: encoder_extended.GemNetTEncoderExt
+hidden_size: 128
+num_targets: $(model.class_latent_dim)
+max_neighbors: ${model.max_neighbors}
+radius: ${model.radius}
+scale_file: ${oc.env:PROJECT_ROOT}/source/scaling_factors/cdivae_v2/y_encoder_scaling_factors_total_dataset_CDiVAE.json

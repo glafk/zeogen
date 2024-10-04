@@ -12,7 +12,7 @@ from pytorch_lightning import seed_everything
 from hydra.core.hydra_config import HydraConfig
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
-from diffusion_model import DiffusionModel
+from cdvae import DiffusionModel
 import wandb
 
 from utils import load_from_wandb, log_config_to_wandb, add_object
@@ -282,7 +282,7 @@ def run_sampling(cfg: DictConfig, model: DiffusionModel = None):
         # Clean up the file so that it doesn't hang around
         os.remove(samples_path)
 
-@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="cdivae")
+@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="cdivae_v2")
 def main(cfg: DictConfig):
 
     model = None

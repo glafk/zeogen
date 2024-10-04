@@ -17,7 +17,7 @@ import plotly.graph_objects as go
 from data_utils.utils import abs_cap
 
 CrystalNN = local_env.CrystalNN(
-    distance_cutoffs=None, x_diff_weight=-1, porous_adjustment=False)
+    distance_cutoffs=None, x_diff_weight=-1, porous_adjustment=True)
 
 
 # Tensor of unit cells. Assumes 27 cells in -1, 0, 1 offsets in the x and y dimensions

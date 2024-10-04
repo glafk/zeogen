@@ -83,23 +83,25 @@ class BaseModule(pl.LightningModule):
 
 
 
-class CDiVAE_nox(BaseModule):
+class CDiVAE_v2(BaseModule):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
+        print(self.hparams)
         self.zd_encoder = hydra.utils.instantiate(
-            self.hparams.domain_encoder, num_targets=self.hparams.domain_latent_dim) # DIVA -> self.qzd
+            self.hparams.cdivae_v2["encoders"]["domain_encoder"], num_targets=self.hparams.domain_latent_dim) # DIVA -> self.qzd
         
         self.zy_encoder = hydra.utils.instantiate(
-            self.hparams.class_encoder, num_targets=self.hparams.class_latent_dim) # DIVA -> self.qzy
+            self.hparams.cdivae_v2["encoders"]["class_encoder"], num_targets=self.hparams.class_latent_dim) # DIVA -> self.qzy
 
         self.pzd = CondPrior(1, self.hparams.domain_latent_dim)
 
         # Hard code one as y in this case would be the HOA which is just a scalar
         self.pzy = CondPrior(1, self.hparams.class_latent_dim)
         
-        self.decoder = hydra.utils.instantiate(self.hparams.decoder)
+        self.positions_decoder = hydra.utils.instantiate(self.hparams.cdivae_v2["decoders"]["positions_decoder"])
+        self.types_decoder = hydra.utils.instantiate(self.hparams.cdivae_v2["decoders"]["types_decoder"])
 
         # DIVA - > self.fc_d -> self.qd. Predictor for the zeolite type from zd
         # TODO: Test this domain predictor without the final softmax activation
@@ -238,17 +240,53 @@ class CDiVAE_nox(BaseModule):
          z) = self.encode(batch)
 
         (pred_num_atoms, pred_lengths_and_angles, pred_lengths, pred_angles,
-         pred_composition_per_crystal) = self.decode_stats(
+         pred_si_ratio_per_crystal) = self.decode_stats(
             z, zd, zy , batch.num_atoms, batch.lengths, batch.angles, teacher_forcing, num_atoms_forcing)
         # endregion
 
         # region PREDICT
+
         # sample noise levels.
         noise_level = torch.randint(0, self.sigmas.size(0),
                                     (batch.num_atoms.size(0),),
                                     device=self.device)
         used_sigmas_per_atom = self.sigmas[noise_level].repeat_interleave(
             batch.num_atoms, dim=0)
+
+        # add noise to the cart coords
+        cart_noises_per_atom = (
+            torch.randn_like(batch.frac_coords) *
+            used_sigmas_per_atom[:, None])
+        cart_coords = frac_to_cart_coords(
+            batch.frac_coords, pred_lengths, pred_angles, batch.num_atoms)
+        noisy_cart_coords = cart_coords + cart_noises_per_atom
+        noisy_frac_coords = cart_to_frac_coords(
+            noisy_cart_coords, pred_lengths, pred_angles, batch.num_atoms)
+
+        # select random atoms according to the predicted composition
+        # We do that since at inference time this is where the decoder
+        # will have to start working from
+        si_ratio_per_atom = torch.repeat_interleave(pred_si_ratio_per_crystal, batch.num_atoms, dim=0).squeeze(1)
+
+        rand_atom_types = torch.multinomial(torch.stack((1 - si_ratio_per_atom, si_ratio_per_atom), dim=1), num_samples=1).squeeze(1) + 13
+        try:
+            # pred_cart_coord_diff is the prediction for the difference in the atom coords based on the noise that is added
+            pred_cart_coord_diff, _ = self.positions_decoder(
+                zd, noisy_frac_coords, rand_atom_types, batch.num_atoms, pred_lengths, pred_angles)
+        except Exception as e:
+            # Handle the case where atoms have 0 neighors in the computational graph 
+            # and the forward pass fails
+            # Pass the ground truths to the decoder
+            # pred_cart_coord_diff, pred_atom_types = self.decoder(z, noisy_frac_coords, rand_atom_types, batch.num_atoms, batch.lengths, batch.angles)
+            return None
+
+        # Before going to the second decoder, calucate the predicted positions of atoms
+        # by adding the predicted cartesian coord diff to the original coords
+        pred_cart_coords = cart_coords + pred_cart_coord_diff
+        pred_frac_coords = cart_to_frac_coords(
+            pred_cart_coords, pred_lengths, pred_angles, batch.num_atoms
+        )
+
         try:
             # This variable will determine whether to sample noise according to the 
             # ground truth or the predicted number of atoms
@@ -287,7 +325,7 @@ class CDiVAE_nox(BaseModule):
             # pred_composition_per_atom = F.softmax(pred_composition_per_atom, dim=-1)
 
             # Adjust with 13 to end up with only Al and Si atoms
-            rand_atom_types = torch.multinomial(atom_type_probs, num_samples=1).squeeze(1) + 13
+            noisy_atom_types = torch.multinomial(atom_type_probs, num_samples=1).squeeze(1) + 13
         except Exception as e:
             print(repr(e))
             batch = {
@@ -303,7 +341,7 @@ class CDiVAE_nox(BaseModule):
                 "log_var_y": log_var_y,
                 "type_noise_level": type_noise_level,
                 "type_noise": type_noise,
-                "pred_composition_per_crystal": pred_composition_per_crystal,
+                "pred_si_ratio_per_crystal": pred_si_ratio_per_crystal,
                 "pred_lengths": pred_lengths,
                 "pred_angles": pred_angles,
                 "zeolite_code": batch.zeolite_code
@@ -319,28 +357,8 @@ class CDiVAE_nox(BaseModule):
 
             raise e
 
-
-        # add noise to the cart coords
-        # TODO: Discuss whether it makes sense to add noise straigth to the frac coords
-        cart_noises_per_atom = (
-            torch.randn_like(batch.frac_coords) *
-            used_sigmas_per_atom[:, None])
-        cart_coords = frac_to_cart_coords(
-            batch.frac_coords, pred_lengths, pred_angles, batch.num_atoms)
-        cart_coords = cart_coords + cart_noises_per_atom
-        noisy_frac_coords = cart_to_frac_coords(
-            cart_coords, pred_lengths, pred_angles, batch.num_atoms)
-
-        try:
-            # pred_cart_coord_diff is the prediction for the difference in the atom coords based on the noise that is added
-            pred_cart_coord_diff, pred_atom_types = self.decoder(
-                z, noisy_frac_coords, rand_atom_types, batch.num_atoms, pred_lengths, pred_angles)
-        except Exception as e:
-            # Handle the case where atoms have 0 neighors in the computational graph 
-            # and the forward pass fails
-            # Pass the ground truths to the decoder
-            # pred_cart_coord_diff, pred_atom_types = self.decoder(z, noisy_frac_coords, rand_atom_types, batch.num_atoms, batch.lengths, batch.angles)
-            return None
+        _, pred_atom_types = self.types_decoder(
+                zy, pred_frac_coords, noisy_atom_types, batch.num_atoms, pred_lengths, pred_angles)
 
         # Predict domain and HOA
         domain_pred = self.domain_predictor(zd)
@@ -348,6 +366,7 @@ class CDiVAE_nox(BaseModule):
         hoa_std_pred = self.hoa_std_predictor(zd)
         norm_hoa_pred = self.norm_hoa_predictor(zy)       
 
+        # Predict parameters of conditional distributions
         zd_p_mu, zd_p_var = self.pzd(batch['zeolite_code_enc'].float().view(-1, 1))
         zy_p_mu, zy_p_var = self.pzy(batch['norm_hoa'].view(-1, 1))
         # endregion
@@ -359,7 +378,7 @@ class CDiVAE_nox(BaseModule):
             'pred_angles': pred_angles,
             'pred_cart_coord_diff': pred_cart_coord_diff,
             'pred_atom_types': pred_atom_types,
-            'pred_composition_per_crystal': pred_composition_per_crystal,
+            'pred_si_ratio_per_crystal': pred_si_ratio_per_crystal,
             # 'pred_composition_ratio': pred_composition_ratio,
             'used_sigmas_per_atom': used_sigmas_per_atom,
             'target_frac_coords': batch.frac_coords,
@@ -620,12 +639,12 @@ class CDiVAE_nox(BaseModule):
              [batch.lengths, batch.angles], dim=-1)
         return F.mse_loss(pred_lengths_and_angles, target_lengths_and_angles)
 
-    def composition_loss(self, pred_composition_per_crystal, batch):
+    def composition_loss(self, pred_si_ratio_per_crystal, batch):
         # Cast target atom types to float
         targets = batch.atom_types.float() - 13
         targets = scatter(targets, batch.batch, reduce="mean")
     
-        loss = F.mse_loss(pred_composition_per_crystal.squeeze(), targets, reduction="mean")
+        loss = F.mse_loss(pred_si_ratio_per_crystal.squeeze(), targets, reduction="mean")
 
         return loss
 
@@ -699,7 +718,7 @@ class CDiVAE_nox(BaseModule):
     def compute_loss(self, batch, outputs, prefix):
         pred_num_atoms = outputs['pred_num_atoms']
         pred_lengths_and_angles = outputs['pred_lengths_and_angles']
-        pred_composition_per_crystal = outputs['pred_composition_per_crystal']
+        pred_si_ratio_per_crystal = outputs['pred_si_ratio_per_crystal']
         pred_cart_coord_diff = outputs['pred_cart_coord_diff']
         pred_atom_types = outputs['pred_atom_types']
         noisy_frac_coords = outputs['noisy_frac_coords']
@@ -721,7 +740,7 @@ class CDiVAE_nox(BaseModule):
         num_atom_loss = self.num_atom_loss(pred_num_atoms, batch)
         lattice_loss = self.lattice_loss(pred_lengths_and_angles, batch)
         composition_loss = self.composition_loss(
-            pred_composition_per_crystal, batch)
+            pred_si_ratio_per_crystal, batch)
         coord_loss = self.coord_loss(
             pred_cart_coord_diff, noisy_frac_coords, used_sigmas_per_atom, batch)
         type_loss = self.type_loss(pred_atom_types, batch.atom_types,

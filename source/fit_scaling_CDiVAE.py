@@ -53,8 +53,10 @@ def fit_scaling():
         num_batches = cfg.fit.num_batches # number of batches to use to fit a single variable
         d_scale_file = cfg.fit.d_encoder_scaling_factors
         y_scale_file = cfg.fit.y_encoder_scaling_factors
-        x_scale_file = cfg.fit.x_encoder_scaling_factors
-        decoder_scale_file = cfg.fit.decoder_scaling_factors
+        # x_scale_file = cfg.fit.x_encoder_scaling_factors
+        # decoder_scale_file = cfg.fit.decoder_scaling_factors
+        pos_decoder_scale_file = cfg.fit.pos_decoder_scaling_factors
+        types_decoder_scale_file = cfg.fit.types_decoder_scaling_factors
         # Print current directory
         print(f"Working directory: {os.getcwd()}")
         # logging.info(f"Target scale file: {scale_file}")
@@ -64,7 +66,7 @@ def fit_scaling():
             preset = {"comment": cfg.fit.comment}
             write_json(scale_file, preset)
 
-        for scale_file in [d_scale_file, y_scale_file, x_scale_file, decoder_scale_file]:
+        for scale_file in [d_scale_file, y_scale_file, pos_decoder_scale_file, types_decoder_scale_file]:
             if os.path.exists(scale_file):
                 logging.warning(f"Already found existing file: {scale_file}")
                 flag = input(
@@ -92,10 +94,11 @@ def fit_scaling():
         datamodule.setup("fit")
 
         # Change the model scale file to reflect the newly fitted file
-        cfg.model.domain_encoder.scale_file = d_scale_file
-        cfg.model.class_encoder.scale_file = y_scale_file
-        cfg.model.residual_encoder.scale_file = x_scale_file
-        cfg.model.decoder.scale_file = decoder_scale_file
+        cfg.model.cdivae_v2.encoders.domain_encoder.scale_file = d_scale_file
+        cfg.model.cdivae_v2.encoders.class_encoder.scale_file = y_scale_file
+        # cfg.model.residual_encoder.scale_file = x_scale_file
+        cfg.model.cdivae_v2.decoders.positions_decoder.scale_file = pos_decoder_scale_file
+        cfg.model.cdivae_v2.decoders.types_decoder.scale_file = types_decoder_scale_file
 
         # Instantiate the model
         model: pl.LightningModule = hydra.utils.instantiate(
