@@ -1,4 +1,4 @@
-expname: test_large_atom_embeddings
+expname: test_cdivae_v2
 
 # metadata specialised for each experiment
 core:

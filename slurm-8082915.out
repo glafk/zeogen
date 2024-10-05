@@ -1,0 +1,25 @@
+/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/defaults_list.py:251: UserWarning: In 'fit_scaling': Defaults list is missing `_self_`. See https://hydra.cc/docs/1.2/upgrades/1.0_to_1.1/default_composition_order for more information
+  warnings.warn(msg, UserWarning)
+WARNING:root:Already found existing file: /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v2/d_encoder_scaling_factors_total_dataset_CDiVAE.json
+Working directory: /gpfs/home5/dglavinkov/ondemand/zeogen
+Do you want to continue and overwrite the file (1), only fit the variables not fitted yet (2), or exit (3)? Traceback (most recent call last):
+  File "/home/dglavinkov/ondemand/zeogen/source/fit_scaling_CDiVAE.py", line 156, in <module>
+    fit_scaling()
+  File "/home/dglavinkov/ondemand/zeogen/source/fit_scaling_CDiVAE.py", line 72, in fit_scaling
+    flag = input(
+           ^^^^^^
+EOFError: EOF when reading a line
+
+JOB STATISTICS
+==============
+Job ID: 8082915
+Cluster: snellius
+User/Group: dglavinkov/dglavinkov
+State: FAILED (exit code 1)
+Nodes: 1
+Cores per node: 9
+CPU Utilized: 00:00:04
+CPU Efficiency: 2.47% of 00:02:42 core-walltime
+Job Wall-clock time: 00:00:18
+Memory Utilized: 1.55 MB
+Memory Efficiency: 0.00% of 60.00 GB

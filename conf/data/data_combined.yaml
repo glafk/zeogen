@@ -78,7 +78,7 @@ datamodule:
     predict: 0
 
   batch_size:
-    train: 32
-    val: 32
-    test: 32
+    train: 48
+    val: 48
+    test: 48
     predict: 1
