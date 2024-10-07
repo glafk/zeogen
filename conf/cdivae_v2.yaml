@@ -1,5 +1,4 @@
-expname: test_cdivae_v2
-
+expname: cdivae_v2_error_teacher_forcing
 # metadata specialised for each experiment
 core:
   version: 1.0.0

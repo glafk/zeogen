@@ -377,7 +377,7 @@ class GemNetT(torch.nn.Module):
             }
 
             # Save the batch
-            with open("/home/TUE/20220787/zeogen/problem_batch.pkl", "wb") as f:
+            with open(f"/home/dglavinkov/ondemand/zeogen/source/problem_batch.pkl", "wb") as f:
                 pickle.dump(batch, f)
 
             raise e
@@ -515,7 +515,7 @@ class GemNetT(torch.nn.Module):
             }
 
             # Save the batch
-            with open("C:/TUE/Thesis/zeogen/problem_batch.pkl", "wb") as f:
+            with open(f"/home/dglavinkov/ondemand/zeogen/source/problem_batch.pkl", "wb") as f:
                 pickle.dump(batch, f)
 
             raise e
