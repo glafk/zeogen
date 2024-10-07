@@ -1,3 +1,4 @@
+import gc
 from pathlib import Path
 from typing import Any, Dict
 
@@ -927,3 +928,7 @@ class CDiVAE_v2(BaseModule):
     #         else:
     #             print(f"{name} | Gradients: None")
     # endregion
+
+    def on_train_epoch_end(self):
+        torch.cuda.empty_cache()
+        gc.collect()
