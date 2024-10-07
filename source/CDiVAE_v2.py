@@ -1,6 +1,7 @@
 import gc
 from pathlib import Path
 from typing import Any, Dict
+from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
 import env
 import hydra
@@ -89,7 +90,7 @@ class CDiVAE_v2(BaseModule):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        print(self.hparams)
+        # print(self.hparams)
         self.zd_encoder = hydra.utils.instantiate(
             self.hparams.cdivae_v2["encoders"]["domain_encoder"], num_targets=self.hparams.domain_latent_dim) # DIVA -> self.qzd
         
@@ -211,12 +212,12 @@ class CDiVAE_v2(BaseModule):
             if self.hparams.teacher_forcing_lattice and teacher_forcing:
                 lengths = gt_lengths
                 angles = gt_angles
-        elif gt_num_atoms is not None and num_atoms_forcing:
-            num_atoms = self.predict_num_atoms(zd)
-            lengths = self.predict_lenghts(zd, gt_num_atoms)
-            angles = self.predict_angles(zd)
-            lengths_and_angles = torch.cat([lengths, angles], dim=-1)
-            composition_per_crystal = self.predict_composition(zy, gt_num_atoms)
+        # elif gt_num_atoms is not None and num_atoms_forcing:
+        #     num_atoms = self.predict_num_atoms(zd)
+        #     lengths = self.predict_lenghts(zd, gt_num_atoms)
+        #     angles = self.predict_angles(zd)
+        #     lengths_and_angles = torch.cat([lengths, angles], dim=-1)
+        #     composition_per_crystal = self.predict_composition(zy, gt_num_atoms)
         else:
             num_atoms = self.predict_num_atoms(zd)
             lengths = self.predict_lenghts(zd, num_atoms.argmax(dim=-1))
@@ -228,7 +229,7 @@ class CDiVAE_v2(BaseModule):
 
     # endregion
 
-    def forward(self, batch, teacher_forcing=False, num_atoms_forcing=False, training=False):
+    def forward(self, batch, teacher_forcing=False, training=False):
         # region ENCODE
         (mu_d, 
          log_var_d, 
@@ -242,7 +243,7 @@ class CDiVAE_v2(BaseModule):
 
         (pred_num_atoms, pred_lengths_and_angles, pred_lengths, pred_angles,
          pred_si_ratio_per_crystal) = self.decode_stats(
-            z, zd, zy , batch.num_atoms, batch.lengths, batch.angles, teacher_forcing, num_atoms_forcing)
+            z, zd, zy , batch.num_atoms, batch.lengths, batch.angles, teacher_forcing)
         # endregion
 
         # region PREDICT
@@ -279,7 +280,8 @@ class CDiVAE_v2(BaseModule):
             # and the forward pass fails
             # Pass the ground truths to the decoder
             # pred_cart_coord_diff, pred_atom_types = self.decoder(z, noisy_frac_coords, rand_atom_types, batch.num_atoms, batch.lengths, batch.angles)
-            return None
+            print("positions_exception", e)
+            raise e
 
         # Before going to the second decoder, calucate the predicted positions of atoms
         # by adding the predicted cartesian coord diff to the original coords
@@ -328,7 +330,7 @@ class CDiVAE_v2(BaseModule):
             # Adjust with 13 to end up with only Al and Si atoms
             noisy_atom_types = torch.multinomial(atom_type_probs, num_samples=1).squeeze(1) + 13
         except Exception as e:
-            print(repr(e))
+            print("atoms_error", e)
             batch = {
                 "original_batch": batch,
                 "teacher_forcing": teacher_forcing,
@@ -347,14 +349,12 @@ class CDiVAE_v2(BaseModule):
                 "pred_angles": pred_angles,
                 "zeolite_code": batch.zeolite_code
             }
-
-            return None
             # Save the batch
-            with open("/home/TUE/20220787/zeogen/problem_batch_mu_sig_std.pkl", "wb") as f:
+            with open(f"/home/dglavinkov/ondemand/zeogen/source/problem_batch_mu_sig_std.pkl", "wb") as f:
                 pickle.dump(batch, f)
 
             # Save the model weights
-            torch.save(self.state_dict(), "/home/TUE/20220787/zeogen/model_weights_mu_sig_std.pth")
+            torch.save(self.state_dict(), f"/home/dglavinkov/ondemand/zeogen/source/model_weights_mu_sig_std.pth")
 
             raise e
 
@@ -645,7 +645,7 @@ class CDiVAE_v2(BaseModule):
         targets = batch.atom_types.float() - 13
         targets = scatter(targets, batch.batch, reduce="mean")
     
-        loss = F.mse_loss(pred_si_ratio_per_crystal.squeeze(), targets, reduction="mean")
+        loss = F.l1_loss(pred_si_ratio_per_crystal.squeeze(), targets, reduction="mean")
 
         return loss
 
@@ -676,7 +676,7 @@ class CDiVAE_v2(BaseModule):
         target_atom_types = target_atom_types - 13
         # Define weights for the weighted BCE loss
         # Needed because the Al atoms are much more common in the dataset
-        atom_type_weights = torch.tensor([0.76, 0.25]).to(self.device) 
+        atom_type_weights = torch.tensor([0.75, 0.25]).to(self.device) 
         loss = F.cross_entropy(
             pred_atom_types, target_atom_types, weight=atom_type_weights, reduction='none')
         # TODO: try to train without rescaling to see if it improves training
@@ -704,17 +704,20 @@ class CDiVAE_v2(BaseModule):
         return F.cross_entropy(pred_domain_logits, batch.zeolite_code_enc)
 
     def norm_hoa_pred_loss(self, pred_norm_hoa, batch):
-        return F.mse_loss(pred_norm_hoa, batch.norm_hoa)
+        return F.l1_loss(pred_norm_hoa, batch.norm_hoa)
 
     def hoa_mu_pred_loss(self, pred_hoa_mu, batch):
-        return F.mse_loss(pred_hoa_mu, batch.hoa_mu)
+        pred_hoa_mu = self.prop_mu_scaler.inverse_transform_backprob_compat(pred_hoa_mu)
+        return F.l1_loss(pred_hoa_mu, batch.hoa_mu)
     
     def hoa_std_pred_loss(self, pred_hoa_std, batch):
-        return F.mse_loss(pred_hoa_std, batch.hoa_std)
+        pred_hoa_std = self.prop_std_scaler.inverse_transform_backprob_compat(pred_hoa_std)
+        return F.l1_loss(pred_hoa_std, batch.hoa_std)
 
     @torch.no_grad()
     def final_hoa_loss(self, pred_hoa, batch):
-        return F.mse_loss(pred_hoa, batch.hoa)
+        pred_hoa = self.prop_scaler.inverse_transform_backprob_compat(pred_hoa)
+        return F.l1_loss(pred_hoa, batch.hoa)
 
     def compute_loss(self, batch, outputs, prefix):
         pred_num_atoms = outputs['pred_num_atoms']
@@ -862,38 +865,29 @@ class CDiVAE_v2(BaseModule):
         teacher_forcing = (
             self.current_epoch <= self.hparams.teacher_forcing_max_epoch)
 
-        # Allow 5 more epochs of only num atoms teacher forcing after the 
-        # teacher forcing of the lattice is done
-        # to allow the MLP for predicting atoms to adjust
-        num_atoms_forcing = (
-            self.current_epoch <= self.hparams.teacher_forcing_max_epoch + 5
-        )
-        outputs = self(batch, teacher_forcing, num_atoms_forcing, training=True)
-
-        # Check if the forward pass failed
-        if outputs is None:
-            print(f"Skipped batch {batch_idx} due to an error.")
-            return None
-
-        log_dict, loss = self.compute_loss(batch, outputs, prefix='train')
-        self.log_dict(
-            log_dict,
-            on_step=True,
-            on_epoch=True,
-            prog_bar=True,
-        )
-        return loss
+        try:
+            outputs = self(batch, teacher_forcing, training=True)
+        except Exception as e:
+            outputs = self(batch, teacher_forcing=True, training=True)
+        finally:
+            log_dict, loss = self.compute_loss(batch, outputs, prefix='train')
+            self.log_dict(
+                log_dict,
+                on_step=True,
+                on_epoch=True,
+                prog_bar=True,
+            )
+            return loss
 
     def validation_step(self, batch: Any, batch_idx: int) -> torch.Tensor:
-        num_atoms_forcing = (
-            self.current_epoch <= self.hparams.teacher_forcing_max_epoch + 5
-        )
-        outputs = self(batch, teacher_forcing=False, num_atoms_forcing=num_atoms_forcing, training=False)
-
-        # Check if the forward pass failed
-        if outputs is None:
-            print(f"Skipped batch {batch_idx} due to an error.")
-            return None
+        try:
+            outputs = self(batch, teacher_forcing=False, training=False)
+        except Exception as e:
+            print("Error", e)
+            # Perform a forward pass without gradient computation
+            with torch.no_grad():
+                dummy_loss = torch.tensor(0.0, requires_grad=True, device=self.device)
+            return dummy_loss
 
         log_dict, loss = self.compute_loss(batch, outputs, prefix='val')
         self.log_dict(
@@ -905,13 +899,16 @@ class CDiVAE_v2(BaseModule):
         return loss
 
     def test_step(self, batch: Any, batch_idx: int) -> torch.Tensor:
-        num_atoms_forcing = (
-            self.current_epoch <= self.hparams.teacher_forcing_max_epoch + 5
-        )
-        outputs = self(batch, teacher_forcing=False, num_atoms_forcing= num_atoms_forcing, training=False)
-        # Check if the forward pass failed
-        if outputs is None:
-            print(f"Skipped batch {batch_idx} due to an error.")
+        # num_atoms_forcing = (
+        #     self.current_epoch <= self.hparams.teacher_forcing_max_epoch + 5
+        # )
+        try:
+            outputs = self(batch, teacher_forcing=False, training=False)
+        except Exception as e:
+            print("Error", e)
+            # Perform a forward pass without gradient computation
+            with torch.no_grad():
+                dummy_loss = torch.tensor(0.0, requires_grad=True, device=self.device)
             return None
 
         log_dict, loss = self.compute_loss(batch, outputs, prefix='test')

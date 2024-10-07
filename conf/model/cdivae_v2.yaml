@@ -17,14 +17,14 @@ cost_hoa_mu: 5.
 cost_hoa_std: 5
 cost_norm_hoa: 10
 beta: 0.01
-num_zeolite_types: 26
+num_zeolite_types: 27
 
 # Training parameters
 teacher_forcing_lattice: true
 teacher_forcing_max_epoch: ${data.teacher_forcing_max_epoch}
 max_neighbors: 20  # maximum number of neighbors for OTF graph bulding in decoder
 radius: 6.  # maximum search radius for OTF graph building in decoder
-sigma_begin: 5.
+sigma_begin: 2.
 sigma_end: 0.05
 type_sigma_begin: 3
 type_sigma_end: 1

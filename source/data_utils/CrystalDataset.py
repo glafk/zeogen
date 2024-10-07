@@ -9,7 +9,7 @@ from torch_geometric.data import Data
 from data_utils.crystal_utils import (
     preprocess, preprocess_tensors, add_scaled_lengths_prop)
 
-ZEOLITE_CODES_MAPPING = {'DDRch1': 0, 'DDRch2': 1, 'FAU': 2, 'FAUch': 3, 'ITW': 4, 'MEL': 5, 'MELch': 6, 'MFI': 7, 'MOR': 8, 'RHO': 9, 'TON': 10, 'TON2': 11, 'TON3': 12, 'TON4': 13, 'TONch': 14, 'BEC': 15, 'CHA': 16, 'ERI': 17, 'FER': 18, 'HEU': 19, 'LTA': 20, 'LTL': 21, 'MER': 22, 'MTW': 23, 'NAT': 24, 'YFI': 25}
+ZEOLITE_CODES_MAPPING = {'DDRch1': 0, 'DDRch2': 1, 'FAU': 2, 'FAUch': 3, 'ITW': 4, 'MEL': 5, 'MELch': 6, 'MFI': 7, 'MOR': 8, 'RHO': 9, 'TON': 10, 'TON2': 11, 'TON3': 12, 'TON4': 13, 'TONch': 14, 'BEC': 15, 'CHA': 16, 'ERI': 17, 'FER': 18, 'HEU': 19, 'LTA': 20, 'LTL': 21, 'MER': 22, 'MTW': 23, 'NAT': 24, 'YFI': 25, "DDR": 26}
 
 class TensorCrystDataset(Dataset):
     def __init__(self, path, niggli, primitive,
@@ -49,9 +49,9 @@ class TensorCrystDataset(Dataset):
         (frac_coords, atom_types, lengths, angles, edge_indices,
          to_jimages, num_atoms) = data_dict['graph_arrays']
 
-        prop = self.prop_scaler.transform(data_dict[self.prop])
-        prop_mu = self.prop_mu_scaler.transform(data_dict[self.prop + "_mu"])
-        prop_std = self.prop_std_scaler.transform(data_dict[self.prop + "_std"])
+        # prop = self.prop_scaler.transform(data_dict[self.prop])
+        # prop_mu = self.prop_mu_scaler.transform(data_dict[self.prop + "_mu"])
+        # prop_std = self.prop_std_scaler.transform(data_dict[self.prop + "_std"])
         # atom_coords are fractional coordinates
         # edge_index is incremented during batching
         # https://pytorch-geometric.readthedocs.io/en/latest/notes/batching.html
@@ -68,9 +68,9 @@ class TensorCrystDataset(Dataset):
             num_nodes=num_atoms,  # special attribute used for batching in pytorch geometric
             zeolite_code=data_dict["zeolite_code"],
             zeolite_code_enc=ZEOLITE_CODES_MAPPING[data_dict["zeolite_code"]],
-            hoa=torch.Tensor(prop).view(1, -1),
-            hoa_mu=torch.Tensor(prop_mu).view(1, -1),
-            hoa_std=torch.Tensor(prop_std).view(1, -1),
+            hoa=torch.Tensor([data_dict[self.prop]]).view(1, -1),
+            hoa_mu=torch.Tensor([data_dict[self.prop + "_mu"]]).view(1, -1),
+            hoa_std=torch.Tensor([data_dict[self.prop + "_std"]]).view(1, -1),
             # The normalized HOA here is not the same as the standardized HOA
             # as this one is normalized per zeolite type instead of averaged in general
             norm_hoa=torch.Tensor([data_dict['norm_hoa']]).view(1, -1),
