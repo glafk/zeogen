@@ -1,0 +1,270 @@
+wandb_version: 1
+
+_wandb:
+  desc: null
+  value:
+    python_version: 3.12.1
+    cli_version: 0.16.6
+    framework: lightning
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1728411256.0
+    t:
+      1:
+      - 1
+      - 9
+      - 50
+      - 55
+      - 77
+      - 103
+      - 105
+      2:
+      - 1
+      - 9
+      - 50
+      - 55
+      - 77
+      - 103
+      - 105
+      3:
+      - 13
+      - 23
+      - 24
+      4: 3.12.1
+      5: 0.16.6
+      8:
+      - 3
+      - 5
+      13: windows-amd64
+data:
+  desc: null
+  value:
+    root_path: C:/TUE/Thesis/zeogen//data/combined_dataset_total
+    prop: hoa
+    num_targets: 1
+    niggli: false
+    primitive: true
+    graph_method: crystalnn
+    lattice_scale_method: scale_length
+    preprocess_workers: 4
+    readout: mean
+    max_atoms: 1024
+    otf_graph: false
+    eval_model_name: diffusion
+    train_max_epochs: 50
+    early_stopping_patience: 50
+    teacher_forcing_max_epoch: 10
+    datamodule:
+      _target_: data_utils.data_module.CrystDataModule
+      datasets:
+        train:
+          _target_: data_utils.CrystalDataset.TensorCrystDataset
+          name: HOA train
+          path: C:/TUE/Thesis/zeogen//data/combined_dataset_total/combined_train.pickle
+          prop: hoa
+          niggli: false
+          primitive: true
+          graph_method: crystalnn
+          lattice_scale_method: scale_length
+          preprocess_workers: 4
+        val:
+          _target_: data_utils.CrystalDataset.TensorCrystDataset
+          name: HOA val
+          path: C:/TUE/Thesis/zeogen//data/combined_dataset_total/combined_val.pickle
+          prop: hoa
+          niggli: false
+          primitive: true
+          graph_method: crystalnn
+          lattice_scale_method: scale_length
+          preprocess_workers: 4
+        test:
+          _target_: data_utils.CrystalDataset.TensorCrystDataset
+          name: HOA test
+          path: C:/TUE/Thesis/zeogen//data/combined_dataset_total/combined_test.pickle
+          prop: hoa
+          niggli: false
+          primitive: true
+          graph_method: crystalnn
+          lattice_scale_method: scale_length
+          preprocess_workers: 4
+        predict:
+          _target_: data_utils.CrystalDataset.TensorCrystDataset
+          name: HOA predict
+          path: C:/TUE/Thesis/zeogen//data/combined_dataset_total/combined_test.pickle
+          prop: hoa
+          niggli: false
+          primitive: true
+          graph_method: crystalnn
+          lattice_scale_method: scale_length
+          preprocess_workers: 4
+          num_records: 10
+      scaler_path: C:/TUE/Thesis/zeogen//source/scaling_factors/cdivae_v2
+      num_workers:
+        train: 0
+        val: 0
+        test: 0
+        predict: 0
+      batch_size:
+        train: 32
+        val: 32
+        test: 32
+        predict: 1
+model:
+  desc: null
+  value:
+    cdivae_v2:
+      encoders:
+        domain_encoder:
+          _target_: encoder_extended.GemNetTEncoderExt
+          hidden_size: 128
+          num_targets: $(model.domain_latent_dim)
+          max_neighbors: 20
+          radius: 6.0
+          scale_file: C:/TUE/Thesis/zeogen//source/scaling_factors/cdivae_v2/d_encoder_scaling_factors_total_dataset_CDiVAE.json
+        class_encoder:
+          _target_: encoder_extended.GemNetTEncoderExt
+          hidden_size: 128
+          num_targets: $(model.class_latent_dim)
+          max_neighbors: 20
+          radius: 6.0
+          scale_file: C:/TUE/Thesis/zeogen//source/scaling_factors/cdivae_v2/y_encoder_scaling_factors_total_dataset_CDiVAE.json
+      decoders:
+        positions_decoder:
+          _target_: decoder.GemNetTDecoder
+          hidden_dim_atom_emb: 128
+          hidden_dim_edge_emb: 128
+          latent_dim: 128
+          max_neighbors: 20
+          radius: 6.0
+          scale_file: C:/TUE/Thesis/zeogen//source/scaling_factors/cdivae_v2/pos_decoder_scaling_factors_total_dataset_CDiVAE.json
+        types_decoder:
+          _target_: decoder.GemNetTDecoder
+          hidden_dim_atom_emb: 128
+          hidden_dim_edge_emb: 128
+          latent_dim: 128
+          max_neighbors: 20
+          radius: 6.0
+          scale_file: C:/TUE/Thesis/zeogen//source/scaling_factors/cdivae_v2/types_decoder_scaling_factors_total_dataset_CDiVAE.json
+    _target_: CDiVAE_v2.CDiVAE_v2
+    hidden_dim: 256
+    domain_latent_dim: 128
+    class_latent_dim: 128
+    total_latent_dim: 256
+    fc_num_layers: 2
+    max_atoms: 1024
+    cost_natom: 1.0
+    cost_coord: 5.0
+    cost_type: 10.0
+    cost_lattice: 10.0
+    cost_composition: 10.0
+    cost_domain: 5.0
+    cost_hoa_mu: 5.0
+    cost_hoa_std: 5
+    cost_norm_hoa: 10
+    beta: 0.01
+    num_zeolite_types: 27
+    teacher_forcing_lattice: true
+    teacher_forcing_max_epoch: 10
+    max_neighbors: 20
+    radius: 6.0
+    sigma_begin: 2.0
+    sigma_end: 0.05
+    type_sigma_begin: 3
+    type_sigma_end: 1
+    num_noise_level: 20
+    predict_property: false
+    load_model: true
+    model_location: wandb
+    ckpt_path: C:/TUE/Thesis/zeogen//model_checkpoints/model-150-epochs-MFI-only.ckpt
+    experiment_name_to_load: cdivae_v2_error_teacher_forcing
+    run_training: false
+    resume_from_checkpoint: false
+    run_reconstruction: false
+    num_reconstructions: 10
+    reconstructions_file: reconstructions-test_sampling_from_cdivae_v2.pickle
+    save_reconstructions_online: true
+    run_sampling: true
+    num_samples_per_domain: 5
+    domains:
+    - DDR
+    - FAU
+    - ITW
+    - MEL
+    - MFI
+    - MOR
+    - RHO
+    norm_hoas:
+    - 0.5
+    - 0.6
+    - 0.7
+    - 0.8
+    - 0.9
+    samples_file: samples-test_sampling_from_cdivae_v2.pickle
+    save_samples_online: true
+optim:
+  desc: null
+  value:
+    optimizer:
+      _target_: torch.optim.Adam
+      lr: 0.001
+      betas:
+      - 0.9
+      - 0.999
+      eps: 1.0e-08
+      weight_decay: 0
+    use_lr_scheduler: true
+    lr_scheduler:
+      _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+      factor: 0.6
+      patience: 30
+      min_lr: 1.0e-05
+train:
+  desc: null
+  value:
+    deterministic: false
+    random_seed: 42
+    pl_trainer:
+      fast_dev_run: false
+      precision: 32
+      max_epochs: 50
+      accumulate_grad_batches: 1
+      num_sanity_val_steps: 2
+      gradient_clip_val: 0.5
+      gradient_clip_algorithm: value
+      profiler: simple
+    monitor_metric: val_loss
+    monitor_metric_mode: min
+    early_stopping:
+      patience: 50
+      verbose: false
+    model_checkpoints:
+      save_top_k: 1
+      save_last: true
+      verbose: false
+logging:
+  desc: null
+  value:
+    val_check_interval: 5
+    progress_bar_refresh_rate: 20
+    wandb:
+      name: test_sampling_from_cdivae_v2
+      project: zeogen
+      entity: null
+      log_model: true
+      mode: online
+      group: test_sampling_from_cdivae_v2
+    wandb_watch:
+      log: all
+      log_freq: 5
+    lr_monitor:
+      logging_interval: step
+      log_momentum: false
+expname:
+  desc: null
+  value: test_sampling_from_cdivae_v2
+core:
+  desc: null
+  value:
+    version: 1.0.0
+    tags:
+    - '2024-10-08'

@@ -13,6 +13,7 @@ from hydra.core.hydra_config import HydraConfig
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 from cdvae import DiffusionModel
+from CDiVAE_v2 import CDiVAE_v2
 import wandb
 
 from utils import load_from_wandb, log_config_to_wandb, add_object
@@ -21,6 +22,9 @@ import env
 
 # Load environment variables
 env.load_envs()
+
+print("ENVIRONMENT VARIABLES:")
+print(env.get_env("PROJECT_ROOT"))
 
 # Set the cwd to the project root
 PROJECT_ROOT: Path = Path(env.get_env("PROJECT_ROOT"))
@@ -218,6 +222,74 @@ def run_reconstruction(cfg: DictConfig, model: DiffusionModel = None):
         os.remove(ground_truth_path)
 
 
+def run_sampling_cdivae_v2(cfg: DictConfig, model: CDiVAE_v2  = None):
+    # Instantiate wandb run
+    wandb.init(project="zeogen", entity="glafk", name=cfg.expname)
+    # Log the configuration using wandb.config
+    log_config_to_wandb(cfg, f"sampling-config-{cfg.model.experiment_name_to_load}")
+
+    if cfg.model.load_model and model is None:
+        # Make sure that the model location is provided
+        assert cfg.model.model_location is not None
+
+        if cfg.model.model_location == "local":
+            assert cfg.model.ckpt_path is not None, "Please provide a path to the model checkpoint"
+            # Load model
+            hydra.utils.log.info(f"Loading model <{cfg.model._target_}>")
+            model = DiffusionModel.load_from_checkpoint(cfg.model.ckpt_path)
+        elif cfg.model.model_location == "wandb":
+            assert cfg.model.experiment_name_to_load is not None, "Please provide an experiment name"
+            model_path, model_dir = load_from_wandb(cfg.model.experiment_name_to_load)
+            model = CDiVAE_v2.load_from_checkpoint(model_path)
+
+            # Clean up downloaded files
+            shutil.rmtree(model_dir)
+    else:
+        raise ValueError("Both load model and arguments model were provided. Ambuguious use of the script")
+
+    # Instantiate datamodule
+    hydra.utils.log.info(f"Instantiating <{cfg.data.datamodule._target_}>")
+    datamodule: pl.LightningDataModule = hydra.utils.instantiate(
+        cfg.data.datamodule, _recursive_=False
+    )
+
+    # Pass scaler from datamodule to model
+    hydra.utils.log.info(f"Passing scalers from datamodule to model>")
+    model.lengths_scaler = datamodule.lengths_scaler.copy()
+    model.prop_scaler = datamodule.prop_scaler.copy()
+    model.prop_mu_scaler = datamodule.prop_mu_scaler.copy()
+    model.prop_std_scaler = datamodule.prop_std_scaler.copy()
+
+    model.eval()
+
+    model = model.to("cuda")
+
+    with torch.no_grad():  # No need to track gradients during inference
+        samples = model.sample(
+            cfg.model.num_samples_per_domain, 
+            DictConfig(
+                {"n_step_each": 100,
+                "step_lr": 0.0001, 
+                "min_sigma": 0.01,
+                "save_traj": True, 
+                "disable_bar": False}), 
+            kwargs_conf_name=f"samples-kwargs-{cfg.model.experiment_name_to_load}",
+            domains=cfg.model.domains,
+            norm_hoas=cfg.model.norm_hoas)
+
+    print(f"Saving samples to {cfg.model.samples_file}.")
+    samples_path = os.path.join(f"{PROJECT_ROOT}/samples", cfg.model.samples_file)
+    add_object(samples, samples_path)
+    
+    if cfg.model.save_samples_online:
+        artifact = wandb.Artifact(cfg.model.samples_file.split('.')[0], type='dataset')
+        artifact.add_file(samples_path)
+        wandb.log_artifact(artifact)
+
+        # Clean up the file so that it doesn't hang around
+        os.remove(samples_path)
+
+
 def run_sampling(cfg: DictConfig, model: DiffusionModel = None):
 
     # Instantiate wandb run
@@ -296,7 +368,7 @@ def main(cfg: DictConfig):
 
     # Run only sampling from saved model
     if cfg.model.run_sampling:
-        run_sampling(cfg, model)
+        run_sampling_cdivae_v2(cfg, model)
 
     # Run reconstruction from saved model
     if cfg.model.run_reconstruction:

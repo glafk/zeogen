@@ -1,0 +1,48 @@
+{
+    "os": "Windows-10-10.0.19044-SP0",
+    "python": "3.12.1",
+    "heartbeatAt": "2024-10-08T18:20:56.283739",
+    "startedAt": "2024-10-08T18:20:52.193405",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "C:\\TUE\\Thesis\\zeogen\\source\\main.py",
+    "codePathLocal": "..\\..\\..\\..\\source\\main.py",
+    "codePath": "source\\main.py",
+    "git": {
+        "remote": "git@github.com:glafk/zeogen.git",
+        "commit": "4cbb9b39a24f20beb668432eb25097a52ecc7215"
+    },
+    "email": "dglavinkoff@gmail.com",
+    "root": "C:/TUE/Thesis/zeogen",
+    "host": "LAPTOP-B3LBCASN",
+    "username": "dglav",
+    "executable": "C:\\Users\\dglav\\Anaconda3\\envs\\thesis\\python.exe",
+    "cpu_count": 6,
+    "cpu_count_logical": 12,
+    "cpu_freq": {
+        "current": 2208.0,
+        "min": 0.0,
+        "max": 2208.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2208.0,
+            "min": 0.0,
+            "max": 2208.0
+        }
+    ],
+    "disk": {},
+    "gpu": "NVIDIA GeForce GTX 1050 Ti with Max-Q Design",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce GTX 1050 Ti with Max-Q Design",
+            "memory_total": 4294967296
+        }
+    ],
+    "memory": {
+        "total": 15.547496795654297
+    }
+}

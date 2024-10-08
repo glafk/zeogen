@@ -32,15 +32,15 @@ num_noise_level: 20
 predict_property: False
 
 # Logging and loading parameters
-load_model: false
+load_model: true
 model_location: wandb
 ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model-150-epochs-MFI-only.ckpt # not applicable if model is on WandB
 
 # From which experiment the model should be loaded for continuted training, sampling and reconstruction
-experiment_name_to_load: test_fixed_dataset_large_y_space
+experiment_name_to_load: cdivae_v2_error_teacher_forcing
 
 # Training
-run_training: true
+run_training: false
 resume_from_checkpoint: false
 
 # Reconstruction
@@ -50,8 +50,10 @@ reconstructions_file: reconstructions-${expname}.pickle
 save_reconstructions_online: true
 
 # Sampling
-run_sampling: false
-num_samples: 30
+run_sampling: true
+num_samples_per_domain: 5
+domains: ["DDR", "FAU", "ITW", "MEL", "MFI", "MOR", "RHO"]
+norm_hoas: [0.5, 0.6, 0.7, 0.8, 0.9]
 samples_file: samples-${expname}.pickle
 save_samples_online: true
 

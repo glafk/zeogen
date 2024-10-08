@@ -24,6 +24,8 @@ env.load_envs()
 
 PROJECT_ROOT = Path(env.get_env("PROJECT_ROOT"))
 
+ZEOLITE_CODES_MAPPING = {'DDRch1': 0, 'DDRch2': 1, 'FAU': 2, 'FAUch': 3, 'ITW': 4, 'MEL': 5, 'MELch': 6, 'MFI': 7, 'MOR': 8, 'RHO': 9, 'TON': 10, 'TON2': 11, 'TON3': 12, 'TON4': 13, 'TONch': 14, 'BEC': 15, 'CHA': 16, 'ERI': 17, 'FER': 18, 'HEU': 19, 'LTA': 20, 'LTL': 21, 'MER': 22, 'MTW': 23, 'NAT': 24, 'YFI': 25, "DDR": 26}
+
 def build_mlp(in_dim, hidden_dim, fc_num_layers, out_dim, final_activation=None):
     mods = [nn.Linear(in_dim, hidden_dim), nn.ReLU()]
     for i in range(fc_num_layers-1):
@@ -191,7 +193,7 @@ class CDiVAE_v2(BaseModule):
         # Temporarily save the hidden layer for debugging
         return mu_d, log_var_d, mu_y, log_var_y, hidden_d, hidden_y, zd, zy, z
 
-    def decode_stats(self, z, zd, zy, gt_num_atoms=None, gt_lengths=None, gt_angles=None,
+    def decode_stats(self, zd, zy, gt_num_atoms=None, gt_lengths=None, gt_angles=None,
                      teacher_forcing=False, num_atoms_forcing=False):
         """
         decode key stats from latent embeddings.
@@ -437,58 +439,8 @@ class CDiVAE_v2(BaseModule):
     # endregion
 
     # region SAMPLING
-    # TODO: Rework sampling to work as intended for the CDiVAE
-    def generate_rand_init(self, pred_composition_per_atom, num_atoms):
-        rand_frac_coords = torch.rand(num_atoms.sum(), 3,
-                                      device=num_atoms.device)
-        pred_composition_per_atom = F.softmax(pred_composition_per_atom,
-                                              dim=-1)
-        rand_atom_types = self.sample_composition(
-            pred_composition_per_atom, num_atoms)
-        return rand_frac_coords, rand_atom_types
-
-    def sample_composition(self, composition_prob, num_atoms):
-        """
-        Samples composition such that it exactly satisfies composition_prob
-        """
-        batch = torch.arange(
-            len(num_atoms), device=num_atoms.device).repeat_interleave(num_atoms)
-        assert composition_prob.size(0) == num_atoms.sum() == batch.size(0)
-        composition_prob = scatter(
-            composition_prob, index=batch, dim=0, reduce='mean')
-
-        all_sampled_comp = []
-
-        for comp_prob, num_atom in zip(list(composition_prob), list(num_atoms)):
-            comp_num = torch.round(comp_prob * num_atom)
-            atom_type = torch.nonzero(comp_num, as_tuple=True)[0] + 1
-            atom_num = comp_num[atom_type - 1].long()
-
-            sampled_comp = atom_type.repeat_interleave(atom_num, dim=0)
-
-            # if the rounded composition gives less atoms, sample the rest
-            if sampled_comp.size(0) < num_atom:
-                left_atom_num = num_atom - sampled_comp.size(0)
-
-                left_comp_prob = comp_prob - comp_num.float() / num_atom
-
-                left_comp_prob[left_comp_prob < 0.] = 0.
-                left_comp = torch.multinomial(
-                    left_comp_prob, num_samples=left_atom_num, replacement=True)
-                # convert to atomic number
-                left_comp = left_comp + 1
-                sampled_comp = torch.cat([sampled_comp, left_comp], dim=0)
-
-            sampled_comp = sampled_comp[torch.randperm(sampled_comp.size(0))]
-            sampled_comp = sampled_comp[:num_atom]
-            all_sampled_comp.append(sampled_comp)
-
-        all_sampled_comp = torch.cat(all_sampled_comp, dim=0)
-        assert all_sampled_comp.size(0) == num_atoms.sum()
-        return all_sampled_comp
-
     @torch.no_grad()
-    def langevin_dynamics(self, z, ld_kwargs, gt_num_atoms=None, gt_atom_types=None):
+    def langevin_dynamics(self, zd, zy, ld_kwargs, domain, norm_hoas, pred_hoas, gt_num_atoms=None, gt_atom_types=None):
         """
         decode crystral structure from latent embeddings.
         ld_kwargs: args for doing annealed langevin dynamics sampling:
@@ -500,28 +452,29 @@ class CDiVAE_v2(BaseModule):
         gt_num_atoms: if not <None>, use the ground truth number of atoms.
         gt_atom_types: if not <None>, use the ground truth atom types.
         """
+
+        # For saving the trajectory I'll skip logging the noise
+        # and prediction cart coord diffs
         if ld_kwargs.save_traj:
             all_frac_coords = []
-            all_pred_cart_coord_diff = []
-            all_noise_cart = []
+            # all_pred_cart_coord_diff = []
+            # all_noise_cart = []
             all_atom_types = []
 
         # obtain key stats.
-        num_atoms, _, lengths, angles, composition_per_atom = self.decode_stats(
-            z, gt_num_atoms)
+        num_atoms, _, lengths, angles, si_ratio_per_crystal = self.decode_stats(
+            zd, zy, gt_num_atoms)
         if gt_num_atoms is not None:
             num_atoms = gt_num_atoms
 
         # obtain atom types.
-        composition_per_atom = F.softmax(composition_per_atom, dim=-1)
-        if gt_atom_types is None:
-            cur_atom_types = self.sample_composition(
-                composition_per_atom, num_atoms)
-        else:
-            cur_atom_types = gt_atom_types
+
+        si_ratio_per_atom = torch.repeat_interleave(si_ratio_per_crystal, num_atoms, dim=0).squeeze(1)
+
+        cur_atom_types = torch.multinomial(torch.stack((1 - si_ratio_per_atom, si_ratio_per_atom), dim=1), num_samples=1).squeeze(1) + 13
 
         # init coords.
-        cur_frac_coords = torch.rand((num_atoms.sum(), 3), device=z.device)
+        cur_frac_coords = torch.rand((num_atoms.sum(), 3), device=zd.device)
 
         # annealed langevin dynamics.
         print(f"Langevin dynamics sigmas...", self.sigmas)
@@ -531,10 +484,12 @@ class CDiVAE_v2(BaseModule):
             step_size = ld_kwargs.step_lr * (sigma / self.sigmas[-1]) ** 2
 
             for step in range(ld_kwargs.n_step_each):
+
+                # Add noise to coords and predict the new coords
                 noise_cart = torch.randn_like(
                     cur_frac_coords) * torch.sqrt(step_size * 2)
-                pred_cart_coord_diff, pred_atom_types = self.decoder(
-                    z, cur_frac_coords, cur_atom_types, num_atoms, lengths, angles) # lines 8,9 of pseudocode
+                pred_cart_coord_diff, _ = self.positions_decoder(
+                    zd, cur_frac_coords, cur_atom_types, num_atoms, lengths, angles) # lines 8,9 of pseudocode
                 cur_cart_coords = frac_to_cart_coords(
                     cur_frac_coords, lengths, angles, num_atoms)
                 pred_cart_coord_diff = pred_cart_coord_diff / sigma
@@ -543,38 +498,43 @@ class CDiVAE_v2(BaseModule):
                 cur_frac_coords = cart_to_frac_coords(
                     cur_cart_coords, lengths, angles, num_atoms)
 
+                # After predicting the coords, predict the atom types
                 if gt_atom_types is None:
-                    cur_atom_types = torch.argmax(pred_atom_types, dim=1) + 1
+                    _, pred_atom_types = self.atom_types_decoder(
+                        zy, cur_frac_coords, num_atoms, lengths, angles)
+                    cur_atom_types = torch.argmax(pred_atom_types, dim=1) + 13
 
                 if ld_kwargs.save_traj:
                     all_frac_coords.append(cur_frac_coords)
-                    all_pred_cart_coord_diff.append(
-                        step_size * pred_cart_coord_diff)
-                    all_noise_cart.append(noise_cart)
+                    # all_pred_cart_coord_diff.append(
+                    #     step_size * pred_cart_coord_diff)
+                    # all_noise_cart.append(noise_cart)
                     all_atom_types.append(cur_atom_types)
 
-        output_dict = {'num_atoms': num_atoms, 'lengths': lengths, 'angles': angles,
-                       'frac_coords': cur_frac_coords, 'atom_types': cur_atom_types,
+        output_dict = {'zd': zd.cpu().numpy(), 'zy': zy.cpu().numpy(),
+                       'num_atoms': num_atoms.cpu().numpy(), 'lengths': lengths.cpu().numpy(), 'angles': angles.cpu().numpy(),
+                       'frac_coords': cur_frac_coords.cpu().numpy(), 'atom_types': cur_atom_types.cpu().numpy(),
+                       'domains': [domain] * len(norm_hoas), 'norm_hoas': norm_hoas,
+                       'pred_hoas': pred_hoas.cpu().numpy(),
                        'is_traj': False}
 
         if ld_kwargs.save_traj:
             output_dict.update(dict(
-                z=z,
-                all_frac_coords=torch.stack(all_frac_coords, dim=0),
-                all_atom_types=torch.stack(all_atom_types, dim=0),
-                all_pred_cart_coord_diff=torch.stack(
-                    all_pred_cart_coord_diff, dim=0),
-                all_noise_cart=torch.stack(all_noise_cart, dim=0),
+                all_frac_coords=torch.stack(all_frac_coords, dim=0).cpu().numpy(),
+                all_atom_types=torch.stack(all_atom_types, dim=0).cpu().numpy(),
+                # all_pred_cart_coord_diff=torch.stack(
+                #     all_pred_cart_coord_diff, dim=0),
+                # all_noise_cart=torch.stack(all_noise_cart, dim=0),
                 is_traj=True))
 
         return output_dict
 
-    def sample(self, num_samples, ld_kwargs, kwargs_conf_name, domains, norm_hoas):
+    def sample(self, num_samples_per_domain, ld_kwargs, kwargs_conf_name, domains, norm_hoas):
         """
         Samples crystals and optionally saves them.
 
         Args:
-            num_samples (int): Number of samples to generate.
+            num_samples_per_domain (int): Number of samples to generate per domain.
             ld_kwargs (dict): Keyword arguments for the Langevin dynamics method.
             kwargs_conf_name (str, optional): Name for the WandB artifact for the config.
             domains (list): Domains for which to generate samples
@@ -589,15 +549,49 @@ class CDiVAE_v2(BaseModule):
 
         # Make sure norm_hoas has the same length as num_samples
         # This way for each generated sample per zeolite type we can have different HOAs
-        assert len(norm_hoas) == num_samples
+        assert len(norm_hoas) == num_samples_per_domain
 
         # Here in the sampling part I will need to figure out how to force the model to sample from the part of the distribution where the representations of the "high-capacity" crystals lie
-        print(f"Sampling {num_samples} crystals.")
-        z = torch.randn(num_samples, self.hparams.hidden_dim, device=self.device)
-        samples = self.langevin_dynamics(z, ld_kwargs)
+        
+        print(f"Sampling {num_samples_per_domain} crystals per domain with the following HOAs: {norm_hoas}.")
+        print(f"Domains: {['\n'.join(dom) for dom in domains]}")
 
-        return samples   
+        all_samples = [] 
+        for domain in domains:
+            if len(domain.split('/')) == 1:
+                # Here we are in the case where we condition on a single domain which we have seen
+                zd = self.pzd(ZEOLITE_CODES_MAPPING[domain])
+                zy = self.pzy(norm_hoas)
+                zd_per_hoa = zd.repeat(num_samples_per_domain, 1)
+                
+                hoa_mu_pred = self.hoa_mu_predictor(zd_per_hoa)
+                hoa_std_pred = self.hoa_std_predictor(zd_per_hoa)
+                norm_hoa_pred = self.norm_hoa_predictor(zy)  
+                pred_hoas = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
+                samples = self.langevin_dynamics(zd_per_hoa, zy, ld_kwargs, domain, norm_hoas, pred_hoas)
+                all_samples.append(samples)
+            else:
+                domain = domain.split('/')
+                # Here we are in the case where we condition on multiple domains and interpolate between them
+                zd_1 = self.pzd(ZEOLITE_CODES_MAPPING[domain[0]])
+                zd_2 = self.pzd(ZEOLITE_CODES_MAPPING[domain[1]])
+                # For now only interpolate with a weight of 0.5. We could do something more sophisticated later
+                # like interpolating with a weight of 0.1, 0.3, 0.6, 0.9
+                zd_interpolated = torch.lerp(zd_1, zd_2, 0.5)
+                zd_per_hoa = zd_interpolated.repeat(num_samples_per_domain, 1)
+                zy = self.pzy(norm_hoas)
 
+                hoa_mu_pred = self.hoa_mu_predictor(zd_per_hoa)
+                hoa_std_pred = self.hoa_std_predictor(zd_per_hoa)
+                norm_hoa_pred = self.norm_hoa_predictor(zy)  
+                pred_hoas = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
+
+                samples = self.langevin_dynamics(zd_per_hoa, zy, ld_kwargs, domain, norm_hoas, pred_hoas)
+                all_samples.append(samples)
+
+        return all_samples   
+
+    # TODO: Refactor recosntruction 
     def reconstruct(self, batch, ld_kwargs, reconstructions_path, ground_truth_path, kwargs_conf_name):
         """
         Reconstructs materials from a dataset sample using the Langevin dynamics method.

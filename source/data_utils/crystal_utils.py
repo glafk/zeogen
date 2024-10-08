@@ -51,9 +51,6 @@ OFFSET_LIST = [
     [1, 1, 0],
     [1, 1, 1],
 ]
-
-ZEOLITE_CODES_MAPPING = {'DDRch1': 0, 'DDRch2': 1, 'FAU': 2, 'FAUch': 3, 'ITW': 4, 'MEL': 5, 'MELch': 6, 'MFI': 7, 'MOR': 8, 'RHO': 9, 'TON': 10, 'TON2': 11, 'TON3': 12, 'TON4': 13, 'TONch': 14, 'BEC': 15, 'CHA': 16, 'ERI': 17, 'FER': 18, 'HEU': 19, 'LTA': 20, 'LTL': 21, 'MER': 22, 'MTW': 23, 'NAT': 24, 'YFI': 25}
-
 EPSILON = 1e-5
 
 def lattice_params_to_matrix(a, b, c, alpha, beta, gamma):
@@ -954,11 +951,11 @@ def save_samples_as_cifs(samples: dict, directory: str):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    samples["atom_types"] = samples["atom_types"].cpu()
-    samples["angles"] = samples["angles"].cpu()
-    samples["lengths"] = samples["lengths"].cpu()
-    samples["num_atoms"] = samples["num_atoms"].cpu()
-    samples["frac_coords"] = samples["frac_coords"].cpu()
+    samples["atom_types"] = samples["atom_types"]
+    samples["angles"] = samples["angles"]
+    samples["lengths"] = samples["lengths"]
+    samples["num_atoms"] = samples["num_atoms"]
+    samples["frac_coords"] = samples["frac_coords"]
 
     # Split atom types
     split_atom_types = np.split(samples["atom_types"], np.cumsum(samples["num_atoms"])[:-1])
