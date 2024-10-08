@@ -421,7 +421,7 @@ class CDiVAE_v2(BaseModule):
         # the lengths and angles, the angles still require gradients
         # so it looks like the entire tensor requires a gradient
         pred_lengths = self.lengths_scaler.inverse_transform_backprob_compat(pred_lengths)
-        if self.hparams.data["lattice_scale_method"] == 'scale_length':
+        if self.hparams["lattice_scale_method"] == 'scale_length':
             # Scale according to number of atoms
             pred_lengths = pred_lengths * num_atoms.view(-1, 1).float()**(1/3)
 
@@ -464,6 +464,8 @@ class CDiVAE_v2(BaseModule):
         # obtain key stats.
         num_atoms, _, lengths, angles, si_ratio_per_crystal = self.decode_stats(
             zd, zy, gt_num_atoms)
+        
+        num_atoms = num_atoms.argmax(dim=-1)    
         if gt_num_atoms is not None:
             num_atoms = gt_num_atoms
 
@@ -500,8 +502,8 @@ class CDiVAE_v2(BaseModule):
 
                 # After predicting the coords, predict the atom types
                 if gt_atom_types is None:
-                    _, pred_atom_types = self.atom_types_decoder(
-                        zy, cur_frac_coords, num_atoms, lengths, angles)
+                    _, pred_atom_types = self.types_decoder(
+                        zy, cur_frac_coords, cur_atom_types, num_atoms, lengths, angles)
                     cur_atom_types = torch.argmax(pred_atom_types, dim=1) + 13
 
                 if ld_kwargs.save_traj:
@@ -559,13 +561,24 @@ class CDiVAE_v2(BaseModule):
         all_samples = [] 
         for domain in domains:
             if len(domain.split('/')) == 1:
+                print(f"Sampling domain: {domain}")
                 # Here we are in the case where we condition on a single domain which we have seen
-                zd = self.pzd(ZEOLITE_CODES_MAPPING[domain])
-                zy = self.pzy(norm_hoas)
+                zd_p_mu, zd_p_log_var = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain]], device=self.device).float().view(-1, 1))
+                zy_p_mu, zy_p_log_var = self.pzy(torch.tensor([norm_hoas], device=self.device).view(-1, 1)) 
+                
+                zd_p_std = torch.exp(0.5 * zd_p_log_var)
+                pzd = dist.Normal(zd_p_mu, zd_p_std)
+                zd = pzd.sample()
                 zd_per_hoa = zd.repeat(num_samples_per_domain, 1)
+
+                zdp_y_std = torch.exp(0.5 * zy_p_log_var)
+                pzy = dist.Normal(zy_p_mu, zdp_y_std)
+                zy = pzy.sample()
                 
                 hoa_mu_pred = self.hoa_mu_predictor(zd_per_hoa)
+                hoa_mu_pred = self.prop_mu_scaler.inverse_transform(hoa_mu_pred)
                 hoa_std_pred = self.hoa_std_predictor(zd_per_hoa)
+                hoa_std_pred = self.prop_std_scaler.inverse_transform(hoa_std_pred)
                 norm_hoa_pred = self.norm_hoa_predictor(zy)  
                 pred_hoas = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
                 samples = self.langevin_dynamics(zd_per_hoa, zy, ld_kwargs, domain, norm_hoas, pred_hoas)

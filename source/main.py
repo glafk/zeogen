@@ -6,7 +6,7 @@ from datetime import datetime
 
 import torch
 import hydra
-from omegaconf import OmegaConf, DictConfig
+from omegaconf import OmegaConf, DictConfig, open_dict
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from hydra.core.hydra_config import HydraConfig
@@ -236,10 +236,17 @@ def run_sampling_cdivae_v2(cfg: DictConfig, model: CDiVAE_v2  = None):
             assert cfg.model.ckpt_path is not None, "Please provide a path to the model checkpoint"
             # Load model
             hydra.utils.log.info(f"Loading model <{cfg.model._target_}>")
-            model = DiffusionModel.load_from_checkpoint(cfg.model.ckpt_path)
+            model = CDiVAE_v2.load_from_checkpoint(cfg.model.ckpt_path)
         elif cfg.model.model_location == "wandb":
             assert cfg.model.experiment_name_to_load is not None, "Please provide an experiment name"
             model_path, model_dir = load_from_wandb(cfg.model.experiment_name_to_load)
+            checkpoint = torch.load(model_path)
+            print(checkpoint.keys())
+            # Replace the hyperparameters with the current config to make sure
+            # the model can be loaded
+            checkpoint["hyper_parameters"] = cfg.model
+            torch.save(checkpoint, model_path)
+            print(f"Loading model from downloaded file at {model_path}")
             model = CDiVAE_v2.load_from_checkpoint(model_path)
 
             # Clean up downloaded files

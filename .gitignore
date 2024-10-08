@@ -183,5 +183,6 @@ source/cluster_logs
 
 # Remove histograms of weights
 /weights
+/wandb
 
 data/combined_dataset_total/

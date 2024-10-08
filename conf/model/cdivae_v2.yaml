@@ -18,6 +18,7 @@ cost_hoa_std: 5
 cost_norm_hoa: 10
 beta: 0.01
 num_zeolite_types: 27
+lattice_scale_method: scale_length
 
 # Training parameters
 teacher_forcing_lattice: true
@@ -53,7 +54,7 @@ save_reconstructions_online: true
 run_sampling: true
 num_samples_per_domain: 5
 domains: ["DDR", "FAU", "ITW", "MEL", "MFI", "MOR", "RHO"]
-norm_hoas: [0.5, 0.6, 0.7, 0.8, 0.9]
+norm_hoas: [0.0, 0.5, 1.0, 1.5, 2.0]
 samples_file: samples-${expname}.pickle
 save_samples_online: true
 
