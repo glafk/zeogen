@@ -479,7 +479,7 @@ class CDiVAE_v2(BaseModule):
         cur_frac_coords = torch.rand((num_atoms.sum(), 3), device=zd.device)
 
         # annealed langevin dynamics.
-        print(f"Langevin dynamics sigmas...", self.sigmas)
+        # print(f"Langevin dynamics sigmas...", self.sigmas)
         for sigma in tqdm(self.sigmas, total=self.sigmas.size(0), disable=ld_kwargs.disable_bar):
             if sigma < ld_kwargs.min_sigma:
                 break
@@ -586,17 +586,28 @@ class CDiVAE_v2(BaseModule):
             else:
                 domain = domain.split('/')
                 # Here we are in the case where we condition on multiple domains and interpolate between them
-                zd_1 = self.pzd(ZEOLITE_CODES_MAPPING[domain[0]])
-                zd_2 = self.pzd(ZEOLITE_CODES_MAPPING[domain[1]])
+                zd_p_mu_1, zd_p_log_var_1 = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain[0]]], device=self.device).float().view(-1, 1))
+                zd_p_mu_2, zd_p_log_var_2 = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain[1]]], device=self.device).float().view(-1, 1))
                 # For now only interpolate with a weight of 0.5. We could do something more sophisticated later
                 # like interpolating with a weight of 0.1, 0.3, 0.6, 0.9
+
+                zd_p_std_1 = torch.exp(0.5 * zd_p_log_var_1)
+                pzd = dist.Normal(zd_p_mu_1, zd_p_std_1)
+                zd_1 = pzd.sample()
+
+                zd_p_std_2 = torch.exp(0.5 * zd_p_log_var_2)
+                pzd = dist.Normal(zd_p_mu_2, zd_p_std_2)
+                zd_2 = pzd.sample()
+
                 zd_interpolated = torch.lerp(zd_1, zd_2, 0.5)
                 zd_per_hoa = zd_interpolated.repeat(num_samples_per_domain, 1)
                 zy = self.pzy(norm_hoas)
 
                 hoa_mu_pred = self.hoa_mu_predictor(zd_per_hoa)
+                hoa_mu_pred = self.prop_mu_scaler.inverse_transform(hoa_mu_pred)
                 hoa_std_pred = self.hoa_std_predictor(zd_per_hoa)
-                norm_hoa_pred = self.norm_hoa_predictor(zy)  
+                hoa_std_pred = self.prop_std_scaler.inverse_transform(hoa_std_pred)
+                norm_hoa_pred = self.norm_hoa_predictor(zy)
                 pred_hoas = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
 
                 samples = self.langevin_dynamics(zd_per_hoa, zy, ld_kwargs, domain, norm_hoas, pred_hoas)

@@ -53,7 +53,7 @@ save_reconstructions_online: true
 # Sampling
 run_sampling: true
 num_samples_per_domain: 5
-domains: ["DDR", "FAU", "ITW", "MEL", "MFI", "MOR", "RHO"]
+domains: ["DDR/FAU", "FAU/ITW", "ITW/MEL", "MEL/MFI", "MFI/MOR", "MOR/RHO", "RHO/DDR"]
 norm_hoas: [0.0, 0.5, 1.0, 1.5, 2.0]
 samples_file: samples-${expname}.pickle
 save_samples_online: true
