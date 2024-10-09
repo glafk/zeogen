@@ -1,0 +1,19 @@
+expname: train_cdivae_v3
+# metadata specialised for each experiment
+core:
+  version: 1.0.0
+  tags:
+    - ${now:%Y-%m-%d}
+
+hydra:
+  run:
+    dir: ${oc.env:HYDRA_JOBS}/singlerun/${now:%Y-%m-%d}/${expname}/
+
+defaults:
+  - data: data_combined
+  - model: cdivae_v3
+  - optim: optim
+  - train: train
+  - logging: wandb_logging
+  - override hydra/job_logging: colorlog
+  - override hydra/hydra_logging: colorlog

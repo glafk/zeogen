@@ -900,7 +900,7 @@ def write_cif(structure: Structure, path: str, decimals: int = 3, *args, **kwarg
                 f.write(f"{site.species_string} {site.species_string} {site.frac_coords[0]:.{decimals}f} {site.frac_coords[1]:.{decimals}f} {site.frac_coords[2]:.{decimals}f} 0.000\n")
 
 
-def sample2cif(sample: dict, path: str):
+def sample2cif(sample: dict, path: str, trajectory_path: str=None, save_trajectory=False, downsample_trajectory=False, downsample_frame_rate=10):
     a,b,c = sample["lengths"]
     alpha, beta, gamma = sample["angles"]
     lattice = Lattice.from_parameters(a=a, b=b, c=c, alpha=alpha, beta=beta, gamma=gamma)
@@ -909,6 +909,21 @@ def sample2cif(sample: dict, path: str):
     structure = Structure(lattice, species, coords)
 
     write_cif(structure, path)
+    if save_trajectory:
+        if not downsample_trajectory:
+            counter = 1
+            for step_coords, step_atoms in zip(sample["all_frac_coords"], ["all_atom_types"]):
+                step_structure = Structure(lattice, step_atoms, step_coords)
+                step_path = os.path.join(trajectory_path, f"step_{counter}.cif")
+                write_cif(step_structure, step_path)
+                counter+=1
+        else:
+            counter=1
+            for step_coords, step_atoms in islice(zip(sample["all_frac_coords"], sample["all_atom_types"]), 0, None, downsample_frame_rate):
+                step_structure = Structure(lattice, step_atoms, step_coords)
+                step_path = os.path.join(trajectory_path, f"step_{counter}.cif")
+                write_cif(step_structure, step_path)
+                counter+=downsample_frame_rate
 
 
 def reconstruction2cif(reconstruction: dict, path: str, trajectory_path: str=None, save_trajectory=False, downsample_trajectory=False, downsample_frame_rate=5):
@@ -947,31 +962,44 @@ def reconstruction2cif(reconstruction: dict, path: str, trajectory_path: str=Non
 
 
 
-def save_samples_as_cifs(samples: dict, directory: str):
+def save_samples_as_cifs(samples: dict, directory: str, 
+                         save_trajectory=False, 
+                         downsample_trajectory=True,
+                         downsample_frame_rate=10):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    samples["atom_types"] = samples["atom_types"]
-    samples["angles"] = samples["angles"]
-    samples["lengths"] = samples["lengths"]
-    samples["num_atoms"] = samples["num_atoms"]
-    samples["frac_coords"] = samples["frac_coords"]
-
-    # Split atom types
-    split_atom_types = np.split(samples["atom_types"], np.cumsum(samples["num_atoms"])[:-1])
-
-    # Split fractional coordinates
-    split_frac_coords = np.split(samples["frac_coords"], np.cumsum(samples["num_atoms"])[:-1])
+    # samples["atom_types"] = samples["atom_types"]
+    # samples["angles"] = samples["angles"]
+    # samples["lengths"] = samples["lengths"]
+    # samples["num_atoms"] = samples["num_atoms"]
+    # samples["frac_coords"] = samples["frac_coords"]
 
     individual_samples = []
-    for i in range(len(samples["num_atoms"])):
-        individual_samples.append({"atom_types": split_atom_types[i], "frac_coords": split_frac_coords[i], "lengths": samples["lengths"][i], "angles": samples["angles"][i]})
 
-    counter = 1
-    for sample in individual_samples:
-        filename = os.path.join(directory, f"sample_{counter}.cif")
-        sample2cif(sample, filename)
-        counter += 1
+    # With the current setup, we have one item per domain in the list
+    for item in samples:
+        # Split atom types
+        split_atom_types = np.split(item["atom_types"], np.cumsum(item["num_atoms"])[:-1])
+    # Split fractional coordinates
+        split_frac_coords = np.split(item["frac_coords"], np.cumsum(item["num_atoms"])[:-1])
+
+        split_all_atoms = np.split(item["all_atom_types"], np.cumsum(item["num_atoms"])[:-1])
+        split_all_coords = np.split(item["all_frac_coords"], np.cumsum(item["num_atoms"])[:-1])
+
+        for i in range(len(item["num_atoms"])):
+            individual_samples.append({"atom_types": split_atom_types[i], "frac_coords": split_frac_coords[i], "lengths": item["lengths"][i], "angles": item["angles"][i], "domain": item["domains"][i], "norm_hoa": item["norm_hoas"][i], "pred_hoa": item["pred_hoas"][i], "all_atom_types": split_all_atoms[i], "all_frac_coords": split_all_coords[i]})
+
+    for sample in individual_samples: # individual_samples:
+        filename = os.path.join(directory, f"sample_{sample["domain"]}_{sample["norm_hoa"]}.cif")
+
+        if sample.get("is_traj", True) and save_trajectory:
+            traj_directory = os.path.join(directory, f"reconstruction_{sample["domain"]}_{sample['norm_hoa']}_traj")
+            if not os.path.exists(traj_directory):
+                os.makedirs(traj_directory)
+            sample2cif(sample, filename, traj_directory, save_trajectory=True, downsample_trajectory=downsample_trajectory, downsample_frame_rate=downsample_frame_rate)
+        else:
+            sample2cif(sample, filename)
 
 
 def save_reconstructions_as_cifs(reconstructions: list, directory: str, ground_truth: bool = False, save_trajectory=False, downsample_trajectory=False, downsample_frame_rate=5):

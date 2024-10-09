@@ -1,0 +1,65 @@
+_target_: CDiVAE_v3.CDiVAE_v3
+
+# Model parameters
+hidden_dim: 256
+domain_latent_dim: 128
+class_latent_dim: 128
+total_latent_dim: 256
+fc_num_layers: 2
+max_atoms: ${data.max_atoms}
+cost_natom: 1.
+cost_coord: 5.
+cost_type: 10.
+cost_lattice: 10.
+cost_composition: 10.
+cost_domain: 5.
+cost_hoa_mu: 5.
+cost_hoa_std: 5
+cost_norm_hoa: 10
+beta: 0.01
+num_zeolite_types: 27
+lattice_scale_method: scale_length
+
+# Training parameters
+teacher_forcing_lattice: true
+teacher_forcing_max_epoch: ${data.teacher_forcing_max_epoch}
+max_neighbors: 20  # maximum number of neighbors for OTF graph bulding in decoder
+radius: 6.  # maximum search radius for OTF graph building in decoder
+sigma_begin: 5.0
+sigma_end: 0.05
+type_sigma_begin: 3
+type_sigma_end: 1
+num_noise_level: 20
+predict_property: False
+
+# Logging and loading parameters
+load_model: true
+model_location: wandb
+ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model-150-epochs-MFI-only.ckpt # not applicable if model is on WandB
+
+# From which experiment the model should be loaded for continuted training, sampling and reconstruction
+experiment_name_to_load: cdivae_v2_error_teacher_forcing
+
+# Training
+run_training: true
+resume_from_checkpoint: false
+
+# Reconstruction
+run_reconstruction: false
+num_reconstructions: 10
+reconstructions_file: reconstructions-${expname}.pickle
+save_reconstructions_online: true
+
+# Sampling
+run_sampling: false
+num_samples_per_domain: 5
+domains: ["DDR/FAU", "FAU/ITW", "ITW/MEL", "MEL/MFI", "MFI/MOR", "MOR/RHO", "RHO/DDR"]
+norm_hoas: [0.0, 0.5, 1.0, 1.5, 2.0]
+samples_file: samples-${expname}.pickle
+save_samples_online: true
+
+defaults:
+  - cdivae_v2/encoders/domain_encoder: domain_encoder.yaml
+  - cdivae_v2/encoders/class_encoder: class_encoder.yaml
+  - cdivae_v2/decoders/positions_decoder: positions_decoder.yaml
+  - cdivae_v2/decoders/types_decoder: types_decoder.yaml
