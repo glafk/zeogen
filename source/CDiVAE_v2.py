@@ -556,7 +556,7 @@ class CDiVAE_v2(BaseModule):
         # Here in the sampling part I will need to figure out how to force the model to sample from the part of the distribution where the representations of the "high-capacity" crystals lie
         
         print(f"Sampling {num_samples_per_domain} crystals per domain with the following HOAs: {norm_hoas}.")
-        print(f"Domains: {['\n'.join(dom) for dom in domains]}")
+        print(f"Domains: {domains}")
 
         all_samples = [] 
         for domain in domains:
@@ -601,7 +601,10 @@ class CDiVAE_v2(BaseModule):
 
                 zd_interpolated = torch.lerp(zd_1, zd_2, 0.5)
                 zd_per_hoa = zd_interpolated.repeat(num_samples_per_domain, 1)
-                zy = self.pzy(norm_hoas)
+
+                zdp_y_std = torch.exp(0.5 * zy_p_log_var)
+                pzy = dist.Normal(zy_p_mu, zdp_y_std)
+                zy = pzy.sample()
 
                 hoa_mu_pred = self.hoa_mu_predictor(zd_per_hoa)
                 hoa_mu_pred = self.prop_mu_scaler.inverse_transform(hoa_mu_pred)
