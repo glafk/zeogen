@@ -584,12 +584,14 @@ class CDiVAE_v2(BaseModule):
                 samples = self.langevin_dynamics(zd_per_hoa, zy, ld_kwargs, domain, norm_hoas, pred_hoas)
                 all_samples.append(samples)
             else:
+                print(f"Sampling domain: {domain}")
                 domain = domain.split('/')
                 # Here we are in the case where we condition on multiple domains and interpolate between them
                 zd_p_mu_1, zd_p_log_var_1 = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain[0]]], device=self.device).float().view(-1, 1))
                 zd_p_mu_2, zd_p_log_var_2 = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain[1]]], device=self.device).float().view(-1, 1))
                 # For now only interpolate with a weight of 0.5. We could do something more sophisticated later
                 # like interpolating with a weight of 0.1, 0.3, 0.6, 0.9
+                zy_p_mu, zy_p_log_var = self.pzy(torch.tensor([norm_hoas], device=self.device).view(-1, 1))
 
                 zd_p_std_1 = torch.exp(0.5 * zd_p_log_var_1)
                 pzd = dist.Normal(zd_p_mu_1, zd_p_std_1)
