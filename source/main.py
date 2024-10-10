@@ -14,6 +14,7 @@ from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 from cdvae import DiffusionModel
 from CDiVAE_v2 import CDiVAE_v2
+from CDiVAE_v3 import CDiVAE_v3
 import wandb
 
 from utils import load_from_wandb, log_config_to_wandb, add_object
@@ -236,7 +237,7 @@ def run_sampling_cdivae_v2(cfg: DictConfig, model: CDiVAE_v2  = None):
             assert cfg.model.ckpt_path is not None, "Please provide a path to the model checkpoint"
             # Load model
             hydra.utils.log.info(f"Loading model <{cfg.model._target_}>")
-            model = CDiVAE_v2.load_from_checkpoint(cfg.model.ckpt_path)
+            model = CDiVAE_v3.load_from_checkpoint(cfg.model.ckpt_path)
         elif cfg.model.model_location == "wandb":
             assert cfg.model.experiment_name_to_load is not None, "Please provide an experiment name"
             model_path, model_dir = load_from_wandb(cfg.model.experiment_name_to_load)
@@ -247,7 +248,7 @@ def run_sampling_cdivae_v2(cfg: DictConfig, model: CDiVAE_v2  = None):
             checkpoint["hyper_parameters"] = cfg.model
             torch.save(checkpoint, model_path)
             print(f"Loading model from downloaded file at {model_path}")
-            model = CDiVAE_v2.load_from_checkpoint(model_path)
+            model = CDiVAE_v3.load_from_checkpoint(model_path)
 
             # Clean up downloaded files
             shutil.rmtree(model_dir)
@@ -361,7 +362,7 @@ def run_sampling(cfg: DictConfig, model: DiffusionModel = None):
         # Clean up the file so that it doesn't hang around
         os.remove(samples_path)
 
-@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="cdivae_v2")
+@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="cdivae_v3")
 def main(cfg: DictConfig):
 
     model = None

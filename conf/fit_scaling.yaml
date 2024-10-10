@@ -12,11 +12,11 @@ hydra:
 
 # fitting process parameters
 fit:
-  d_encoder_scaling_factors: ${oc.env:PROJECT_ROOT}/source/scaling_factors/cdivae_v2/d_encoder_scaling_factors_total_dataset_CDiVAE.json
-  y_encoder_scaling_factors: ${oc.env:PROJECT_ROOT}/source/scaling_factors/cdivae_v2/y_encoder_scaling_factors_total_dataset_CDiVAE.json
+  d_encoder_scaling_factors: ${oc.env:PROJECT_ROOT}/source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json
+  y_encoder_scaling_factors: ${oc.env:PROJECT_ROOT}/source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json
   # x_encoder_scaling_factors: ${oc.env:PROJECT_ROOT}/source/scaling_factors/x_encoder_scaling_factors_total_dataset_CDiVAE.json
-  pos_decoder_scaling_factors: ${oc.env:PROJECT_ROOT}/source/scaling_factors/cdivae_v2/pos_decoder_scaling_factors_total_dataset_CDiVAE.json
-  types_decoder_scaling_factors: ${oc.env:PROJECT_ROOT}/source/scaling_factors/cdivae_v2/types_decoder_scaling_factors_total_dataset_CDiVAE.json
+  pos_decoder_scaling_factors: ${oc.env:PROJECT_ROOT}/source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json
+  types_decoder_scaling_factors: ${oc.env:PROJECT_ROOT}/source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json
   lengths_scaler_file: ${oc.env:PROJECT_ROOT}/source/scaling_factors/lengths_scaler_total_dataset.pt
   prop_scaler_file: ${oc.env:PROJECT_ROOT}/source/scaling_factors/prop_scaler_total_dataset.pt
   num_batches: 128
@@ -25,6 +25,6 @@ fit:
 
 defaults:
   - data: data_combined
-  - model: cdivae_v2
+  - model: cdivae_v3
   - optim: optim
   - train: train

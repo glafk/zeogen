@@ -1,0 +1,20 @@
+{
+    "comment": "gemnet scaling factors for combined total dataset based on CDivAE model",
+    "TripInteraction_1_had_rbf": 19.878767013549805,
+    "TripInteraction_1_sum_cbf": 19.618093490600586,
+    "AtomUpdate_1_sum": 3.7228808403015137,
+    "TripInteraction_2_had_rbf": 18.28927993774414,
+    "TripInteraction_2_sum_cbf": 18.661237716674805,
+    "AtomUpdate_2_sum": 3.382824659347534,
+    "TripInteraction_3_had_rbf": 17.288867950439453,
+    "TripInteraction_3_sum_cbf": 16.380016326904297,
+    "AtomUpdate_3_sum": 3.120805501937866,
+    "OutBlock_0_sum": 3.8984785079956055,
+    "OutBlock_0_had": 17.866092681884766,
+    "OutBlock_1_sum": 3.3265585899353027,
+    "OutBlock_1_had": 15.845849990844727,
+    "OutBlock_2_sum": 3.268916368484497,
+    "OutBlock_2_had": 15.313742637634277,
+    "OutBlock_3_sum": 3.185851812362671,
+    "OutBlock_3_had": 14.231240272521973
+}

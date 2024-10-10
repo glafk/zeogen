@@ -991,10 +991,10 @@ def save_samples_as_cifs(samples: dict, directory: str,
             individual_samples.append({"atom_types": split_atom_types[i], "frac_coords": split_frac_coords[i], "lengths": item["lengths"][i], "angles": item["angles"][i], "domain": item["domains"][i], "norm_hoa": item["norm_hoas"][i], "pred_hoa": item["pred_hoas"][i], "all_atom_types": split_all_atoms[i], "all_frac_coords": split_all_coords[i]})
 
     for sample in individual_samples: # individual_samples:
-        filename = os.path.join(directory, f"sample_{sample["domain"]}_{str(sample["norm_hoa"]).replace('.', '_')}.cif")
+        filename = os.path.join(directory, f"sample_{sample['domain']}_{str(sample['norm_hoa']).replace('.', '_')}.cif")
 
         if sample.get("is_traj", True) and save_trajectory:
-            traj_directory = os.path.join(directory, f"reconstruction_{sample["domain"]}_{sample['norm_hoa']}_traj")
+            traj_directory = os.path.join(directory, f"reconstruction_{sample['domain']}_{sample['norm_hoa']}_traj")
             if not os.path.exists(traj_directory):
                 os.makedirs(traj_directory)
             sample2cif(sample, filename, traj_directory, save_trajectory=True, downsample_trajectory=downsample_trajectory, downsample_frame_rate=downsample_frame_rate)

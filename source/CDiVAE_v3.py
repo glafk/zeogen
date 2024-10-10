@@ -61,10 +61,10 @@ class CondPrior(nn.Module):
 
     def forward(self, condition):
         hidden = self.fc1(condition)
-        z_mu = self.fc21(hidden)
-        z_log_var = self.fc22(hidden) + 1e-7
+        z_loc = self.fc21(hidden)
+        z_scale = self.fc22(hidden) + 1e-7
 
-        return z_mu, z_log_var
+        return z_loc, z_scale
 
 
 # This class code is repeated in the GEMNet file. TODO: Remove repetition
@@ -94,18 +94,18 @@ class CDiVAE_v3(BaseModule):
 
         # print(self.hparams)
         self.zd_encoder = hydra.utils.instantiate(
-            self.hparams.cdivae_v2["encoders"]["domain_encoder"], num_targets=self.hparams.domain_latent_dim) # DIVA -> self.qzd
+            self.hparams.cdivae_v3["encoders"]["domain_encoder"], num_targets=self.hparams.domain_latent_dim) # DIVA -> self.qzd
         
         self.zy_encoder = hydra.utils.instantiate(
-            self.hparams.cdivae_v2["encoders"]["class_encoder"], num_targets=self.hparams.class_latent_dim) # DIVA -> self.qzy
+            self.hparams.cdivae_v3["encoders"]["class_encoder"], num_targets=self.hparams.class_latent_dim) # DIVA -> self.qzy
 
         self.pzd = CondPrior(1, self.hparams.domain_latent_dim)
 
         # Hard code one as y in this case would be the HOA which is just a scalar
         self.pzy = CondPrior(1, self.hparams.class_latent_dim)
         
-        self.positions_decoder = hydra.utils.instantiate(self.hparams.cdivae_v2["decoders"]["positions_decoder"])
-        self.types_decoder = hydra.utils.instantiate(self.hparams.cdivae_v2["decoders"]["types_decoder"])
+        self.positions_decoder = hydra.utils.instantiate(self.hparams.cdivae_v3["decoders"]["positions_decoder"])
+        self.types_decoder = hydra.utils.instantiate(self.hparams.cdivae_v3["decoders"]["types_decoder"])
 
         # DIVA - > self.fc_d -> self.qd. Predictor for the zeolite type from zd
         # TODO: Test this domain predictor without the final softmax activation
@@ -160,7 +160,7 @@ class CDiVAE_v3(BaseModule):
         self.prop_std_scaler = None
 
     # region ENCODE HELPERS
-    def reparameterize(self, mu, log_var):
+    def reparameterize(self, loc, scale):
         """
         Reparameterization trick to sample from N(mu, var) from
         N(0,1).
@@ -168,9 +168,9 @@ class CDiVAE_v3(BaseModule):
         :param logvar: (Tensor) Standard deviation of the latent Gaussian [B x D]
         :return: (Tensor) [B x D]
         """
-        std = torch.exp(0.5 * log_var)  # Convert log-variance to standard deviation
-        eps = torch.randn_like(std)     # Sample from standard normal distribution
-        return mu + std * eps           # Reparameterized sample from latent Gaussian
+        d = dist.Normal(loc, scale)
+
+        return d
 
     def encode(self, batch):
         """
@@ -179,17 +179,19 @@ class CDiVAE_v3(BaseModule):
         # Comments providing mapping between the variables in this implementation
         # and the original DIVA implementation
         # DIVA - mu_d -> zd_q_loc, log_var_d -> zd_q_scale 
-        mu_d, log_var_d, hidden_d = self.zd_encoder(batch, uniform_types=True)
-        zd = self.reparameterize(mu_d, log_var_d)
+        zd_q_loc, zd_q_scale, hidden_d = self.zd_encoder(batch, uniform_types=True)
+        qzd = self.reparameterize(zd_q_loc, zd_q_scale)
+        zd = qzd.rsample()
 
         # DIVA - mu_y -> zy_q_loc, log_var_y -> zy_q_scale
-        mu_y, log_var_y, hidden_y = self.zy_encoder(batch)
-        zy = self.reparameterize(mu_y, log_var_y)
+        zy_q_loc, zy_q_scale, hidden_y = self.zy_encoder(batch)
+        qzy = self.reparameterize(zy_q_loc, zy_q_scale)
+        zy = qzy.rsample()
 
         z = torch.cat([zd, zy], dim=-1)
 
         # Temporarily save the hidden layer for debugging
-        return mu_d, log_var_d, mu_y, log_var_y, hidden_d, hidden_y, zd, zy, z
+        return zd_q_loc, zd_q_scale, zy_q_loc, zy_q_scale, hidden_d, hidden_y, zd, zy, z
 
     def decode_stats(self, zd, zy, gt_num_atoms=None, gt_lengths=None, gt_angles=None,
                      teacher_forcing=False, num_atoms_forcing=False):
@@ -231,10 +233,10 @@ class CDiVAE_v3(BaseModule):
 
     def forward(self, batch, teacher_forcing=False, training=False):
         # region ENCODE
-        (mu_d, 
-         log_var_d, 
-         mu_y, 
-         log_var_y, 
+        (zd_q_loc, 
+         zd_q_scale, 
+         zy_q_loc, 
+         zy_q_scale, 
          hidden_d, 
          hidden_y,
          zd, 
@@ -243,7 +245,7 @@ class CDiVAE_v3(BaseModule):
 
         (pred_num_atoms, pred_lengths_and_angles, pred_lengths, pred_angles,
          pred_si_ratio_per_crystal) = self.decode_stats(
-            z, zd, zy , batch.num_atoms, batch.lengths, batch.angles, teacher_forcing)
+            zd, zy , batch.num_atoms, batch.lengths, batch.angles, teacher_forcing)
         # endregion
 
         # region PREDICT
@@ -368,8 +370,8 @@ class CDiVAE_v3(BaseModule):
         norm_hoa_pred = self.norm_hoa_predictor(zy)       
 
         # Predict parameters of conditional distributions
-        zd_p_mu, zd_p_var = self.pzd(batch['zeolite_code_enc'].float().view(-1, 1))
-        zy_p_mu, zy_p_var = self.pzy(batch['norm_hoa'].view(-1, 1))
+        zd_p_loc, zd_p_scale = self.pzd(batch['zeolite_code_enc'].float().view(-1, 1))
+        zy_p_loc, zy_p_scale = self.pzy(batch['norm_hoa'].view(-1, 1))
         # endregion
 
         return {
@@ -388,17 +390,17 @@ class CDiVAE_v3(BaseModule):
             'rand_atom_types': rand_atom_types,
             'type_noise': type_noise,
             'noisy_frac_coords': noisy_frac_coords,
-            'mu_d': mu_d,
-            'log_var_d': log_var_d,
-            'mu_y': mu_y,
-            'log_var_y': log_var_y,
+            'zd_q_loc': zd_q_loc,
+            'zd_q_scale': zd_q_scale,
+            'zy_q_loc': zy_q_loc,
+            'zy_q_scale': zy_q_scale,
             'z': z,
             'zd': zd,
             'zy': zy,
-            'zd_p_mu': zd_p_mu,
-            'zd_p_var': zd_p_var,
-            'zy_p_mu': zy_p_mu,
-            'zy_p_var': zy_p_var,
+            'zd_p_loc': zd_p_loc,
+            'zd_p_scale': zd_p_scale,
+            'zy_p_loc': zy_p_loc,
+            'zy_p_scale': zy_p_scale,
             'domain_pred': domain_pred,
             'hoa_mu_pred': hoa_mu_pred,
             'hoa_std_pred': hoa_std_pred,
@@ -706,16 +708,11 @@ class CDiVAE_v3(BaseModule):
         # loss = loss / used_type_sigmas_per_atom
         return scatter(loss, batch.batch, reduce='mean').mean()
 
-    def kld_loss(self, mu_q, log_var_q, mu_p, log_var_p):
-        var_p = log_var_p.exp()
-        var_q = log_var_q.exp()
+    def kld_loss(self, q_loc, q_scale, p_loc, p_scale, z):
+        q = dist.Normal(q_loc, q_scale)
+        p = dist.Normal(p_loc, p_scale)
 
-        kld = 0.5 * (
-            torch.sum(log_var_q - log_var_p, dim=1)
-            - mu_p.size(1)
-            + torch.sum(var_p / var_q, dim=1)
-            + torch.sum((mu_q - mu_p)**2 / var_q, dim=1)
-        )
+        kld = torch.sum(p.log_prob(z) - q.log_prob(z), dim=-1)
 
         return torch.mean(kld, dim=0)
 
@@ -747,14 +744,16 @@ class CDiVAE_v3(BaseModule):
         noisy_frac_coords = outputs['noisy_frac_coords']
         used_sigmas_per_atom = outputs['used_sigmas_per_atom']
         type_noise = outputs['type_noise']
-        mu_d = outputs['mu_d']
-        log_var_d = outputs['log_var_d']
-        mu_y = outputs['mu_y']
-        log_var_y = outputs['log_var_y']
-        zd_p_mu = outputs['zd_p_mu']
-        zd_p_log_var = outputs['zd_p_var']
-        zy_p_mu = outputs['zy_p_mu']
-        zy_p_log_var = outputs['zy_p_var']
+        zd_q_loc = outputs['zd_q_loc']
+        zd_q_scale = outputs['zd_q_scale']
+        zy_q_loc = outputs['zy_q_loc']
+        zy_q_scale = outputs['zy_q_scale']
+        zd_p_loc = outputs['zd_p_loc']
+        zd_p_scale = outputs['zd_p_scale']
+        zy_p_loc = outputs['zy_p_loc']
+        zy_p_scale = outputs['zy_p_scale']
+        zd = outputs['zd']
+        zy = outputs['zy']
         domain_pred = outputs['domain_pred']
         hoa_mu_pred = outputs['hoa_mu_pred']
         hoa_std_pred = outputs['hoa_std_pred']
@@ -769,8 +768,8 @@ class CDiVAE_v3(BaseModule):
         type_loss = self.type_loss(pred_atom_types, batch.atom_types,
                                    type_noise, batch)
 
-        kld_loss_d = self.kld_loss(mu_d, log_var_d, zd_p_mu, zd_p_log_var)
-        kld_loss_y = self.kld_loss(mu_y, log_var_y, zy_p_mu, zy_p_log_var)
+        kld_loss_d = self.kld_loss(zd_q_loc, zd_q_scale, zd_p_loc, zd_p_scale, zd)
+        kld_loss_y = self.kld_loss(zy_q_loc, zy_q_scale, zy_p_loc, zy_p_scale, zy)
         kld_loss = kld_loss_d + kld_loss_y
 
         domain_pred_loss = self.domain_pred_loss(domain_pred, batch)
