@@ -10,13 +10,13 @@ max_atoms: ${data.max_atoms}
 cost_natom: 1.
 cost_coord: 5.
 cost_type: 10.
-cost_lattice: 10.
-cost_composition: 10.
+cost_lattice: 1.
+cost_composition: 1.
 cost_domain: 5.
-cost_hoa_mu: 5.
-cost_hoa_std: 5
+cost_hoa_mu: 10.
+cost_hoa_std: 10
 cost_norm_hoa: 10
-beta: 0.01
+beta: 0.1
 num_zeolite_types: 27
 lattice_scale_method: scale_length
 
@@ -33,12 +33,12 @@ num_noise_level: 20
 predict_property: False
 
 # Logging and loading parameters
-load_model: true
+load_model: false
 model_location: wandb
 ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model-150-epochs-MFI-only.ckpt # not applicable if model is on WandB
 
 # From which experiment the model should be loaded for continuted training, sampling and reconstruction
-experiment_name_to_load: cdivae_v2_error_teacher_forcing
+experiment_name_to_load: train_cdivae_v3
 
 # Training
 run_training: true
@@ -53,13 +53,13 @@ save_reconstructions_online: true
 # Sampling
 run_sampling: false
 num_samples_per_domain: 5
-domains: ["DDR/FAU", "FAU/ITW", "ITW/MEL", "MEL/MFI", "MFI/MOR", "MOR/RHO", "RHO/DDR"]
+domains: ["DDR", "FAU", "ITW", "MEL", "MFI", "MOR", "RHO", "DDR/FAU", "FAU/ITW", "ITW/MEL", "MEL/MFI", "MFI/MOR", "MOR/RHO", "RHO/DDR"]
 norm_hoas: [0.0, 0.5, 1.0, 1.5, 2.0]
 samples_file: samples-${expname}.pickle
 save_samples_online: true
 
 defaults:
-  - cdivae_v2/encoders/domain_encoder: domain_encoder.yaml
-  - cdivae_v2/encoders/class_encoder: class_encoder.yaml
-  - cdivae_v2/decoders/positions_decoder: positions_decoder.yaml
-  - cdivae_v2/decoders/types_decoder: types_decoder.yaml
+  - cdivae_v3/encoders/domain_encoder: domain_encoder.yaml
+  - cdivae_v3/encoders/class_encoder: class_encoder.yaml
+  - cdivae_v3/decoders/positions_decoder: positions_decoder.yaml
+  - cdivae_v3/decoders/types_decoder: types_decoder.yaml

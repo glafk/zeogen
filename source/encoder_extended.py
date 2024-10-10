@@ -56,8 +56,8 @@ class GemNetTEncoderExt(nn.Module):
             num_bonds=data.num_bonds
         )
 
-        mu = self.fc_mu(hidden)
-        log_var = self.fc_var(hidden) + 1e-5
+        z_loc = self.fc_mu(hidden)
+        z_scale = self.fc_var(hidden) + 1e-5
 
         # Here hidden is returned for debugging purposes
-        return mu, log_var, hidden
+        return z_loc, z_scale, hidden
