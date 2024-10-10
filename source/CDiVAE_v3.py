@@ -340,10 +340,6 @@ class CDiVAE_v3(BaseModule):
                 "hidden_y": hidden_y,
                 "zd": zd,
                 "zy": zy,
-                "mu_d": mu_d,
-                "log_var_d": log_var_d,
-                "mu_y": mu_y,
-                "log_var_y": log_var_y,
                 "type_noise_level": type_noise_level,
                 "type_noise": type_noise,
                 "pred_si_ratio_per_crystal": pred_si_ratio_per_crystal,
@@ -712,7 +708,7 @@ class CDiVAE_v3(BaseModule):
         q = dist.Normal(q_loc, q_scale)
         p = dist.Normal(p_loc, p_scale)
 
-        kld = torch.sum(p.log_prob(z) - q.log_prob(z), dim=-1)
+        kld = -torch.sum(p.log_prob(z) - q.log_prob(z), dim=-1)
 
         return torch.mean(kld, dim=0)
 

@@ -16,7 +16,7 @@ cost_domain: 5.
 cost_hoa_mu: 10.
 cost_hoa_std: 10
 cost_norm_hoa: 10
-beta: 0.1
+beta: 0.01
 num_zeolite_types: 27
 lattice_scale_method: scale_length
 
