@@ -559,16 +559,14 @@ class CDiVAE_v3(BaseModule):
             if len(domain.split('/')) == 1:
                 print(f"Sampling domain: {domain}")
                 # Here we are in the case where we condition on a single domain which we have seen
-                zd_p_mu, zd_p_log_var = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain]], device=self.device).float().view(-1, 1))
-                zy_p_mu, zy_p_log_var = self.pzy(torch.tensor([norm_hoas], device=self.device).view(-1, 1)) 
+                zd_p_loc, zd_p_scale = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain]], device=self.device).float().view(-1, 1))
+                zy_p_loc, zy_p_scale = self.pzy(torch.tensor([norm_hoas], device=self.device).view(-1, 1)) 
                 
-                zd_p_std = torch.exp(0.5 * zd_p_log_var)
-                pzd = dist.Normal(zd_p_mu, zd_p_std)
+                pzd = dist.Normal(zd_p_loc, zd_p_scale)
                 zd = pzd.sample()
                 zd_per_hoa = zd.repeat(num_samples_per_domain, 1)
 
-                zdp_y_std = torch.exp(0.5 * zy_p_log_var)
-                pzy = dist.Normal(zy_p_mu, zdp_y_std)
+                pzy = dist.Normal(zy_p_loc, zy_p_scale)
                 zy = pzy.sample()
                 
                 hoa_mu_pred = self.hoa_mu_predictor(zd_per_hoa)
@@ -582,24 +580,22 @@ class CDiVAE_v3(BaseModule):
             else:
                 domain = domain.split('/')
                 # Here we are in the case where we condition on multiple domains and interpolate between them
-                zd_p_mu_1, zd_p_log_var_1 = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain[0]]], device=self.device).float().view(-1, 1))
-                zd_p_mu_2, zd_p_log_var_2 = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain[1]]], device=self.device).float().view(-1, 1))
+                zd_p_loc_1, zd_p_scale_1 = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain[0]]], device=self.device).float().view(-1, 1))
+                zd_p_loc_2, zd_p_scale_2 = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain[1]]], device=self.device).float().view(-1, 1))
+                zy_p_loc, zy_p_scale = self.pzy(torch.tensor([norm_hoas], device=self.device).view(-1, 1))
                 # For now only interpolate with a weight of 0.5. We could do something more sophisticated later
                 # like interpolating with a weight of 0.1, 0.3, 0.6, 0.9
 
-                zd_p_std_1 = torch.exp(0.5 * zd_p_log_var_1)
-                pzd = dist.Normal(zd_p_mu_1, zd_p_std_1)
-                zd_1 = pzd.sample()
+                pzd_1 = dist.Normal(zd_p_loc_1, zd_p_scale_1)
+                zd_1 = pzd_1.sample()
 
-                zd_p_std_2 = torch.exp(0.5 * zd_p_log_var_2)
-                pzd = dist.Normal(zd_p_mu_2, zd_p_std_2)
-                zd_2 = pzd.sample()
+                pzd_2 = dist.Normal(zd_p_loc_2, zd_p_scale_2)
+                zd_2 = pzd_2.sample()
 
                 zd_interpolated = torch.lerp(zd_1, zd_2, 0.5)
                 zd_per_hoa = zd_interpolated.repeat(num_samples_per_domain, 1)
 
-                zdp_y_std = torch.exp(0.5 * zy_p_log_var)
-                pzy = dist.Normal(zy_p_mu, zdp_y_std)
+                pzy = dist.Normal(zy_p_loc, zy_p_scale)
                 zy = pzy.sample()
 
                 hoa_mu_pred = self.hoa_mu_predictor(zd_per_hoa)

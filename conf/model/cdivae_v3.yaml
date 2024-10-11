@@ -33,15 +33,15 @@ num_noise_level: 20
 predict_property: False
 
 # Logging and loading parameters
-load_model: false
+load_model: true
 model_location: wandb
 ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model-150-epochs-MFI-only.ckpt # not applicable if model is on WandB
 
 # From which experiment the model should be loaded for continuted training, sampling and reconstruction
-experiment_name_to_load: train_cdivae_v3
+experiment_name_to_load: train_cdivae_v3_DIVA_setup_copy
 
 # Training
-run_training: true
+run_training: false
 resume_from_checkpoint: false
 
 # Reconstruction
@@ -51,7 +51,7 @@ reconstructions_file: reconstructions-${expname}.pickle
 save_reconstructions_online: true
 
 # Sampling
-run_sampling: false
+run_sampling: true
 num_samples_per_domain: 5
 domains: ["DDR", "FAU", "ITW", "MEL", "MFI", "MOR", "RHO", "DDR/FAU", "FAU/ITW", "ITW/MEL", "MEL/MFI", "MFI/MOR", "MOR/RHO", "RHO/DDR"]
 norm_hoas: [0.0, 0.5, 1.0, 1.5, 2.0]
