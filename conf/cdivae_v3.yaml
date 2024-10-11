@@ -1,4 +1,4 @@
-expname: test_new_kld_loss_setup
+expname: train_cdivae_v3_DIVA_setup_copy
 # metadata specialised for each experiment
 core:
   version: 1.0.0
