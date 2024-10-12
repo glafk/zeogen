@@ -41,8 +41,8 @@ ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model-150-epochs-MFI-only.ck
 experiment_name_to_load: train_cdivae_v3_DIVA_setup_copy
 
 # Training
-run_training: false
-resume_from_checkpoint: false
+run_training: true
+resume_from_checkpoint: true
 
 # Reconstruction
 run_reconstruction: false
@@ -51,7 +51,7 @@ reconstructions_file: reconstructions-${expname}.pickle
 save_reconstructions_online: true
 
 # Sampling
-run_sampling: true
+run_sampling: false
 num_samples_per_domain: 5
 domains: ["DDR", "FAU", "ITW", "MEL", "MFI", "MOR", "RHO", "DDR/FAU", "FAU/ITW", "ITW/MEL", "MEL/MFI", "MFI/MOR", "MOR/RHO", "RHO/DDR"]
 norm_hoas: [0.0, 0.5, 1.0, 1.5, 2.0]

@@ -846,6 +846,14 @@ class CDiVAE_v3(BaseModule):
             domain_accuracy = domain_pred.argmax(dim=-1) == batch.zeolite_code_enc
             domain_accuracy = domain_accuracy.float().mean()
 
+            # Evaluate predicitons of domains made on the samples form pzd
+            with torch.no_grad():
+                pzd = self.reparameterize(zd_p_loc, zd_p_scale)
+                pzd_samples = pzd.rsample()
+                pred_domain_pzd = self.domain_predictor(pzd_samples)
+                pzd_domain_accuracy = pred_domain_pzd.argmax(dim=-1) == batch.zeolite_code_enc
+                pzd_domain_accuracy= pzd_domain_accuracy.float().mean()
+
             
             # Evaluate final HOA prediction loss
             hoa_pred = norm_hoa_pred * hoa_std_pred + hoa_mu_pred

@@ -12,7 +12,7 @@ otf_graph: false
 eval_model_name: diffusion
 
 
-train_max_epochs: 50
+train_max_epochs: 60
 early_stopping_patience: 50
 teacher_forcing_max_epoch: 10
 
