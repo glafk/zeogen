@@ -16,7 +16,8 @@ cost_domain: 5.
 cost_hoa_mu: 10.
 cost_hoa_std: 10
 cost_norm_hoa: 10
-beta: 0.01
+beta_d: 0.001
+beta_y: 0.01
 num_zeolite_types: 27
 lattice_scale_method: scale_length
 
@@ -33,7 +34,7 @@ num_noise_level: 20
 predict_property: False
 
 # Logging and loading parameters
-load_model: true
+load_model: false
 model_location: wandb
 ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model-150-epochs-MFI-only.ckpt # not applicable if model is on WandB
 
@@ -42,7 +43,7 @@ experiment_name_to_load: train_cdivae_v3_DIVA_setup_copy
 
 # Training
 run_training: true
-resume_from_checkpoint: true
+resume_from_checkpoint: false
 
 # Reconstruction
 run_reconstruction: false

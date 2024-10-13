@@ -762,7 +762,7 @@ class CDiVAE_v3(BaseModule):
 
         kld_loss_d = self.kld_loss(zd_q_loc, zd_q_scale, zd_p_loc, zd_p_scale, zd)
         kld_loss_y = self.kld_loss(zy_q_loc, zy_q_scale, zy_p_loc, zy_p_scale, zy)
-        kld_loss = kld_loss_d + kld_loss_y
+        kld_loss = self.hparams.beta_d * kld_loss_d + self.hparams.beta_y * kld_loss_y
 
         domain_pred_loss = self.domain_pred_loss(domain_pred, batch)
         norm_hoa_pred_loss = self.norm_hoa_pred_loss(norm_hoa_pred, batch)
@@ -774,7 +774,7 @@ class CDiVAE_v3(BaseModule):
             self.hparams.cost_lattice * lattice_loss +
             self.hparams.cost_coord * coord_loss +
             self.hparams.cost_type * type_loss +
-            self.hparams.beta * kld_loss +
+            kld_loss +
             self.hparams.cost_composition * composition_loss +
             self.hparams.cost_domain * domain_pred_loss +
             self.hparams.cost_norm_hoa * norm_hoa_pred_loss +
@@ -868,6 +868,7 @@ class CDiVAE_v3(BaseModule):
                 f'{prefix}_loss': loss,
                 f'{prefix}_natom_accuracy': num_atom_accuracy,
                 f'{prefix}_domain_accuracy': domain_accuracy,
+                f'{prefix}_pzd_domain_accuracy': pzd_domain_accuracy,
                 f'{prefix}_lengths_mard': lengths_mard,
                 f'{prefix}_angles_mae': angles_mae,
                 f'{prefix}_volumes_mard': volumes_mard,

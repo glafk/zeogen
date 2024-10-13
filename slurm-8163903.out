@@ -1,0 +1,516 @@
+/home/dglavinkov/ondemand/zeogen/source/main.py:365: UserWarning: 
+The version_base parameter is not specified.
+Please specify a compatability version level, or None.
+Will assume defaults for version 1.1
+  @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="cdivae_v3")
+/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/defaults_list.py:251: UserWarning: In 'cdivae_v3': Defaults list is missing `_self_`. See https://hydra.cc/docs/1.2/upgrades/1.0_to_1.1/default_composition_order for more information
+  warnings.warn(msg, UserWarning)
+/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/hydra.py:119: UserWarning: Future Hydra versions will no longer change working directory at job runtime by default.
+See https://hydra.cc/docs/1.2/upgrades/1.1_to_1.2/changes_to_job_working_dir/ for more information.
+  ret = run_job(
+ENVIRONMENT VARIABLES:
+/home//dglavinkov/ondemand/zeogen/
+[[36m2024-10-13 01:46:07,080[0m][[34mhydra.utils[0m][[32mINFO[0m] - Instantiating <data_utils.data_module.CrystDataModule>[0m
+[[36m2024-10-13 01:46:07,099[0m][[34mhydra.utils[0m][[32mINFO[0m] - Instantiating <CDiVAE_v3.CDiVAE_v3>[0m
+Instantiating triplet interaction
+Instantiating TripInteraction_1
+Instantiating autoscaleFit for TripInteraction_1_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_1_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_1_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_2
+Instantiating autoscaleFit for TripInteraction_2_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_2_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_2_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_3
+Instantiating autoscaleFit for TripInteraction_3_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_3_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_3_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_0_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_0_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_1_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_1_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_2_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_2_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_3_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_3_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_1
+Instantiating autoscaleFit for TripInteraction_1_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_1_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_1_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_2
+Instantiating autoscaleFit for TripInteraction_2_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_2_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_2_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_3
+Instantiating autoscaleFit for TripInteraction_3_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_3_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_3_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_0_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_0_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_1_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_1_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_2_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_2_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_3_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_3_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating gemnet model
+Instantiating triplet interaction
+Instantiating TripInteraction_1
+Instantiating autoscaleFit for TripInteraction_1_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_1_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_1_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_2
+Instantiating autoscaleFit for TripInteraction_2_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_2_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_2_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_3
+Instantiating autoscaleFit for TripInteraction_3_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_3_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_3_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_0_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_0_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_1_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_1_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_2_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_2_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_3_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_3_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating gemnet model
+Instantiating triplet interaction
+Instantiating TripInteraction_1
+Instantiating autoscaleFit for TripInteraction_1_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_1_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_1_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_2
+Instantiating autoscaleFit for TripInteraction_2_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_2_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_2_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_3
+Instantiating autoscaleFit for TripInteraction_3_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_3_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_3_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_0_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_0_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_1_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_1_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_2_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_2_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_3_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_3_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+[[36m2024-10-13 01:46:08,794[0m][[34mhydra.utils[0m][[32mINFO[0m] - Passing scalers from datamodule to model>[0m
+[[36m2024-10-13 01:46:08,796[0m][[34mhydra.utils[0m][[32mINFO[0m] - Instantiating <WandbLogger>[0m
+[[36m2024-10-13 01:46:08,798[0m][[34mhydra.utils[0m][[32mINFO[0m] - W&B is now watching <{cfg.logging.wandb_watch.log}>![0m
+wandb: Using wandb-core as the SDK backend. Please refer to https://wandb.me/wandb-core for more information.
+wandb: Currently logged in as: glafk. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.18.1
+wandb: Run data is saved locally in ./wandb/run-20241013_014609-7ulm0s51
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run train_cdivae_v3_high_d_beta
+wandb: ⭐️ View project at https://wandb.ai/glafk/zeogen
+wandb: 🚀 View run at https://wandb.ai/glafk/zeogen/runs/7ulm0s51
+wandb: logging graph, to disable use `wandb.watch(log_graph=False)`
+[[36m2024-10-13 01:46:09,960[0m][[34mhydra.utils[0m][[32mINFO[0m] - Instantiating the Trainer[0m
+wandb: Downloading large artifact model-m4pftuxi:v0, 103.56MB. 1 files... 
+wandb:   1 of 1 files downloaded.  
+Done. 0:0:0.4
+You have turned on `Trainer(detect_anomaly=True)`. This will significantly slow down compute speed and is recommended only for model debugging.
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+Run ID for experiment 'train_cdivae_v3_DIVA_setup_copy' is: m4pftuxi
+[[36m2024-10-13 01:46:35,559[0m][[34mhydra.utils[0m][[32mINFO[0m] - Starting training![0m
+You are using a CUDA device ('NVIDIA A100-SXM4-40GB MIG 3g.20gb') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+Restoring states from the checkpoint path at /gpfs/home5/dglavinkov/ondemand/zeogen/hydra/singlerun/2024-10-13/train_cdivae_v3_high_d_beta/artifacts/model-m4pftuxi:v0/model.ckpt
+/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/pytorch_lightning/callbacks/model_checkpoint.py:361: The dirpath has changed from './zeogen/m4pftuxi/checkpoints' to './zeogen/7ulm0s51/checkpoints', therefore `best_model_score`, `kth_best_model_path`, `kth_value`, `last_model_path` and `best_k_models` won't be reloaded. Only `best_model_path` will be reloaded.
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [MIG-71410132-ba51-54d4-84db-e854d69891f7]
+
+   | Name               | Type              | Params
+----------------------------------------------------------
+0  | zd_encoder         | GemNetTEncoderExt | 2.5 M 
+1  | zy_encoder         | GemNetTEncoderExt | 2.5 M 
+2  | pzd                | CondPrior         | 33.4 K
+3  | pzy                | CondPrior         | 33.4 K
+4  | positions_decoder  | GemNetTDecoder    | 2.3 M 
+5  | types_decoder      | GemNetTDecoder    | 2.3 M 
+6  | domain_predictor   | Sequential        | 105 K 
+7  | hoa_mu_predictor   | Sequential        | 99.1 K
+8  | hoa_std_predictor  | Sequential        | 99.1 K
+9  | norm_hoa_predictor | Sequential        | 99.1 K
+10 | fc_num_atoms       | Sequential        | 362 K 
+11 | fc_lengths         | Sequential        | 99.6 K
+12 | fc_angles          | Sequential        | 99.6 K
+13 | fc_composition     | Sequential        | 99.1 K
+   | other params       | n/a               | 40    
+----------------------------------------------------------
+10.7 M    Trainable params
+108       Non-trainable params
+10.7 M    Total params
+42.752    Total estimated model params size (MB)
+Restored all states from the checkpoint at /gpfs/home5/dglavinkov/ondemand/zeogen/hydra/singlerun/2024-10-13/train_cdivae_v3_high_d_beta/artifacts/model-m4pftuxi:v0/model.ckpt
+SLURM auto-requeueing enabled. Setting signal handlers.
+Setting up data module
+Sanity Checking: |          | 0/? [00:00<?, ?it/s]/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/pytorch_lightning/trainer/connectors/data_connector.py:441: The 'val_dataloader' does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` to `num_workers=8` in the `DataLoader` to improve performance.
+Sanity Checking:   0%|          | 0/2 [00:00<?, ?it/s]Sanity Checking DataLoader 0:   0%|          | 0/2 [00:00<?, ?it/s]Error executing job with overrides: []
+Traceback (most recent call last):
+  File "/home/dglavinkov/ondemand/zeogen/source/main.py", line 386, in <module>
+    main()
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/main.py", line 94, in decorated_main
+    _run_hydra(
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/utils.py", line 394, in _run_hydra
+    _run_app(
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/utils.py", line 457, in _run_app
+    run_and_report(
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/utils.py", line 223, in run_and_report
+    raise ex
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/utils.py", line 220, in run_and_report
+    return func()
+           ^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/utils.py", line 458, in <lambda>
+    lambda: hydra.run(
+            ^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/hydra.py", line 132, in run
+    _ = ret.return_value
+        ^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/core/utils.py", line 260, in return_value
+    raise self._return_value
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/core/utils.py", line 186, in run_job
+    ret.return_value = task_function(task_cfg)
+                       ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/dglavinkov/ondemand/zeogen/source/main.py", line 371, in main
+    model = run_training(cfg)
+            ^^^^^^^^^^^^^^^^^
+  File "/home/dglavinkov/ondemand/zeogen/source/main.py", line 128, in run_training
+    trainer.fit(model=model, datamodule=datamodule, ckpt_path=model_path)
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/pytorch_lightning/trainer/trainer.py", line 544, in fit
+    call._call_and_handle_interrupt(
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/pytorch_lightning/trainer/call.py", line 44, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/pytorch_lightning/trainer/trainer.py", line 580, in _fit_impl
+    self._run(model, ckpt_path=ckpt_path)
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/pytorch_lightning/trainer/trainer.py", line 987, in _run
+    results = self._run_stage()
+              ^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/pytorch_lightning/trainer/trainer.py", line 1031, in _run_stage
+    self._run_sanity_check()
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/pytorch_lightning/trainer/trainer.py", line 1060, in _run_sanity_check
+    val_loop.run()
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/pytorch_lightning/loops/utilities.py", line 182, in _decorator
+    return loop_run(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/pytorch_lightning/loops/evaluation_loop.py", line 135, in run
+    self._evaluation_step(batch, batch_idx, dataloader_idx, dataloader_iter)
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/pytorch_lightning/loops/evaluation_loop.py", line 396, in _evaluation_step
+    output = call._call_strategy_hook(trainer, hook_name, *step_args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/pytorch_lightning/trainer/call.py", line 309, in _call_strategy_hook
+    output = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/pytorch_lightning/strategies/strategy.py", line 412, in validation_step
+    return self.lightning_module.validation_step(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/zeogen/source/CDiVAE_v3.py", line 911, in validation_step
+    log_dict, loss = self.compute_loss(batch, outputs, prefix='val')
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/zeogen/source/CDiVAE_v3.py", line 765, in compute_loss
+    kld_loss = self.hparams.beta_d.kld_loss_d + self.haprams.beta_y.kld_loss_y
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'float' object has no attribute 'kld_loss_d'
+[1;34mwandb[0m: 🚀 View run [33mtrain_cdivae_v3_high_d_beta[0m at: [34mhttps://wandb.ai/glafk/zeogen/runs/7ulm0s51[0m
+
+JOB STATISTICS
+==============
+Job ID: 8163903
+Cluster: snellius
+User/Group: dglavinkov/dglavinkov
+State: RUNNING
+Nodes: 1
+Cores per node: 9
+CPU Utilized: 00:00:00
+CPU Efficiency: 0.00% of 00:07:48 core-walltime
+Job Wall-clock time: 00:00:52
+Memory Utilized: 0.00 MB (estimated maximum)
+Memory Efficiency: 0.00% of 60.00 GB (60.00 GB/node)
+WARNING: Efficiency statistics may be misleading for RUNNING jobs.

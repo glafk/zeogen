@@ -1,4 +1,4 @@
-expname: sample_cdivae_v3_diva_copy
+expname: train_cdivae_v3_low_d_beta
 # metadata specialised for each experiment
 core:
   version: 1.0.0
