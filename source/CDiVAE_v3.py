@@ -15,6 +15,8 @@ from torch.nn import functional as F
 from torch_scatter import scatter
 from tqdm import tqdm
 import torch.distributions as dist
+from torchcrf import CRF
+from torch.nn.utils.rnn import pad_sequence
 
 from utils import add_object, log_config_to_wandb, masked_bce_loss
 from data_utils.crystal_utils import frac_to_cart_coords, cart_to_frac_coords, min_distance_sqr_pbc, mard, lengths_angles_to_volume
@@ -25,6 +27,50 @@ env.load_envs()
 PROJECT_ROOT = Path(env.get_env("PROJECT_ROOT"))
 
 ZEOLITE_CODES_MAPPING = {'DDRch1': 0, 'DDRch2': 1, 'FAU': 2, 'FAUch': 3, 'ITW': 4, 'MEL': 5, 'MELch': 6, 'MFI': 7, 'MOR': 8, 'RHO': 9, 'TON': 10, 'TON2': 11, 'TON3': 12, 'TON4': 13, 'TONch': 14, 'BEC': 15, 'CHA': 16, 'ERI': 17, 'FER': 18, 'HEU': 19, 'LTA': 20, 'LTL': 21, 'MER': 22, 'MTW': 23, 'NAT': 24, 'YFI': 25, "DDR": 26}
+
+
+def pad_tensors(sequences):
+    """
+    :param sequences: list of tensors
+    :return:
+    """
+    num = len(sequences)
+    max_len = max([s.size(0) for s in sequences])
+    out_dims = (num, max_len)
+    out_tensor = sequences[0].data.new(*out_dims).fill_(0)
+    mask = sequences[0].data.new(*out_dims).fill_(0)
+    for i, tensor in enumerate(sequences):
+        length = tensor.size(0)
+        out_tensor[i, :length] = tensor
+        mask[i, :length] = 1
+    return out_tensor, mask
+
+def pad_predictions(predictions, batch_indices):
+        # Step 1: Find the batch size and max padded length
+    batch_size = max(batch_indices) + 1
+    grouped_predictions = [[] for _ in range(batch_size)]
+    mask = [[] for _ in range(batch_size)]
+    
+    # Step 2: Group predictions by batch index
+    for pred, idx in zip(predictions, batch_indices):
+        grouped_predictions[idx].append(pred.cpu().detach())
+        mask[idx].append(1)
+
+    # Step 3: Find the maximum length for padding
+    max_length = max(len(group) for group in grouped_predictions)
+
+    # Step 4: Pad each group to max_length
+    padded_predictions = []
+    padded_mask = []
+    for group, mask_group in zip(grouped_predictions, mask):
+        # If group is shorter than max_length, pad with pad_value
+        padded_group = group + [torch.randn(2)] * (max_length - len(group))
+        padded_mask_group = mask_group + [0] * (max_length - len(group))
+        padded_predictions.append(padded_group)
+        padded_mask.append(padded_mask_group)
+
+    # Convert the result to a tensor
+    return torch.tensor(np.array(padded_predictions)).to(predictions.device), torch.tensor(padded_mask).to(predictions.device)
 
 def build_mlp(in_dim, hidden_dim, fc_num_layers, out_dim, final_activation=None):
     mods = [nn.Linear(in_dim, hidden_dim), nn.ReLU()]
@@ -138,6 +184,8 @@ class CDiVAE_v3(BaseModule):
                                    self.hparams.fc_num_layers, 3, final_activation='sigmoid')
         self.fc_composition = build_mlp(self.hparams.class_latent_dim, self.hparams.hidden_dim,
                                         self.hparams.fc_num_layers, 1, final_activation="hard_sigmoid")
+
+        self.crf_layer = CRF(2, batch_first=True)
 
         sigmas = torch.tensor(np.exp(np.linspace(
             np.log(self.hparams.sigma_begin),
@@ -359,6 +407,20 @@ class CDiVAE_v3(BaseModule):
         _, pred_atom_types = self.types_decoder(
                 zy, pred_frac_coords, noisy_atom_types, batch.num_atoms, pred_lengths, pred_angles)
 
+        unique_crystal_ids = batch.batch.unique()
+        atom_types = batch.atom_types - 13
+        crystal_logits = [torch.index_select(pred_atom_types, 0, torch.nonzero(batch.batch == cid, as_tuple=True)[0]) for cid in unique_crystal_ids]
+        crystal_labels = [torch.index_select(atom_types, 0, torch.nonzero(batch.batch == cid, as_tuple=True)[0]) for cid in unique_crystal_ids]
+
+        padded_logits = pad_sequence(crystal_logits, batch_first=True)  # Shape: [batch_size, max_num_atoms, 2]
+        padded_labels = pad_sequence(crystal_labels, batch_first=True)  # Shape: [batch_size, max_num_atoms]
+        mask = pad_sequence([torch.ones(len(seq), dtype=torch.uint8) for seq in crystal_labels], batch_first=True).to(self.device)
+
+        # Unlike the other losses which are calucalted after the fowrard pass
+        # this one is calculated directly by the CRF layer
+        type_loss = -self.crf_layer(padded_logits, padded_labels, mask=mask.bool())
+        pred_atom_types = self.crf_layer.decode(padded_logits, mask=mask.bool())
+
         # Predict domain and HOA
         domain_pred = self.domain_predictor(zd)
         hoa_mu_pred = self.hoa_mu_predictor(zd)
@@ -377,6 +439,7 @@ class CDiVAE_v3(BaseModule):
             'pred_angles': pred_angles,
             'pred_cart_coord_diff': pred_cart_coord_diff,
             'pred_atom_types': pred_atom_types,
+            'type_loss': type_loss,
             'pred_si_ratio_per_crystal': pred_si_ratio_per_crystal,
             # 'pred_composition_ratio': pred_composition_ratio,
             'used_sigmas_per_atom': used_sigmas_per_atom,
@@ -512,8 +575,8 @@ class CDiVAE_v3(BaseModule):
         output_dict = {'zd': zd.cpu().numpy(), 'zy': zy.cpu().numpy(),
                        'num_atoms': num_atoms.cpu().numpy(), 'lengths': lengths.cpu().numpy(), 'angles': angles.cpu().numpy(),
                        'frac_coords': cur_frac_coords.cpu().numpy(), 'atom_types': cur_atom_types.cpu().numpy(),
-                       'domains': [domain] * len(norm_hoas), 'norm_hoas': norm_hoas,
-                       'pred_hoas': pred_hoas.cpu().numpy(),
+                       # 'domains': [domain] * len(norm_hoas), 'norm_hoas': norm_hoas,
+                       # 'pred_hoas': pred_hoas.cpu().numpy(),
                        'is_traj': False}
 
         if ld_kwargs.save_traj:
@@ -625,9 +688,17 @@ class CDiVAE_v3(BaseModule):
             None
         """
         # Reconstruct materials from dataset sample
-        mu, log_var, z = self.encode(batch)
+        (zd_q_loc, 
+         zd_q_scale, 
+         zy_q_loc, 
+         zy_q_scale, 
+         hidden_d, 
+         hidden_y,
+         zd, 
+         zy,
+         z) = self.encode(batch)
 
-        reconstruction = self.langevin_dynamics(z, ld_kwargs)
+        reconstruction = self.langevin_dynamics(zd, zy, ld_kwargs)
 
         add_object(reconstruction, reconstructions_path)
         add_object(batch, ground_truth_path)
@@ -733,6 +804,7 @@ class CDiVAE_v3(BaseModule):
         pred_si_ratio_per_crystal = outputs['pred_si_ratio_per_crystal']
         pred_cart_coord_diff = outputs['pred_cart_coord_diff']
         pred_atom_types = outputs['pred_atom_types']
+        type_loss = outputs['type_loss']
         noisy_frac_coords = outputs['noisy_frac_coords']
         used_sigmas_per_atom = outputs['used_sigmas_per_atom']
         type_noise = outputs['type_noise']
@@ -757,8 +829,8 @@ class CDiVAE_v3(BaseModule):
             pred_si_ratio_per_crystal, batch)
         coord_loss = self.coord_loss(
             pred_cart_coord_diff, noisy_frac_coords, used_sigmas_per_atom, batch)
-        type_loss = self.type_loss(pred_atom_types, batch.atom_types,
-                                   type_noise, batch)
+        # type_loss = self.type_loss(pred_atom_types, batch.atom_types,
+        #                           type_noise, batch)
 
         kld_loss_d = self.kld_loss(zd_q_loc, zd_q_scale, zd_p_loc, zd_p_scale, zd)
         kld_loss_y = self.kld_loss(zy_q_loc, zy_q_scale, zy_p_loc, zy_p_scale, zy)
@@ -829,15 +901,16 @@ class CDiVAE_v3(BaseModule):
             # evaluate atom type prediction.
             pred_atom_types = outputs['pred_atom_types']
             target_atom_types = outputs['target_atom_types']
-            type_accuracy = pred_atom_types.argmax(
-                dim=-1) == (target_atom_types - 13)
+            flattened_pred_atom_types = [pred for predictions in pred_atom_types for pred in predictions]
+            pred_atom_types = torch.tensor(flattened_pred_atom_types).to(self.device)
+            type_accuracy = pred_atom_types == (target_atom_types - 13)
             type_accuracy = scatter(type_accuracy.float(
             ), batch.batch, dim=0, reduce='mean').mean()
 
             # Evaluate aluminum atom predictions
             al_mask = target_atom_types == 13
 
-            al_type_accuracy = pred_atom_types.argmax(dim=-1)[al_mask] == (target_atom_types[al_mask] - 13)
+            al_type_accuracy = pred_atom_types[al_mask] == (target_atom_types[al_mask] - 13)
 
             # Calculate the mean accuracy over the selected atoms and scatter to the batch level
             al_type_accuracy = scatter(al_type_accuracy.float(), batch.batch[al_mask], dim=0, reduce='mean').mean()

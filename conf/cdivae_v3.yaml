@@ -1,4 +1,4 @@
-expname: train_cdivae_v3_low_d_beta
+expname: train_cdivaev3_crf_layer
 # metadata specialised for each experiment
 core:
   version: 1.0.0
