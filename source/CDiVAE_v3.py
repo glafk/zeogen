@@ -340,6 +340,10 @@ class CDiVAE_v3(BaseModule):
             pred_cart_coords, pred_lengths, pred_angles, batch.num_atoms
         )
 
+        # Turn off gradient tracking for these coords to prevent mixing of gradients
+        # between the two decoders and mixing information between to two latent spaces
+        pred_cart_coords = pred_cart_coords.detach()
+
         try:
             # This variable will determine whether to sample noise according to the 
             # ground truth or the predicted number of atoms

@@ -1,4 +1,4 @@
-expname: train_cdivaev3_crf_layer
+expname: train_crf_separate_grads
 # metadata specialised for each experiment
 core:
   version: 1.0.0
