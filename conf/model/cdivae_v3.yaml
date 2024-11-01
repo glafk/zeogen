@@ -1,10 +1,10 @@
 _target_: CDiVAE_v3.CDiVAE_v3
 
 # Model parameters
-hidden_dim: 256
-domain_latent_dim: 128
-class_latent_dim: 128
-total_latent_dim: 256
+hidden_dim: 32
+domain_latent_dim: 32
+class_latent_dim: 32
+total_latent_dim: 64
 fc_num_layers: 2
 max_atoms: ${data.max_atoms}
 cost_natom: 1.
@@ -28,8 +28,8 @@ max_neighbors: 20  # maximum number of neighbors for OTF graph bulding in decode
 radius: 6.  # maximum search radius for OTF graph building in decoder
 sigma_begin: 5.0
 sigma_end: 0.05
-type_sigma_begin: 3
-type_sigma_end: 1
+type_sigma_begin: 0.5
+type_sigma_end: 0.05
 num_noise_level: 20
 predict_property: False
 

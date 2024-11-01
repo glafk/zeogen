@@ -17,6 +17,7 @@ from tqdm import tqdm
 import torch.distributions as dist
 from torchcrf import CRF
 from torch.nn.utils.rnn import pad_sequence
+from scipy.optimize import linear_sum_assignment
 
 from utils import add_object, log_config_to_wandb, masked_bce_loss
 from data_utils.crystal_utils import frac_to_cart_coords, cart_to_frac_coords, min_distance_sqr_pbc, mard, lengths_angles_to_volume
@@ -29,48 +30,51 @@ PROJECT_ROOT = Path(env.get_env("PROJECT_ROOT"))
 ZEOLITE_CODES_MAPPING = {'DDRch1': 0, 'DDRch2': 1, 'FAU': 2, 'FAUch': 3, 'ITW': 4, 'MEL': 5, 'MELch': 6, 'MFI': 7, 'MOR': 8, 'RHO': 9, 'TON': 10, 'TON2': 11, 'TON3': 12, 'TON4': 13, 'TONch': 14, 'BEC': 15, 'CHA': 16, 'ERI': 17, 'FER': 18, 'HEU': 19, 'LTA': 20, 'LTL': 21, 'MER': 22, 'MTW': 23, 'NAT': 24, 'YFI': 25, "DDR": 26}
 
 
-def pad_tensors(sequences):
+def permutate_al_atoms(frac_coords: torch.Tensor, atom_types: torch.Tensor, sigma: float) -> torch.Tensor:
     """
-    :param sequences: list of tensors
-    :return:
-    """
-    num = len(sequences)
-    max_len = max([s.size(0) for s in sequences])
-    out_dims = (num, max_len)
-    out_tensor = sequences[0].data.new(*out_dims).fill_(0)
-    mask = sequences[0].data.new(*out_dims).fill_(0)
-    for i, tensor in enumerate(sequences):
-        length = tensor.size(0)
-        out_tensor[i, :length] = tensor
-        mask[i, :length] = 1
-    return out_tensor, mask
+    Permute aluminum atoms in the unit cell.
 
-def pad_predictions(predictions, batch_indices):
-        # Step 1: Find the batch size and max padded length
-    batch_size = max(batch_indices) + 1
-    grouped_predictions = [[] for _ in range(batch_size)]
-    mask = [[] for _ in range(batch_size)]
+    Args:
+        frac_coords (torch.Tensor): Fractional coordinates of the unit cell.
+        atom_types (torch.Tensor): Atom types of the unit cell.
+        noise_level (float): Noise level to add to the permutation.
+
+    Returns:
+        torch.Tensor: Permutated atom types.
     
-    # Step 2: Group predictions by batch index
-    for pred, idx in zip(predictions, batch_indices):
-        grouped_predictions[idx].append(pred.cpu().detach())
-        mask[idx].append(1)
+    """
 
-    # Step 3: Find the maximum length for padding
-    max_length = max(len(group) for group in grouped_predictions)
+    al_indices = torch.where(atom_types == 0)[0]  # Indices of aluminum atoms
 
-    # Step 4: Pad each group to max_length
-    padded_predictions = []
-    padded_mask = []
-    for group, mask_group in zip(grouped_predictions, mask):
-        # If group is shorter than max_length, pad with pad_value
-        padded_group = group + [torch.randn(2)] * (max_length - len(group))
-        padded_mask_group = mask_group + [0] * (max_length - len(group))
-        padded_predictions.append(padded_group)
-        padded_mask.append(padded_mask_group)
+    noisy_coords = frac_coords.clone()
+    noise = torch.normal(mean=0.0, std=sigma, size=(len(al_indices), 3)).to(frac_coords.device)
+    noisy_coords[al_indices] += noise
+    noisy_coords = noisy_coords[al_indices]
 
-    # Convert the result to a tensor
-    return torch.tensor(np.array(padded_predictions)).to(predictions.device), torch.tensor(padded_mask).to(predictions.device)
+    # Apply periodic boundary conditions (wrap coordinates to [0, 1))
+    noisy_coords %= 1.0
+
+    coords_np = frac_coords.detach().cpu().numpy()
+    noisy_coords_np = noisy_coords.detach().cpu().numpy()
+
+    dist_matrix = np.linalg.norm(
+        np.minimum(np.abs(coords_np[:, None, :] - noisy_coords_np[None, :, :]),
+                1 - np.abs(coords_np[:, None, :] - noisy_coords_np[None, :, :])),
+        axis=-1
+    )
+
+    # Solve the optimal transport (linear assignment) problem
+    row_ind, _ = linear_sum_assignment(dist_matrix)
+
+    permuted_types = atom_types.clone()
+
+    # Apply the permutation
+    # First set all al indices to be 1, assuming we will move them
+    permuted_types[al_indices] = 1
+    # Take one out of the new positons of the Al indices to indicate where they are
+    permuted_types[row_ind] -= 1
+
+    return permuted_types
 
 def build_mlp(in_dim, hidden_dim, fc_num_layers, out_dim, final_activation=None):
     mods = [nn.Linear(in_dim, hidden_dim), nn.ReLU()]
@@ -93,9 +97,13 @@ def build_mlp(in_dim, hidden_dim, fc_num_layers, out_dim, final_activation=None)
 
 
 class CondPrior(nn.Module):
-    def __init__(self, cond_dim, z_dim):
+    def __init__(self, cond_dim, z_dim, embed=False):
         super(CondPrior, self).__init__()
-        self.fc1 = nn.Sequential(nn.Linear(cond_dim, z_dim, bias=False), nn.BatchNorm1d(z_dim), nn.ReLU())
+        self.emb = nn.Embedding(len(ZEOLITE_CODES_MAPPING.keys()), 128)
+        if embed:
+            self.fc1 = nn.Sequential(nn.Linear(128, z_dim, bias=False), nn.BatchNorm1d(z_dim), nn.ReLU())
+        else:
+            self.fc1 = nn.Sequential(nn.Linear(cond_dim, z_dim, bias=False), nn.BatchNorm1d(z_dim), nn.ReLU())
         self.fc21 = nn.Sequential(nn.Linear(z_dim, z_dim))
         self.fc22 = nn.Sequential(nn.Linear(z_dim, z_dim), nn.Softplus())
 
@@ -105,7 +113,10 @@ class CondPrior(nn.Module):
         torch.nn.init.xavier_uniform_(self.fc22[0].weight)
         self.fc22[0].bias.data.zero_()
 
-    def forward(self, condition):
+    def forward(self, condition, embed=False):
+        if embed:
+            condition = self.emb(condition)
+        
         hidden = self.fc1(condition)
         z_loc = self.fc21(hidden)
         z_scale = self.fc22(hidden) + 1e-7
@@ -145,7 +156,7 @@ class CDiVAE_v3(BaseModule):
         self.zy_encoder = hydra.utils.instantiate(
             self.hparams.cdivae_v3["encoders"]["class_encoder"], num_targets=self.hparams.class_latent_dim) # DIVA -> self.qzy
 
-        self.pzd = CondPrior(1, self.hparams.domain_latent_dim)
+        self.pzd = CondPrior(1, self.hparams.domain_latent_dim, embed=True)
 
         # Hard code one as y in this case would be the HOA which is just a scalar
         self.pzy = CondPrior(1, self.hparams.class_latent_dim)
@@ -363,8 +374,16 @@ class CDiVAE_v3(BaseModule):
             # push them back to the original atom types. Since the pred_compositon probs
             # have a shape of [batch_size, max_atoms] we need to slice only the for which we have 
             # ground truth atoms
-            atom_type_probs = (F.one_hot(batch.atom_types - 13, num_classes=2) 
-                + (torch.rand_like(type_noise.float()) * type_noise).unsqueeze(dim=1))
+            frac_coords_copy = batch.frac_coords.clone()
+            frac_coords_copy = torch.split(frac_coords_copy, batch.num_atoms.tolist())
+            atom_types_copy = batch.atom_types.clone()
+            atom_types_copy = torch.split(atom_types_copy, batch.num_atoms.tolist())
+            noisy_atom_types = [permutate_al_atoms(frac_coords_copy[i], atom_types_copy[i] - 13, type_noise[i]) for i in range(len(frac_coords_copy))]
+
+            del frac_coords_copy
+            del atom_types_copy
+            
+            noisy_atom_types = torch.cat(noisy_atom_types, dim=-1)
             
             # Clamp the atom_type_probs to ensure no probability going into the torch.multinomial sampling is negative
             # atom_type_probs = torch.clamp(atom_type_probs, max=1)
@@ -378,7 +397,7 @@ class CDiVAE_v3(BaseModule):
             # pred_composition_per_atom = F.softmax(pred_composition_per_atom, dim=-1)
 
             # Adjust with 13 to end up with only Al and Si atoms
-            noisy_atom_types = torch.multinomial(atom_type_probs, num_samples=1).squeeze(1) + 13
+            noisy_atom_types = noisy_atom_types + 13
         except Exception as e:
             print("atoms_error", e)
             batch = {
@@ -428,7 +447,8 @@ class CDiVAE_v3(BaseModule):
         norm_hoa_pred = self.norm_hoa_predictor(zy)       
 
         # Predict parameters of conditional distributions
-        zd_p_loc, zd_p_scale = self.pzd(batch['zeolite_code_enc'].float().view(-1, 1))
+        # Do proper one hot encoding
+        zd_p_loc, zd_p_scale = self.pzd(batch['zeolite_code_enc'], embed=True)
         zy_p_loc, zy_p_scale = self.pzy(batch['norm_hoa'].view(-1, 1))
         # endregion
 
