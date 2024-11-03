@@ -1,4 +1,4 @@
-expname: test_new_cond_prior
+expname: train_cdivaev3_predicted_coords_in_type_decoder
 # metadata specialised for each experiment
 core:
   version: 1.0.0

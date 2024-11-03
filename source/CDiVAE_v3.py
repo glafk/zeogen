@@ -346,7 +346,7 @@ class CDiVAE_v3(BaseModule):
 
         # Before going to the second decoder, calucate the predicted positions of atoms
         # by adding the predicted cartesian coord diff to the original coords
-        pred_cart_coords = cart_coords + pred_cart_coord_diff
+        pred_cart_coords = noisy_cart_coords + pred_cart_coord_diff
         pred_frac_coords = cart_to_frac_coords(
             pred_cart_coords, pred_lengths, pred_angles, batch.num_atoms
         )
@@ -427,8 +427,12 @@ class CDiVAE_v3(BaseModule):
 
             raise e
 
-        _, pred_atom_types = self.types_decoder(
-                zy, pred_frac_coords, noisy_atom_types, batch.num_atoms, pred_lengths, pred_angles)
+        if teacher_forcing:
+            _, pred_atom_types = self.types_decoder(
+                    zy, batch.frac_coords.clone(), noisy_atom_types, batch.num_atoms, pred_lengths, pred_angles)
+        else:
+            _, pred_atom_types = self.types_decoder(
+                    zy, pred_cart_coords, noisy_atom_types, batch.num_atoms, pred_lengths, pred_angles)
 
         unique_crystal_ids = batch.batch.unique()
         atom_types = batch.atom_types - 13
