@@ -32,47 +32,54 @@ ZEOLITE_CODES_MAPPING = {'DDRch1': 0, 'DDRch2': 1, 'FAU': 2, 'FAUch': 3, 'ITW': 
 
 def permutate_al_atoms(frac_coords: torch.Tensor, atom_types: torch.Tensor, sigma: float) -> torch.Tensor:
     """
-    Permute aluminum atoms in the unit cell.
+    Permute aluminum atoms in the unit cell by adding noise and assigning them to the closest
+    positions in the original coordinates, while swapping types to maintain the composition.
 
     Args:
         frac_coords (torch.Tensor): Fractional coordinates of the unit cell.
         atom_types (torch.Tensor): Atom types of the unit cell.
-        noise_level (float): Noise level to add to the permutation.
+        sigma (float): Standard deviation of the noise to add to the aluminum atoms' positions.
 
     Returns:
         torch.Tensor: Permutated atom types.
-    
+        torch.Tensor: Noisy coordinates of aluminum atoms.
     """
+    # Get the indices of aluminum atoms (0 indicates aluminum)
+    al_indices = torch.where(atom_types == 0)[0]
 
-    al_indices = torch.where(atom_types == 0)[0]  # Indices of aluminum atoms
-
+    # Create noisy positions for aluminum atoms
     noisy_coords = frac_coords.clone()
     noise = torch.normal(mean=0.0, std=sigma, size=(len(al_indices), 3)).to(frac_coords.device)
     noisy_coords[al_indices] += noise
-    noisy_coords = noisy_coords[al_indices]
 
     # Apply periodic boundary conditions (wrap coordinates to [0, 1))
     noisy_coords %= 1.0
 
-    coords_np = frac_coords.detach().cpu().numpy()
-    noisy_coords_np = noisy_coords.detach().cpu().numpy()
+    # Extract noisy coordinates for aluminum atoms only
+    noisy_al_coords = noisy_coords[al_indices]
 
+    # Convert coordinates to numpy for linear_sum_assignment
+    coords_np = frac_coords.detach().cpu().numpy()
+    noisy_al_coords_np = noisy_al_coords.detach().cpu().numpy()
+
+    # Calculate distance matrix between noisy aluminum coordinates and all original coordinates
     dist_matrix = np.linalg.norm(
-        np.minimum(np.abs(coords_np[:, None, :] - noisy_coords_np[None, :, :]),
-                1 - np.abs(coords_np[:, None, :] - noisy_coords_np[None, :, :])),
+        np.minimum(np.abs(coords_np[:, None, :] - noisy_al_coords_np[None, :, :]),
+                   1 - np.abs(coords_np[:, None, :] - noisy_al_coords_np[None, :, :])),
         axis=-1
     )
 
     # Solve the optimal transport (linear assignment) problem
-    row_ind, _ = linear_sum_assignment(dist_matrix)
+    row_ind, col_ind = linear_sum_assignment(dist_matrix)
 
+    # Create a copy of atom types to apply the permutation
     permuted_types = atom_types.clone()
 
-    # Apply the permutation
-    # First set all al indices to be 1, assuming we will move them
-    permuted_types[al_indices] = 1
-    # Take one out of the new positons of the Al indices to indicate where they are
-    permuted_types[row_ind] -= 1
+    # Swap the atom types between aluminum atoms and the atoms they replace
+    for orig_idx, new_idx in zip(row_ind, col_ind):
+        # Swap types: set the type at `new_idx` to aluminum (0) and the type at `orig_idx` to what was at `new_idx`
+        permuted_types[al_indices[new_idx]] = atom_types[orig_idx]
+        permuted_types[orig_idx] = atom_types[al_indices[new_idx]]
 
     return permuted_types
 
@@ -432,7 +439,7 @@ class CDiVAE_v3(BaseModule):
                     zy, batch.frac_coords.clone(), noisy_atom_types, batch.num_atoms, pred_lengths, pred_angles)
         else:
             _, pred_atom_types = self.types_decoder(
-                    zy, pred_cart_coords, noisy_atom_types, batch.num_atoms, pred_lengths, pred_angles)
+                    zy, pred_frac_coords, noisy_atom_types, batch.num_atoms, pred_lengths, pred_angles)
 
         unique_crystal_ids = batch.batch.unique()
         atom_types = batch.atom_types - 13
