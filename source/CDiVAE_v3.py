@@ -598,7 +598,12 @@ class CDiVAE_v3(BaseModule):
                 if gt_atom_types is None:
                     _, pred_atom_types = self.types_decoder(
                         zy, cur_frac_coords, cur_atom_types, num_atoms, lengths, angles)
-                    cur_atom_types = torch.argmax(pred_atom_types, dim=1) + 13
+
+                    crystal_logits = torch.split(pred_atom_types, num_atoms.clone().detach().cpu().numpy().tolist())
+                    padded_logits = pad_sequence(crystal_logits, batch_first=True)
+                    mask = pad_sequence([torch.ones(seq, dtype=torch.uint8) for seq in num_atoms], batch_first=True).to(self.device)
+                    pred_atom_types = self.crf_layer.decode(padded_logits, mask=mask.bool())
+                    cur_atom_types = torch.cat([torch.tensor(crystal) for crystal in pred_atom_types]).to(self.device) + 13
 
                 if ld_kwargs.save_traj:
                     all_frac_coords.append(cur_frac_coords)
@@ -610,8 +615,8 @@ class CDiVAE_v3(BaseModule):
         output_dict = {'zd': zd.cpu().numpy(), 'zy': zy.cpu().numpy(),
                        'num_atoms': num_atoms.cpu().numpy(), 'lengths': lengths.cpu().numpy(), 'angles': angles.cpu().numpy(),
                        'frac_coords': cur_frac_coords.cpu().numpy(), 'atom_types': cur_atom_types.cpu().numpy(),
-                       # 'domains': [domain] * len(norm_hoas), 'norm_hoas': norm_hoas,
-                       # 'pred_hoas': pred_hoas.cpu().numpy(),
+                       'domains': [domain] * len(norm_hoas), 'norm_hoas': norm_hoas,
+                       'pred_hoas': pred_hoas.cpu().numpy(),
                        'is_traj': False}
 
         if ld_kwargs.save_traj:
@@ -657,7 +662,7 @@ class CDiVAE_v3(BaseModule):
             if len(domain.split('/')) == 1:
                 print(f"Sampling domain: {domain}")
                 # Here we are in the case where we condition on a single domain which we have seen
-                zd_p_loc, zd_p_scale = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain]], device=self.device).float().view(-1, 1))
+                zd_p_loc, zd_p_scale = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain]], device=self.device), embed=True)
                 zy_p_loc, zy_p_scale = self.pzy(torch.tensor([norm_hoas], device=self.device).view(-1, 1)) 
                 
                 pzd = dist.Normal(zd_p_loc, zd_p_scale)
