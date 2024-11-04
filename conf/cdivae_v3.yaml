@@ -1,4 +1,4 @@
-expname: train_cdivaev3_predicted_coords_in_type_decoder
+expname: sample_cdivaev3_fixed_atom_noising
 # metadata specialised for each experiment
 core:
   version: 1.0.0
