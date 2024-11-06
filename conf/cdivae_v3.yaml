@@ -1,4 +1,4 @@
-expname: sample_cdivaev3_fixed_atom_noising
+expname: debug_sampling
 # metadata specialised for each experiment
 core:
   version: 1.0.0
@@ -10,7 +10,7 @@ hydra:
     dir: ${oc.env:HYDRA_JOBS}/singlerun/${now:%Y-%m-%d}/${expname}/
 
 defaults:
-  - data: data_combined
+  - data: data_MOR_only
   - model: cdivae_v3
   - optim: optim
   - train: train

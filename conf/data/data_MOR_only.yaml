@@ -7,14 +7,14 @@ graph_method: crystalnn
 lattice_scale_method: scale_length
 preprocess_workers: 4
 readout: mean
-max_atoms: 128
+max_atoms: 1024
 otf_graph: false
 eval_model_name: diffusion
 
 
-train_max_epochs: 150
-early_stopping_patience: 100
-teacher_forcing_max_epoch: 150
+train_max_epochs: 50
+early_stopping_patience: 20
+teacher_forcing_max_epoch: 10
 
 datamodule:
   _target_: data_utils.data_module.CrystDataModule
@@ -69,13 +69,13 @@ datamodule:
       num_records: 10
 
   num_workers:
-    train: 4
-    val: 4
-    test: 4
-    predict: 4
+    train: 0
+    val: 0
+    test: 0
+    predict: 0
 
   batch_size:
-    train: 32
-    val: 32
-    test: 32
+    train: 16
+    val: 16
+    test: 16
     predict: 1

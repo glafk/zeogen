@@ -994,7 +994,7 @@ def save_samples_as_cifs(samples: dict, directory: str,
         filename = os.path.join(directory, f"sample_{sample['domain']}_{str(sample['norm_hoa']).replace('.', '_')}.cif")
 
         if sample.get("is_traj", True) and save_trajectory:
-            traj_directory = os.path.join(directory, f"reconstruction_{sample['domain']}_{sample['norm_hoa']}_traj")
+            traj_directory = os.path.join(directory, f"trajectory_{sample['domain']}_{sample['norm_hoa']}_traj")
             if not os.path.exists(traj_directory):
                 os.makedirs(traj_directory)
             sample2cif(sample, filename, traj_directory, save_trajectory=True, downsample_trajectory=downsample_trajectory, downsample_frame_rate=downsample_frame_rate)
