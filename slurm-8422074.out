@@ -1,0 +1,436 @@
+/home/dglavinkov/ondemand/zeogen/source/main.py:365: UserWarning: 
+The version_base parameter is not specified.
+Please specify a compatability version level, or None.
+Will assume defaults for version 1.1
+  @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="cdivae_v3")
+/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/defaults_list.py:251: UserWarning: In 'cdivae_v3': Defaults list is missing `_self_`. See https://hydra.cc/docs/1.2/upgrades/1.0_to_1.1/default_composition_order for more information
+  warnings.warn(msg, UserWarning)
+/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/hydra.py:119: UserWarning: Future Hydra versions will no longer change working directory at job runtime by default.
+See https://hydra.cc/docs/1.2/upgrades/1.1_to_1.2/changes_to_job_working_dir/ for more information.
+  ret = run_job(
+ENVIRONMENT VARIABLES:
+/home//dglavinkov/ondemand/zeogen/
+wandb: Using wandb-core as the SDK backend. Please refer to https://wandb.me/wandb-core for more information.
+wandb: Currently logged in as: glafk. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.18.1
+wandb: Run data is saved locally in /home//dglavinkov/ondemand/zeogen/wandb/wandb/run-20241105_231911-ghqrfnfe
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run sample_cdivaev3_fixed_atom_noising
+wandb: ⭐️ View project at https://wandb.ai/glafk/zeogen
+wandb: 🚀 View run at https://wandb.ai/glafk/zeogen/runs/ghqrfnfe
+wandb: Downloading large artifact model-0ywqc4x0:v0, 103.80MB. 1 files... 
+wandb:   1 of 1 files downloaded.  
+Done. 0:0:0.5
+Run ID for experiment 'train_cdivaev3_fixed_atom_noising' is: 0ywqc4x0
+dict_keys(['epoch', 'global_step', 'pytorch-lightning_version', 'state_dict', 'loops', 'callbacks', 'optimizer_states', 'lr_schedulers', 'hparams_name', 'hyper_parameters'])
+Loading model from downloaded file at /gpfs/home5/dglavinkov/ondemand/zeogen/hydra/singlerun/2024-11-05/sample_cdivaev3_fixed_atom_noising/artifacts/model-0ywqc4x0:v0/model.ckpt
+Instantiating triplet interaction
+Instantiating TripInteraction_1
+Instantiating autoscaleFit for TripInteraction_1_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_1_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_1_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_2
+Instantiating autoscaleFit for TripInteraction_2_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_2_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_2_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_3
+Instantiating autoscaleFit for TripInteraction_3_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_3_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_3_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_0_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_0_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_1_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_1_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_2_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_2_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_3_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_3_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/d_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_1
+Instantiating autoscaleFit for TripInteraction_1_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_1_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_1_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_2
+Instantiating autoscaleFit for TripInteraction_2_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_2_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_2_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_3
+Instantiating autoscaleFit for TripInteraction_3_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_3_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_3_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_0_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_0_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_1_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_1_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_2_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_2_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_3_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_3_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/y_encoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating gemnet model
+Instantiating triplet interaction
+Instantiating TripInteraction_1
+Instantiating autoscaleFit for TripInteraction_1_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_1_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_1_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_2
+Instantiating autoscaleFit for TripInteraction_2_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_2_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_2_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_3
+Instantiating autoscaleFit for TripInteraction_3_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_3_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_3_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_0_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_0_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_1_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_1_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_2_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_2_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_3_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_3_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating gemnet model
+Instantiating triplet interaction
+Instantiating TripInteraction_1
+Instantiating autoscaleFit for TripInteraction_1_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_1_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_1_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_2
+Instantiating autoscaleFit for TripInteraction_2_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_2_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_2_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_3
+Instantiating autoscaleFit for TripInteraction_3_had_rbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_3_sum_cbf
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_3_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_0_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_0_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_1_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_1_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_2_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_2_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_3_sum
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_3_had
+AutomaticFit init called.
+Loading maybe - from /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdivae_v3/types_decoder_scaling_factors_total_dataset_CDiVAE.json.
+Fitting mode:  False
+Fitted:  True
+[[36m2024-11-05 23:19:43,223[0m][[34mhydra.utils[0m][[32mINFO[0m] - Instantiating <data_utils.data_module.CrystDataModule>[0m
+[[36m2024-11-05 23:19:43,243[0m][[34mhydra.utils[0m][[32mINFO[0m] - Passing scalers from datamodule to model>[0m
+/gpfs/home5/dglavinkov/ondemand/zeogen/source/data_utils/crystal_utils.py:568: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  X = torch.tensor(X, dtype=torch.float)
+Sampling 5 crystals per domain with the following HOAs: [0.0, 0.5, 1.0, 1.5, 2.0].
+Domains: ['DDR', 'FAU', 'ITW', 'MEL', 'MFI', 'MOR', 'RHO', 'DDR/FAU', 'FAU/ITW', 'ITW/MEL', 'MEL/MFI', 'MFI/MOR', 'MOR/RHO', 'RHO/DDR']
+Sampling domain: DDR
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:08<02:48,  8.89s/it] 10%|█         | 2/20 [00:17<02:36,  8.68s/it] 15%|█▌        | 3/20 [00:25<02:26,  8.60s/it] 20%|██        | 4/20 [00:34<02:17,  8.58s/it] 25%|██▌       | 5/20 [00:43<02:08,  8.56s/it] 30%|███       | 6/20 [00:51<01:59,  8.55s/it] 35%|███▌      | 7/20 [01:00<01:51,  8.56s/it] 40%|████      | 8/20 [01:08<01:42,  8.58s/it] 45%|████▌     | 9/20 [01:17<01:34,  8.58s/it] 50%|█████     | 10/20 [01:25<01:25,  8.55s/it] 55%|█████▌    | 11/20 [01:34<01:16,  8.53s/it] 60%|██████    | 12/20 [01:42<01:08,  8.51s/it] 65%|██████▌   | 13/20 [01:51<00:59,  8.49s/it] 70%|███████   | 14/20 [01:59<00:50,  8.46s/it] 75%|███████▌  | 15/20 [02:07<00:42,  8.45s/it] 80%|████████  | 16/20 [02:16<00:33,  8.45s/it] 85%|████████▌ | 17/20 [02:24<00:25,  8.46s/it] 90%|█████████ | 18/20 [02:33<00:16,  8.47s/it] 95%|█████████▌| 19/20 [02:41<00:08,  8.46s/it]100%|██████████| 20/20 [02:50<00:00,  8.47s/it]100%|██████████| 20/20 [02:50<00:00,  8.52s/it]
+Sampling domain: FAU
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:10<03:16, 10.34s/it] 10%|█         | 2/20 [00:20<03:06, 10.38s/it] 15%|█▌        | 3/20 [00:31<02:56, 10.40s/it] 20%|██        | 4/20 [00:41<02:46, 10.42s/it] 25%|██▌       | 5/20 [00:52<02:36, 10.41s/it] 30%|███       | 6/20 [01:02<02:25, 10.43s/it] 35%|███▌      | 7/20 [01:12<02:15, 10.43s/it] 40%|████      | 8/20 [01:23<02:05, 10.42s/it] 45%|████▌     | 9/20 [01:33<01:54, 10.41s/it] 50%|█████     | 10/20 [01:43<01:43, 10.35s/it] 55%|█████▌    | 11/20 [01:54<01:33, 10.34s/it] 60%|██████    | 12/20 [02:04<01:22, 10.35s/it] 65%|██████▌   | 13/20 [02:14<01:12, 10.34s/it] 70%|███████   | 14/20 [02:25<01:02, 10.34s/it] 75%|███████▌  | 15/20 [02:35<00:51, 10.35s/it] 80%|████████  | 16/20 [02:46<00:41, 10.36s/it] 85%|████████▌ | 17/20 [02:56<00:31, 10.38s/it] 90%|█████████ | 18/20 [03:07<00:20, 10.45s/it] 95%|█████████▌| 19/20 [03:17<00:10, 10.51s/it]100%|██████████| 20/20 [03:28<00:00, 10.54s/it]100%|██████████| 20/20 [03:28<00:00, 10.42s/it]
+Sampling domain: ITW
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:05<01:36,  5.09s/it] 10%|█         | 2/20 [00:10<01:31,  5.06s/it] 15%|█▌        | 3/20 [00:15<01:26,  5.10s/it] 20%|██        | 4/20 [00:20<01:21,  5.10s/it] 25%|██▌       | 5/20 [00:25<01:16,  5.08s/it] 30%|███       | 6/20 [00:30<01:10,  5.06s/it] 35%|███▌      | 7/20 [00:35<01:05,  5.05s/it] 40%|████      | 8/20 [00:40<01:00,  5.05s/it] 45%|████▌     | 9/20 [00:45<00:55,  5.06s/it] 50%|█████     | 10/20 [00:50<00:50,  5.06s/it] 55%|█████▌    | 11/20 [00:55<00:45,  5.03s/it] 60%|██████    | 12/20 [01:00<00:39,  4.99s/it] 65%|██████▌   | 13/20 [01:05<00:34,  4.96s/it] 70%|███████   | 14/20 [01:10<00:29,  4.93s/it] 75%|███████▌  | 15/20 [01:15<00:24,  4.93s/it] 80%|████████  | 16/20 [01:20<00:19,  4.93s/it] 85%|████████▌ | 17/20 [01:25<00:14,  4.92s/it] 90%|█████████ | 18/20 [01:29<00:09,  4.89s/it] 95%|█████████▌| 19/20 [01:34<00:04,  4.88s/it]100%|██████████| 20/20 [01:39<00:00,  4.87s/it]100%|██████████| 20/20 [01:39<00:00,  4.98s/it]
+Sampling domain: MEL
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:07<02:18,  7.30s/it] 10%|█         | 2/20 [00:14<02:10,  7.24s/it] 15%|█▌        | 3/20 [00:21<02:02,  7.23s/it] 20%|██        | 4/20 [00:29<01:56,  7.29s/it] 25%|██▌       | 5/20 [00:36<01:49,  7.31s/it] 30%|███       | 6/20 [00:43<01:42,  7.33s/it] 35%|███▌      | 7/20 [00:51<01:35,  7.31s/it] 40%|████      | 8/20 [00:58<01:26,  7.25s/it] 45%|████▌     | 9/20 [01:05<01:19,  7.20s/it] 50%|█████     | 10/20 [01:12<01:11,  7.18s/it] 55%|█████▌    | 11/20 [01:19<01:04,  7.21s/it] 60%|██████    | 12/20 [01:26<00:57,  7.18s/it] 65%|██████▌   | 13/20 [01:33<00:49,  7.14s/it] 70%|███████   | 14/20 [01:40<00:42,  7.13s/it] 75%|███████▌  | 15/20 [01:48<00:35,  7.13s/it] 80%|████████  | 16/20 [01:55<00:28,  7.10s/it] 85%|████████▌ | 17/20 [02:02<00:21,  7.11s/it] 90%|█████████ | 18/20 [02:09<00:14,  7.12s/it] 95%|█████████▌| 19/20 [02:16<00:07,  7.11s/it]100%|██████████| 20/20 [02:23<00:00,  7.12s/it]100%|██████████| 20/20 [02:23<00:00,  7.18s/it]
+Sampling domain: MFI
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:07<02:22,  7.52s/it] 10%|█         | 2/20 [00:14<02:13,  7.44s/it] 15%|█▌        | 3/20 [00:22<02:07,  7.49s/it] 20%|██        | 4/20 [00:29<01:59,  7.47s/it] 25%|██▌       | 5/20 [00:37<01:51,  7.41s/it] 30%|███       | 6/20 [00:44<01:43,  7.39s/it] 35%|███▌      | 7/20 [00:51<01:35,  7.35s/it] 40%|████      | 8/20 [00:59<01:27,  7.33s/it] 45%|████▌     | 9/20 [01:06<01:20,  7.32s/it] 50%|█████     | 10/20 [01:13<01:13,  7.32s/it] 55%|█████▌    | 11/20 [01:21<01:06,  7.35s/it] 60%|██████    | 12/20 [01:28<00:58,  7.33s/it] 65%|██████▌   | 13/20 [01:35<00:51,  7.32s/it] 70%|███████   | 14/20 [01:42<00:43,  7.31s/it] 75%|███████▌  | 15/20 [01:50<00:36,  7.30s/it] 80%|████████  | 16/20 [01:57<00:29,  7.29s/it] 85%|████████▌ | 17/20 [02:04<00:21,  7.28s/it] 90%|█████████ | 18/20 [02:12<00:14,  7.27s/it] 95%|█████████▌| 19/20 [02:19<00:07,  7.26s/it]100%|██████████| 20/20 [02:26<00:00,  7.26s/it]100%|██████████| 20/20 [02:26<00:00,  7.33s/it]
+Sampling domain: MOR
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:05<01:41,  5.34s/it] 10%|█         | 2/20 [00:10<01:34,  5.26s/it] 15%|█▌        | 3/20 [00:15<01:29,  5.25s/it] 20%|██        | 4/20 [00:20<01:23,  5.22s/it] 25%|██▌       | 5/20 [00:26<01:18,  5.21s/it] 30%|███       | 6/20 [00:31<01:12,  5.20s/it] 35%|███▌      | 7/20 [00:36<01:07,  5.18s/it] 40%|████      | 8/20 [00:41<01:02,  5.17s/it] 45%|████▌     | 9/20 [00:46<00:56,  5.16s/it] 50%|█████     | 10/20 [00:51<00:51,  5.15s/it] 55%|█████▌    | 11/20 [00:57<00:46,  5.15s/it] 60%|██████    | 12/20 [01:02<00:41,  5.13s/it] 65%|██████▌   | 13/20 [01:07<00:35,  5.12s/it] 70%|███████   | 14/20 [01:12<00:30,  5.11s/it] 75%|███████▌  | 15/20 [01:17<00:25,  5.08s/it] 80%|████████  | 16/20 [01:22<00:20,  5.07s/it] 85%|████████▌ | 17/20 [01:27<00:15,  5.08s/it] 90%|█████████ | 18/20 [01:32<00:10,  5.10s/it] 95%|█████████▌| 19/20 [01:37<00:05,  5.11s/it]100%|██████████| 20/20 [01:42<00:00,  5.13s/it]100%|██████████| 20/20 [01:42<00:00,  5.15s/it]
+Sampling domain: RHO
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:05<01:39,  5.21s/it] 10%|█         | 2/20 [00:10<01:32,  5.14s/it] 15%|█▌        | 3/20 [00:15<01:26,  5.11s/it] 20%|██        | 4/20 [00:20<01:21,  5.10s/it] 25%|██▌       | 5/20 [00:25<01:16,  5.08s/it] 30%|███       | 6/20 [00:30<01:11,  5.09s/it] 35%|███▌      | 7/20 [00:35<01:05,  5.07s/it] 40%|████      | 8/20 [00:40<01:00,  5.05s/it] 45%|████▌     | 9/20 [00:45<00:55,  5.03s/it] 50%|█████     | 10/20 [00:50<00:50,  5.02s/it] 55%|█████▌    | 11/20 [00:55<00:45,  5.03s/it] 60%|██████    | 12/20 [01:00<00:40,  5.02s/it] 65%|██████▌   | 13/20 [01:05<00:35,  5.02s/it] 70%|███████   | 14/20 [01:10<00:30,  5.02s/it] 75%|███████▌  | 15/20 [01:15<00:25,  5.01s/it] 80%|████████  | 16/20 [01:20<00:20,  5.01s/it] 85%|████████▌ | 17/20 [01:25<00:15,  5.01s/it] 90%|█████████ | 18/20 [01:30<00:10,  5.01s/it] 95%|█████████▌| 19/20 [01:35<00:05,  5.04s/it]100%|██████████| 20/20 [01:40<00:00,  5.03s/it]100%|██████████| 20/20 [01:40<00:00,  5.04s/it]
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:04<01:33,  4.95s/it] 10%|█         | 2/20 [00:09<01:27,  4.89s/it] 15%|█▌        | 3/20 [00:14<01:22,  4.84s/it] 20%|██        | 4/20 [00:19<01:17,  4.82s/it] 25%|██▌       | 5/20 [00:24<01:12,  4.80s/it] 30%|███       | 6/20 [00:28<01:07,  4.79s/it] 35%|███▌      | 7/20 [00:33<01:02,  4.78s/it] 40%|████      | 8/20 [00:38<00:57,  4.79s/it] 45%|████▌     | 9/20 [00:43<00:52,  4.78s/it] 50%|█████     | 10/20 [00:48<00:47,  4.78s/it] 55%|█████▌    | 11/20 [00:52<00:42,  4.77s/it] 60%|██████    | 12/20 [00:57<00:38,  4.76s/it] 65%|██████▌   | 13/20 [01:02<00:33,  4.76s/it] 70%|███████   | 14/20 [01:07<00:28,  4.76s/it] 75%|███████▌  | 15/20 [01:11<00:23,  4.76s/it] 80%|████████  | 16/20 [01:16<00:19,  4.77s/it] 85%|████████▌ | 17/20 [01:21<00:14,  4.77s/it] 90%|█████████ | 18/20 [01:26<00:09,  4.77s/it] 95%|█████████▌| 19/20 [01:30<00:04,  4.77s/it]100%|██████████| 20/20 [01:35<00:00,  4.77s/it]100%|██████████| 20/20 [01:35<00:00,  4.78s/it]
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:11<03:46, 11.95s/it] 10%|█         | 2/20 [00:23<03:35, 11.97s/it] 15%|█▌        | 3/20 [00:35<03:23, 11.97s/it] 20%|██        | 4/20 [00:47<03:11, 11.98s/it] 25%|██▌       | 5/20 [00:59<02:59, 11.94s/it] 30%|███       | 6/20 [01:11<02:46, 11.91s/it] 35%|███▌      | 7/20 [01:23<02:34, 11.89s/it] 40%|████      | 8/20 [01:35<02:22, 11.88s/it] 45%|████▌     | 9/20 [01:47<02:11, 11.93s/it] 50%|█████     | 10/20 [01:59<01:59, 11.95s/it] 55%|█████▌    | 11/20 [02:11<01:47, 11.97s/it] 60%|██████    | 12/20 [02:23<01:35, 11.96s/it] 65%|██████▌   | 13/20 [02:35<01:23, 11.93s/it] 70%|███████   | 14/20 [02:47<01:11, 11.96s/it] 75%|███████▌  | 15/20 [02:59<00:59, 11.97s/it] 80%|████████  | 16/20 [03:11<00:47, 12.00s/it] 85%|████████▌ | 17/20 [03:23<00:35, 11.96s/it] 90%|█████████ | 18/20 [03:34<00:23, 11.92s/it] 95%|█████████▌| 19/20 [03:46<00:11, 11.90s/it]100%|██████████| 20/20 [03:58<00:00, 11.88s/it]100%|██████████| 20/20 [03:58<00:00, 11.93s/it]
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:04<01:30,  4.75s/it] 10%|█         | 2/20 [00:09<01:25,  4.73s/it] 15%|█▌        | 3/20 [00:14<01:20,  4.71s/it] 20%|██        | 4/20 [00:18<01:15,  4.70s/it] 25%|██▌       | 5/20 [00:23<01:10,  4.71s/it] 30%|███       | 6/20 [00:28<01:05,  4.69s/it] 35%|███▌      | 7/20 [00:32<01:00,  4.69s/it] 40%|████      | 8/20 [00:37<00:56,  4.69s/it] 45%|████▌     | 9/20 [00:42<00:51,  4.70s/it] 50%|█████     | 10/20 [00:47<00:46,  4.70s/it] 55%|█████▌    | 11/20 [00:51<00:42,  4.70s/it] 60%|██████    | 12/20 [00:56<00:37,  4.69s/it] 65%|██████▌   | 13/20 [01:01<00:32,  4.68s/it] 70%|███████   | 14/20 [01:05<00:28,  4.69s/it] 75%|███████▌  | 15/20 [01:10<00:23,  4.69s/it] 80%|████████  | 16/20 [01:15<00:18,  4.71s/it] 85%|████████▌ | 17/20 [01:19<00:14,  4.70s/it] 90%|█████████ | 18/20 [01:24<00:09,  4.68s/it] 95%|█████████▌| 19/20 [01:29<00:04,  4.65s/it]100%|██████████| 20/20 [01:33<00:00,  4.67s/it]100%|██████████| 20/20 [01:33<00:00,  4.69s/it]
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:07<02:16,  7.19s/it] 10%|█         | 2/20 [00:14<02:09,  7.17s/it] 15%|█▌        | 3/20 [00:21<02:01,  7.14s/it] 20%|██        | 4/20 [00:28<01:54,  7.15s/it] 25%|██▌       | 5/20 [00:35<01:46,  7.11s/it] 30%|███       | 6/20 [00:42<01:39,  7.08s/it] 35%|███▌      | 7/20 [00:49<01:32,  7.08s/it] 40%|████      | 8/20 [00:56<01:24,  7.07s/it] 45%|████▌     | 9/20 [01:03<01:17,  7.06s/it] 50%|█████     | 10/20 [01:10<01:10,  7.05s/it] 55%|█████▌    | 11/20 [01:17<01:03,  7.07s/it] 60%|██████    | 12/20 [01:25<00:56,  7.08s/it] 65%|██████▌   | 13/20 [01:32<00:49,  7.09s/it] 70%|███████   | 14/20 [01:39<00:42,  7.09s/it] 75%|███████▌  | 15/20 [01:46<00:35,  7.09s/it] 80%|████████  | 16/20 [01:53<00:28,  7.09s/it] 85%|████████▌ | 17/20 [02:00<00:21,  7.10s/it] 90%|█████████ | 18/20 [02:07<00:14,  7.10s/it] 95%|█████████▌| 19/20 [02:14<00:07,  7.10s/it]100%|██████████| 20/20 [02:21<00:00,  7.10s/it]100%|██████████| 20/20 [02:21<00:00,  7.09s/it]
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:07<02:14,  7.10s/it] 10%|█         | 2/20 [00:14<02:07,  7.08s/it] 15%|█▌        | 3/20 [00:21<02:00,  7.09s/it] 20%|██        | 4/20 [00:28<01:53,  7.08s/it] 25%|██▌       | 5/20 [00:35<01:46,  7.09s/it] 30%|███       | 6/20 [00:42<01:39,  7.12s/it] 35%|███▌      | 7/20 [00:49<01:32,  7.13s/it] 40%|████      | 8/20 [00:56<01:25,  7.12s/it] 45%|████▌     | 9/20 [01:03<01:18,  7.11s/it] 50%|█████     | 10/20 [01:10<01:10,  7.09s/it] 55%|█████▌    | 11/20 [01:18<01:03,  7.08s/it] 60%|██████    | 12/20 [01:25<00:56,  7.09s/it] 65%|██████▌   | 13/20 [01:32<00:49,  7.11s/it] 70%|███████   | 14/20 [01:39<00:42,  7.12s/it] 75%|███████▌  | 15/20 [01:46<00:35,  7.14s/it] 80%|████████  | 16/20 [01:53<00:28,  7.13s/it] 85%|████████▌ | 17/20 [02:00<00:21,  7.13s/it] 90%|█████████ | 18/20 [02:08<00:14,  7.13s/it] 95%|█████████▌| 19/20 [02:15<00:07,  7.12s/it]100%|██████████| 20/20 [02:22<00:00,  7.12s/it]100%|██████████| 20/20 [02:22<00:00,  7.11s/it]
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:05<01:36,  5.10s/it] 10%|█         | 2/20 [00:10<01:30,  5.04s/it] 15%|█▌        | 3/20 [00:15<01:25,  5.01s/it] 20%|██        | 4/20 [00:20<01:19,  4.99s/it] 25%|██▌       | 5/20 [00:24<01:14,  4.98s/it] 30%|███       | 6/20 [00:29<01:09,  4.97s/it] 35%|███▌      | 7/20 [00:34<01:04,  4.96s/it] 40%|████      | 8/20 [00:39<00:59,  4.95s/it] 45%|████▌     | 9/20 [00:44<00:54,  4.95s/it] 50%|█████     | 10/20 [00:49<00:49,  4.95s/it] 55%|█████▌    | 11/20 [00:54<00:44,  4.95s/it] 60%|██████    | 12/20 [00:59<00:39,  4.95s/it] 65%|██████▌   | 13/20 [01:04<00:34,  4.94s/it] 70%|███████   | 14/20 [01:09<00:29,  4.94s/it] 75%|███████▌  | 15/20 [01:14<00:24,  4.94s/it] 80%|████████  | 16/20 [01:19<00:19,  4.94s/it] 85%|████████▌ | 17/20 [01:24<00:14,  4.94s/it] 90%|█████████ | 18/20 [01:29<00:09,  4.95s/it] 95%|█████████▌| 19/20 [01:34<00:04,  4.95s/it]100%|██████████| 20/20 [01:39<00:00,  4.95s/it]100%|██████████| 20/20 [01:39<00:00,  4.96s/it]
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:05<01:37,  5.12s/it] 10%|█         | 2/20 [00:10<01:31,  5.08s/it] 15%|█▌        | 3/20 [00:15<01:25,  5.04s/it] 20%|██        | 4/20 [00:20<01:20,  5.02s/it] 25%|██▌       | 5/20 [00:25<01:14,  5.00s/it] 30%|███       | 6/20 [00:30<01:09,  4.98s/it] 35%|███▌      | 7/20 [00:35<01:04,  4.97s/it] 40%|████      | 8/20 [00:40<00:59,  4.99s/it] 45%|████▌     | 9/20 [00:45<00:54,  5.00s/it] 50%|█████     | 10/20 [00:49<00:49,  4.98s/it] 55%|█████▌    | 11/20 [00:54<00:44,  4.98s/it] 60%|██████    | 12/20 [00:59<00:39,  4.98s/it] 65%|██████▌   | 13/20 [01:04<00:34,  4.97s/it] 70%|███████   | 14/20 [01:09<00:29,  4.97s/it] 75%|███████▌  | 15/20 [01:14<00:24,  4.98s/it] 80%|████████  | 16/20 [01:19<00:19,  4.97s/it] 85%|████████▌ | 17/20 [01:24<00:14,  4.96s/it] 90%|█████████ | 18/20 [01:29<00:09,  4.95s/it] 95%|█████████▌| 19/20 [01:34<00:04,  4.95s/it]100%|██████████| 20/20 [01:39<00:00,  4.95s/it]100%|██████████| 20/20 [01:39<00:00,  4.98s/it]
+Saving samples to samples-sample_cdivaev3_fixed_atom_noising.pickle.
+[1;34mwandb[0m: 🚀 View run [33msample_cdivaev3_fixed_atom_noising[0m at: [34mhttps://wandb.ai/glafk/zeogen/runs/ghqrfnfe[0m
+[1;34mwandb[0m: Find logs at: [1;35m../../../../../../../../../home/dglavinkov/ondemand/zeogen/wandb/wandb/run-20241105_231911-ghqrfnfe/logs[0m
+
+JOB STATISTICS
+==============
+Job ID: 8422074
+Cluster: snellius
+User/Group: dglavinkov/dglavinkov
+State: COMPLETED (exit code 0)
+Nodes: 1
+Cores per node: 9
+CPU Utilized: 00:32:30
+CPU Efficiency: 11.07% of 04:53:42 core-walltime
+Job Wall-clock time: 00:32:38
+Memory Utilized: 1.36 GB
+Memory Efficiency: 2.26% of 60.00 GB

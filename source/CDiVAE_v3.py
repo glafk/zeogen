@@ -683,8 +683,8 @@ class CDiVAE_v3(BaseModule):
             else:
                 domain = domain.split('/')
                 # Here we are in the case where we condition on multiple domains and interpolate between them
-                zd_p_loc_1, zd_p_scale_1 = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain[0]]], device=self.device).float().view(-1, 1))
-                zd_p_loc_2, zd_p_scale_2 = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain[1]]], device=self.device).float().view(-1, 1))
+                zd_p_loc_1, zd_p_scale_1 = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain[0]]], device=self.device), embed=True)
+                zd_p_loc_2, zd_p_scale_2 = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain[1]]], device=self.device), embed=True)
                 zy_p_loc, zy_p_scale = self.pzy(torch.tensor([norm_hoas], device=self.device).view(-1, 1))
                 # For now only interpolate with a weight of 0.5. We could do something more sophisticated later
                 # like interpolating with a weight of 0.1, 0.3, 0.6, 0.9
