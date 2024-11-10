@@ -658,16 +658,16 @@ def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, prop_n
             'hoa_mu': crystal_dict['hoa_mu'],
             'hoa_std': crystal_dict['hoa_std'],
             'norm_hoa': crystal_dict['norm_hoa'],
-            'zeolite_code': crystal_dict['zeolite_code'],
-            # 'zeolite_code': "MOR",
+            # 'zeolite_code': crystal_dict['zeolite_code'],
+            'zeolite_code': "MOR",
             # 'zeolite_code_enc': crystal_dict['zeolite_code_enc'],
         }
         return result_dict
 
     # Extract HOA and zeolite codes
     hoa = np.array([entry['hoa'] for entry in crystal_dict_list])
-    zeo_code = np.array([entry['zeolite_code'] for entry in crystal_dict_list])
-    # zeo_code = np.array(["MOR" for entry in crystal_dict_list])
+    # zeo_code = np.array([entry['zeolite_code'] for entry in crystal_dict_list])
+    zeo_code = np.array(["MOR" for entry in crystal_dict_list])
 
     # Find unique zeolite codes
     unique_zeo_codes = np.unique(zeo_code)
@@ -677,17 +677,17 @@ def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, prop_n
     std_hoa_per_zeo_code = {}
     for code in unique_zeo_codes:
         # Get the HOA values corresponding to the current zeolite code
-        hoa_values_for_code = np.array([entry['hoa'] for entry in crystal_dict_list if entry['zeolite_code'] == code])
-        # hoa_values_for_code = np.array([entry['hoa'] for entry in crystal_dict_list if "MOR" == code])
+        # hoa_values_for_code = np.array([entry['hoa'] for entry in crystal_dict_list if entry['zeolite_code'] == code])
+        hoa_values_for_code = np.array([entry['hoa'] for entry in crystal_dict_list if "MOR" == code])
         mean_hoa_per_zeo_code[code] = np.mean(hoa_values_for_code)
         std_hoa_per_zeo_code[code] = np.std(hoa_values_for_code)
 
     # Add normalized HOA
     for entry in crystal_dict_list:
-        mean_hoa = mean_hoa_per_zeo_code[entry['zeolite_code']]
-        std_hoa = std_hoa_per_zeo_code[entry['zeolite_code']]
-        # mean_hoa = mean_hoa_per_zeo_code["MOR"]
-        # std_hoa = std_hoa_per_zeo_code["MOR"]
+        # mean_hoa = mean_hoa_per_zeo_code[entry['zeolite_code']]
+        # std_hoa = std_hoa_per_zeo_code[entry['zeolite_code']]
+        mean_hoa = mean_hoa_per_zeo_code["MOR"]
+        std_hoa = std_hoa_per_zeo_code["MOR"]
         entry['hoa_mu'] = mean_hoa
         entry['hoa_std'] = std_hoa
         entry['norm_hoa'] = (entry['hoa'] - mean_hoa) / std_hoa
