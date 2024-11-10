@@ -12,9 +12,9 @@ otf_graph: false
 eval_model_name: diffusion
 
 
-train_max_epochs: 60
+train_max_epochs: 50
 early_stopping_patience: 50
-teacher_forcing_max_epoch: 10
+teacher_forcing_max_epoch: 5
 
 datamodule:
   _target_: data_utils.data_module.CrystDataModule

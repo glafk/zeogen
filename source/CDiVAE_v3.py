@@ -276,7 +276,7 @@ class CDiVAE_v3(BaseModule):
             # To calculate the loss I will use a mask to take into account
             # only the number of atoms in each crystal, either ground truth 
             # or predicted 
-            composition_per_crystal = self.predict_composition(zy, gt_num_atoms)
+            composition_per_crystal = self.predict_composition(zy)
             if self.hparams.teacher_forcing_lattice and teacher_forcing:
                 lengths = gt_lengths
                 angles = gt_angles
@@ -288,10 +288,13 @@ class CDiVAE_v3(BaseModule):
         #     composition_per_crystal = self.predict_composition(zy, gt_num_atoms)
         else:
             num_atoms = self.predict_num_atoms(zd)
-            lengths = self.predict_lenghts(zd, num_atoms.argmax(dim=-1))
+            num_atoms_copy = num_atoms.clone().detach()
+            lengths = self.predict_lenghts(zd, num_atoms_copy.argmax(dim=-1))
             angles = self.predict_angles(zd)
             lengths_and_angles = torch.cat([lengths, angles], dim=-1)
-            composition_per_crystal = self.predict_composition(zy, num_atoms.argmax(dim=-1))
+            composition_per_crystal = self.predict_composition(zy)
+            lengths = lengths.clone().detach()
+            angles = angles.clone().detach()
 
         return num_atoms, lengths_and_angles, lengths, angles, composition_per_crystal
 
@@ -336,7 +339,7 @@ class CDiVAE_v3(BaseModule):
         # select random atoms according to the predicted composition
         # We do that since at inference time this is where the decoder
         # will have to start working from
-        si_ratio_per_atom = torch.repeat_interleave(pred_si_ratio_per_crystal, batch.num_atoms, dim=0).squeeze(1)
+        si_ratio_per_atom = torch.repeat_interleave(pred_si_ratio_per_crystal.clone().detach(), batch.num_atoms, dim=0).squeeze(1)
 
         rand_atom_types = torch.multinomial(torch.stack((1 - si_ratio_per_atom, si_ratio_per_atom), dim=1), num_samples=1).squeeze(1) + 13
         try:
@@ -353,7 +356,7 @@ class CDiVAE_v3(BaseModule):
 
         # Before going to the second decoder, calucate the predicted positions of atoms
         # by adding the predicted cartesian coord diff to the original coords
-        pred_cart_coords = noisy_cart_coords + pred_cart_coord_diff
+        pred_cart_coords = noisy_cart_coords.clone() + pred_cart_coord_diff.clone().detach()
         pred_frac_coords = cart_to_frac_coords(
             pred_cart_coords, pred_lengths, pred_angles, batch.num_atoms
         )
@@ -527,7 +530,7 @@ class CDiVAE_v3(BaseModule):
         pred_angles = pred_angles * 180
         return pred_angles
 
-    def predict_composition(self, z, num_atoms):
+    def predict_composition(self, z):
         pred_composition_per_atom = self.fc_composition(z)
         return pred_composition_per_atom
     # endregion
