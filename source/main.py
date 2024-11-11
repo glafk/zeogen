@@ -222,8 +222,77 @@ def run_reconstruction(cfg: DictConfig, model: DiffusionModel = None):
         os.remove(reconstructions_path)
         os.remove(ground_truth_path)
 
+def run_reconstruction_cdivae_v3(cfg: DictConfig, model: CDiVAE_v3 = None):
 
-def run_sampling_cdivae_v2(cfg: DictConfig, model: CDiVAE_v2  = None):
+    # Log the configuration using wandb.config
+    log_config_to_wandb(cfg, f"reconstruction-config-{cfg.model.experiment_name_to_load}")
+
+    if cfg.model.load_model and model is None:
+        # Make sure that the model location is provided
+        assert cfg.model.model_location is not None
+
+        if cfg.model.model_location == "local":
+            assert cfg.model.ckpt_path is not None, "Please provide a path to the model checkpoint"
+            # Load model
+            hydra.utils.log.info(f"Loading model <{cfg.model._target_}>")
+            model = CDiVAE_v3.load_from_checkpoint(cfg.model.ckpt_path)
+        elif cfg.model.model_location == "wandb":
+            assert cfg.model.experiment_name_to_load is not None, "Please provide an experiment name"
+            model_path, model_dir = load_from_wandb(cfg.model.experiment_name_to_load)
+            model = CDiVAE_v3.load_from_checkpoint(model_path)
+
+            # Clean up downloaded files
+            shutil.rmtree(model_dir)
+    else:
+        raise ValueError("Both load model and arguments model were provided. Ambuguious use of the script")
+
+    # Instantiate datamodule
+    hydra.utils.log.info(f"Instantiating <{cfg.data.datamodule._target_}>")
+    datamodule: pl.LightningDataModule = hydra.utils.instantiate(
+        cfg.data.datamodule, _recursive_=False
+    ) 
+
+    # Pass scaler from datamodule to model
+    hydra.utils.log.info(f"Passing scaler from datamodule to model <{datamodule.scaler}>")
+    model.lengths_scaler = datamodule.lengths_scaler.copy()
+    model.scaler = datamodule.scaler.copy()
+
+    datamodule.setup(stage="predict")
+    model.eval()
+    predict_dataloader = datamodule.predict_dataloader()
+    
+    model = model.to("cuda")
+
+    reconstructions_path = os.path.join(f"{PROJECT_ROOT}/reconstructions", cfg.model.reconstructions_file)
+    ground_truth_path = os.path.join(f"{PROJECT_ROOT}/reconstructions", cfg.model.reconstructions_file.split('.')[0] + "_gt.pickle")
+
+    for batch in predict_dataloader:
+        batch = batch.to("cuda")
+        with torch.no_grad():  # No need to track gradients during inference
+            model.reconstruct(batch, DictConfig(
+                {"n_step_each": 100, 
+                 "step_lr": 0.0001, 
+                 "min_sigma": 0.01, 
+                 "save_traj": True, 
+                 "disable_bar": False}), 
+                 reconstructions_path, 
+                 ground_truth_path,
+                 kwargs_conf_name=f"reconstruction-config-{cfg.model.experiment_name_to_load}")
+
+    if cfg.model.save_reconstructions_online:
+        artifact_recon = wandb.Artifact(cfg.model.reconstructions_file.split('.')[0], type='dataset')
+        artifact_recon.add_file(reconstructions_path)
+        artifact_recon_gt = wandb.Artifact(cfg.model.reconstructions_file.split('.')[0] + "_gt", type='dataset')
+        artifact_recon_gt.add_file(ground_truth_path)
+        
+        wandb.log_artifact(artifact_recon)
+        wandb.log_artifact(artifact_recon_gt)
+
+        # Clean up the file so that it doesn't hang around
+        os.remove(reconstructions_path)
+        os.remove(ground_truth_path)
+
+def run_sampling_cdivae_v3(cfg: DictConfig, model: CDiVAE_v2  = None):
     # Instantiate wandb run
     wandb.init(project="zeogen", entity="glafk", name=cfg.expname)
     # Log the configuration using wandb.config
@@ -248,6 +317,7 @@ def run_sampling_cdivae_v2(cfg: DictConfig, model: CDiVAE_v2  = None):
             checkpoint["hyper_parameters"] = cfg.model
             torch.save(checkpoint, model_path)
             print(f"Loading model from downloaded file at {model_path}")
+            print("State dict keys:", checkpoint["state_dict"].keys())
             model = CDiVAE_v3.load_from_checkpoint(model_path)
 
             # Clean up downloaded files
@@ -376,11 +446,11 @@ def main(cfg: DictConfig):
 
     # Run only sampling from saved model
     if cfg.model.run_sampling:
-        run_sampling_cdivae_v2(cfg, model)
+        run_sampling_cdivae_v3(cfg, model)
 
     # Run reconstruction from saved model
     if cfg.model.run_reconstruction:
-        run_reconstruction(cfg, model)
+        run_reconstruction_cdivae_v3(cfg, model)
 
 if __name__ == "__main__":
     main()

@@ -1,4 +1,4 @@
-expname: sample_overfit_MOR_10_epochs
+expname: reconstruct_overfit_MOR_10_epochs
 # metadata specialised for each experiment
 core:
   version: 1.0.0

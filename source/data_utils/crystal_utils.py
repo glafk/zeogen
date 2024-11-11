@@ -989,11 +989,13 @@ def save_samples_as_cifs(samples: dict, directory: str,
     # Split fractional coordinates
         split_frac_coords = np.split(item["frac_coords"], np.cumsum(item["num_atoms"])[:-1])
 
-        split_all_atoms = np.split(item["all_atom_types"], np.cumsum(item["num_atoms"])[:-1])
-        split_all_coords = np.split(item["all_frac_coords"], np.cumsum(item["num_atoms"])[:-1])
+        split_all_atoms_steps = np.split(item["all_atom_types"], np.cumsum(item["num_atoms"])[:-1], axis=1)
+        split_all_atoms_array = np.stack(split_all_atoms_steps)
+        split_all_coords_steps = np.split(item["all_frac_coords"], np.cumsum(item["num_atoms"])[:-1], axis=1)
+        split_all_coords_array = np.stack(split_all_coords_steps)
 
         for i in range(len(item["num_atoms"])):
-            individual_samples.append({"atom_types": split_atom_types[i], "frac_coords": split_frac_coords[i], "lengths": item["lengths"][i], "angles": item["angles"][i], "domain": item["domains"][i], "norm_hoa": item["norm_hoas"][i], "pred_hoa": item["pred_hoas"][i], "all_atom_types": split_all_atoms[i], "all_frac_coords": split_all_coords[i]})
+            individual_samples.append({"atom_types": split_atom_types[i], "frac_coords": split_frac_coords[i], "lengths": item["lengths"][i], "angles": item["angles"][i], "domain": item["domains"][i], "norm_hoa": item["norm_hoas"][i], "pred_hoa": item["pred_hoas"][i], "all_atom_types": split_all_atoms_array[i], "all_frac_coords": split_all_coords_array[i]})
 
     for sample in individual_samples: # individual_samples:
         filename = os.path.join(directory, f"sample_{sample['domain']}_{str(sample['norm_hoa']).replace('.', '_')}.cif")

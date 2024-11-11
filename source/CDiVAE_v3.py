@@ -741,7 +741,15 @@ class CDiVAE_v3(BaseModule):
          zy,
          z) = self.encode(batch)
 
-        reconstruction = self.langevin_dynamics(zd, zy, ld_kwargs)
+        pred_domain = self.domain_predictor(zd)
+        hoa_mu_pred = self.hoa_mu_predictor(zd)
+        hoa_mu_pred = self.prop_mu_scaler.inverse_transform(hoa_mu_pred)
+        hoa_std_pred = self.hoa_std_predictor(zd)
+        hoa_std_pred = self.prop_std_scaler.inverse_transform(hoa_std_pred)
+        norm_hoa_pred = self.norm_hoa_predictor(zy)
+        pred_hoa = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
+
+        reconstruction = self.langevin_dynamics(zd, zy, ld_kwargs, pred_domain, norm_hoa_pred, pred_hoa)
 
         add_object(reconstruction, reconstructions_path)
         add_object(batch, ground_truth_path)

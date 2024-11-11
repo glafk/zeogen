@@ -39,20 +39,20 @@ model_location: wandb
 ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model-150-epochs-MFI-only.ckpt # not applicable if model is on WandB
 
 # From which experiment the model should be loaded for continuted training, sampling and reconstruction
-experiment_name_to_load: overfit_on_MOR_10_epochs
+experiment_name_to_load: overfit_MOR_10_epochs
 
 # Training
 run_training: false
 resume_from_checkpoint: false
 
 # Reconstruction
-run_reconstruction: false
+run_reconstruction: true
 num_reconstructions: 10
 reconstructions_file: reconstructions-${expname}.pickle
 save_reconstructions_online: true
 
 # Sampling
-run_sampling: true
+run_sampling: false
 num_samples_per_domain: 5
 domains: ["MOR"]
 # domains: ["DDR", "FAU", "ITW", "MEL", "MFI", "MOR", "RHO", "DDR/FAU", "FAU/ITW", "ITW/MEL", "MEL/MFI", "MFI/MOR", "MOR/RHO", "RHO/DDR"]
