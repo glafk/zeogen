@@ -13,8 +13,8 @@ eval_model_name: diffusion
 
 
 train_max_epochs: 50
-early_stopping_patience: 50
-teacher_forcing_max_epoch: 5
+early_stopping_patience: 10
+teacher_forcing_max_epoch: 3
 
 datamodule:
   _target_: data_utils.data_module.CrystDataModule

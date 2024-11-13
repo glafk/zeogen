@@ -10,7 +10,7 @@ hydra:
     dir: ${oc.env:HYDRA_JOBS}/singlerun/${now:%Y-%m-%d}/${expname}/
 
 defaults:
-  - data: data_MOR_only
+  - data: data_combined
   - model: cdivae_v3
   - optim: optim
   - train: train

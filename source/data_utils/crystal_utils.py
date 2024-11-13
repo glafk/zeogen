@@ -658,16 +658,16 @@ def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, prop_n
             'hoa_mu': crystal_dict['hoa_mu'],
             'hoa_std': crystal_dict['hoa_std'],
             'norm_hoa': crystal_dict['norm_hoa'],
-            # 'zeolite_code': crystal_dict['zeolite_code'],
-            'zeolite_code': "MOR",
+            'zeolite_code': crystal_dict['zeolite_code'],
+            # 'zeolite_code': "MOR",
             # 'zeolite_code_enc': crystal_dict['zeolite_code_enc'],
         }
         return result_dict
 
     # Extract HOA and zeolite codes
     hoa = np.array([entry['hoa'] for entry in crystal_dict_list])
-    # zeo_code = np.array([entry['zeolite_code'] for entry in crystal_dict_list])
-    zeo_code = np.array(["MOR" for entry in crystal_dict_list])
+    zeo_code = np.array([entry['zeolite_code'] for entry in crystal_dict_list])
+    # zeo_code = np.array(["MOR" for entry in crystal_dict_list])
 
     # Find unique zeolite codes
     unique_zeo_codes = np.unique(zeo_code)
@@ -677,17 +677,17 @@ def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, prop_n
     std_hoa_per_zeo_code = {}
     for code in unique_zeo_codes:
         # Get the HOA values corresponding to the current zeolite code
-        # hoa_values_for_code = np.array([entry['hoa'] for entry in crystal_dict_list if entry['zeolite_code'] == code])
-        hoa_values_for_code = np.array([entry['hoa'] for entry in crystal_dict_list if "MOR" == code])
+        hoa_values_for_code = np.array([entry['hoa'] for entry in crystal_dict_list if entry['zeolite_code'] == code])
+        # hoa_values_for_code = np.array([entry['hoa'] for entry in crystal_dict_list if "MOR" == code])
         mean_hoa_per_zeo_code[code] = np.mean(hoa_values_for_code)
         std_hoa_per_zeo_code[code] = np.std(hoa_values_for_code)
 
     # Add normalized HOA
     for entry in crystal_dict_list:
-        # mean_hoa = mean_hoa_per_zeo_code[entry['zeolite_code']]
-        # std_hoa = std_hoa_per_zeo_code[entry['zeolite_code']]
-        mean_hoa = mean_hoa_per_zeo_code["MOR"]
-        std_hoa = std_hoa_per_zeo_code["MOR"]
+        mean_hoa = mean_hoa_per_zeo_code[entry['zeolite_code']]
+        std_hoa = std_hoa_per_zeo_code[entry['zeolite_code']]
+        # mean_hoa = mean_hoa_per_zeo_code["MOR"]
+        # std_hoa = std_hoa_per_zeo_code["MOR"]
         entry['hoa_mu'] = mean_hoa
         entry['hoa_std'] = std_hoa
         entry['norm_hoa'] = (entry['hoa'] - mean_hoa) / std_hoa
@@ -932,34 +932,29 @@ def sample2cif(sample: dict, path: str, trajectory_path: str=None, save_trajecto
 
 
 def reconstruction2cif(reconstruction: dict, path: str, trajectory_path: str=None, save_trajectory=False, downsample_trajectory=False, downsample_frame_rate=5):
-    reconstruction["atom_types"] = reconstruction["atom_types"].cpu()
-    reconstruction["angles"] = reconstruction["angles"].cpu()[0]
-    reconstruction["lengths"] = reconstruction["lengths"].cpu()[0]
-    reconstruction["num_atoms"] = reconstruction["num_atoms"].cpu()
-    reconstruction["frac_coords"] = reconstruction["frac_coords"].cpu()
-    if save_trajectory:
-        reconstruction["all_frac_coords"] = reconstruction["all_frac_coords"].cpu()
-        reconstruction["all_atom_types"] = reconstruction["all_atom_types"].cpu()
-
-    a,b,c = reconstruction["lengths"]
-    alpha, beta, gamma = reconstruction["angles"]
+    print(reconstruction)
+    print(reconstruction.keys())
+    print(reconstruction["lengths"].shape)
+    a,b,c = reconstruction["lengths"][0].tolist()
+    alpha, beta, gamma = reconstruction["angles"][0].tolist()
     lattice = Lattice.from_parameters(a=a, b=b, c=c, alpha=alpha, beta=beta, gamma=gamma)
-    final_species = reconstruction["atom_types"]
-    final_coords = reconstruction["frac_coords"]
+    final_species = reconstruction["atom_types"].tolist()
+    final_coords = reconstruction["frac_coords"].tolist()
     final_structure = Structure(lattice, final_species, final_coords)
+
 
     write_cif(final_structure, path)
     if save_trajectory:
         if not downsample_trajectory:
             counter = 1
-            for step_coords, step_atoms in zip(reconstruction["all_frac_coords"], reconstruction["all_atom_types"]):
+            for step_coords, step_atoms in zip(reconstruction["all_frac_coords"].tolist(), reconstruction["all_atom_types"].tolist()):
                 step_structure = Structure(lattice, step_atoms, step_coords)
                 step_path = os.path.join(trajectory_path, f"step_{counter}.cif")
                 write_cif(step_structure, step_path)
                 counter+=1
         else:
             counter=1
-            for step_coords, step_atoms in islice(zip(reconstruction["all_frac_coords"], reconstruction["all_atom_types"]), 0, None, downsample_frame_rate):
+            for step_coords, step_atoms in islice(zip(reconstruction["all_frac_coords"].tolist(), reconstruction["all_atom_types"].tolist()), 0, None, downsample_frame_rate):
                 step_structure = Structure(lattice, step_atoms, step_coords)
                 step_path = os.path.join(trajectory_path, f"step_{counter}.cif")
                 write_cif(step_structure, step_path)
