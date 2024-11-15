@@ -253,9 +253,11 @@ def run_reconstruction_cdivae_v3(cfg: DictConfig, model: CDiVAE_v3 = None):
     ) 
 
     # Pass scaler from datamodule to model
-    hydra.utils.log.info(f"Passing scaler from datamodule to model <{datamodule.scaler}>")
+    hydra.utils.log.info(f"Passing scaler from datamodule to model")
     model.lengths_scaler = datamodule.lengths_scaler.copy()
-    model.scaler = datamodule.scaler.copy()
+    model.prop_scaler = datamodule.prop_scaler.copy()
+    model.prop_mu_scaler = datamodule.prop_mu_scaler.copy()
+    model.prop_std_scaler = datamodule.prop_std_scaler.copy()
 
     datamodule.setup(stage="predict")
     model.eval()
@@ -266,7 +268,10 @@ def run_reconstruction_cdivae_v3(cfg: DictConfig, model: CDiVAE_v3 = None):
     reconstructions_path = os.path.join(f"{PROJECT_ROOT}/reconstructions", cfg.model.reconstructions_file)
     ground_truth_path = os.path.join(f"{PROJECT_ROOT}/reconstructions", cfg.model.reconstructions_file.split('.')[0] + "_gt.pickle")
 
+    print(len(predict_dataloader))
+    counter = 1
     for batch in predict_dataloader:
+        print(f"processsing batch {counter}")
         batch = batch.to("cuda")
         with torch.no_grad():  # No need to track gradients during inference
             model.reconstruct(batch, DictConfig(
@@ -278,7 +283,7 @@ def run_reconstruction_cdivae_v3(cfg: DictConfig, model: CDiVAE_v3 = None):
                  reconstructions_path, 
                  ground_truth_path,
                  kwargs_conf_name=f"reconstruction-config-{cfg.model.experiment_name_to_load}")
-
+        counter += 1
     if cfg.model.save_reconstructions_online:
         artifact_recon = wandb.Artifact(cfg.model.reconstructions_file.split('.')[0], type='dataset')
         artifact_recon.add_file(reconstructions_path)
