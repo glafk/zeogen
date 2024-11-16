@@ -1,4 +1,4 @@
-expname: reconstruct_overfit_MOR_10_epochs
+expname: train_no_crf_layer_no_uniform_types
 # metadata specialised for each experiment
 core:
   version: 1.0.0

@@ -1,4 +1,5 @@
 import gc
+import os
 from pathlib import Path
 from typing import Any, Dict
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
@@ -203,7 +204,7 @@ class CDiVAE_v3(BaseModule):
         self.fc_composition = build_mlp(self.hparams.class_latent_dim, self.hparams.hidden_dim,
                                         self.hparams.fc_num_layers, 1, final_activation="hard_sigmoid")
 
-        self.crf_layer = CRF(2, batch_first=True)
+        # self.crf_layer = CRF(2, batch_first=True)
 
         sigmas = torch.tensor(np.exp(np.linspace(
             np.log(self.hparams.sigma_begin),
@@ -245,7 +246,7 @@ class CDiVAE_v3(BaseModule):
         # Comments providing mapping between the variables in this implementation
         # and the original DIVA implementation
         # DIVA - mu_d -> zd_q_loc, log_var_d -> zd_q_scale 
-        zd_q_loc, zd_q_scale, hidden_d = self.zd_encoder(batch, uniform_types=True)
+        zd_q_loc, zd_q_scale, hidden_d = self.zd_encoder(batch, uniform_types=False)
         qzd = self.reparameterize(zd_q_loc, zd_q_scale)
         zd = qzd.rsample()
 
@@ -444,25 +445,34 @@ class CDiVAE_v3(BaseModule):
             _, pred_atom_types = self.types_decoder(
                     zy, pred_frac_coords, noisy_atom_types, batch.num_atoms, pred_lengths, pred_angles)
 
-        unique_crystal_ids = batch.batch.unique()
-        atom_types = batch.atom_types - 13
-        crystal_logits = [torch.index_select(pred_atom_types, 0, torch.nonzero(batch.batch == cid, as_tuple=True)[0]) for cid in unique_crystal_ids]
-        crystal_labels = [torch.index_select(atom_types, 0, torch.nonzero(batch.batch == cid, as_tuple=True)[0]) for cid in unique_crystal_ids]
+        # unique_crystal_ids = batch.batch.unique()
+        # atom_types = batch.atom_types - 13
+        # crystal_logits = [torch.index_select(pred_atom_types, 0, torch.nonzero(batch.batch == cid, as_tuple=True)[0]) for cid in unique_crystal_ids]
+        # crystal_labels = [torch.index_select(atom_types, 0, torch.nonzero(batch.batch == cid, as_tuple=True)[0]) for cid in unique_crystal_ids]
 
-        padded_logits = pad_sequence(crystal_logits, batch_first=True)  # Shape: [batch_size, max_num_atoms, 2]
-        padded_labels = pad_sequence(crystal_labels, batch_first=True)  # Shape: [batch_size, max_num_atoms]
-        mask = pad_sequence([torch.ones(len(seq), dtype=torch.uint8) for seq in crystal_labels], batch_first=True).to(self.device)
+        # padded_logits = pad_sequence(crystal_logits, batch_first=True)  # Shape: [batch_size, max_num_atoms, 2]
+        # padded_labels = pad_sequence(crystal_labels, batch_first=True)  # Shape: [batch_size, max_num_atoms]
+        # mask = pad_sequence([torch.ones(len(seq), dtype=torch.uint8) for seq in crystal_labels], batch_first=True).to(self.device)
 
-        # Unlike the other losses which are calucalted after the fowrard pass
-        # this one is calculated directly by the CRF layer
-        type_loss = -self.crf_layer(padded_logits, padded_labels, mask=mask.bool())
-        pred_atom_types = self.crf_layer.decode(padded_logits, mask=mask.bool())
+        # # Unlike the other losses which are calucalted after the fowrard pass
+        # # this one is calculated directly by the CRF layer
+        # type_loss = -self.crf_layer(padded_logits, padded_labels, mask=mask.bool())
+        # pred_atom_types = self.crf_layer.decode(padded_logits, mask=mask.bool())
 
         # Predict domain and HOA
         domain_pred = self.domain_predictor(zd)
         hoa_mu_pred = self.hoa_mu_predictor(zd)
         hoa_std_pred = self.hoa_std_predictor(zd)
         norm_hoa_pred = self.norm_hoa_predictor(zy)       
+
+        add_object({
+            'pred_domains': domain_pred,
+            'gt_domains': batch.zeolite_code,
+            'zd': zd,
+            'hidden_d': hidden_d,
+            'zd_q_loc': zd_q_loc,
+            'zd_q_scale': zd_q_scale
+        }, os.path.join(f"{PROJECT_ROOT}/zd_logs", "zds_inspection.pickle"))
 
         # Predict parameters of conditional distributions
         # Do proper one hot encoding
@@ -477,7 +487,7 @@ class CDiVAE_v3(BaseModule):
             'pred_angles': pred_angles,
             'pred_cart_coord_diff': pred_cart_coord_diff,
             'pred_atom_types': pred_atom_types,
-            'type_loss': type_loss,
+            # 'type_loss': type_loss,
             'pred_si_ratio_per_crystal': pred_si_ratio_per_crystal,
             # 'pred_composition_ratio': pred_composition_ratio,
             'used_sigmas_per_atom': used_sigmas_per_atom,
@@ -602,11 +612,7 @@ class CDiVAE_v3(BaseModule):
                     _, pred_atom_types = self.types_decoder(
                         zy, cur_frac_coords, cur_atom_types, num_atoms, lengths, angles)
 
-                    crystal_logits = torch.split(pred_atom_types, num_atoms.clone().detach().cpu().numpy().tolist())
-                    padded_logits = pad_sequence(crystal_logits, batch_first=True)
-                    mask = pad_sequence([torch.ones(seq, dtype=torch.uint8) for seq in num_atoms], batch_first=True).to(self.device)
-                    pred_atom_types = self.crf_layer.decode(padded_logits, mask=mask.bool())
-                    cur_atom_types = torch.cat([torch.tensor(crystal) for crystal in pred_atom_types]).to(self.device) + 13
+                    cur_atom_types = pred_atom_types.argmax(dim=-1) + 13
 
                 if ld_kwargs.save_traj:
                     all_frac_coords.append(cur_frac_coords)
@@ -615,6 +621,12 @@ class CDiVAE_v3(BaseModule):
                     # all_noise_cart.append(noise_cart)
                     all_atom_types.append(cur_atom_types)
 
+        crystal_logits = torch.split(pred_atom_types, num_atoms.clone().detach().cpu().numpy().tolist())
+        padded_logits = pad_sequence(crystal_logits, batch_first=True)
+        mask = pad_sequence([torch.ones(seq, dtype=torch.uint8) for seq in num_atoms], batch_first=True).to(self.device)
+        pred_atom_types = self.crf_layer.decode(padded_logits, mask=mask.bool())
+        cur_atom_types = torch.cat([torch.tensor(crystal) for crystal in pred_atom_types]).to(self.device) + 13
+        
         output_dict = {'zd': zd.cpu().numpy(), 'zy': zy.cpu().numpy(),
                        'num_atoms': num_atoms.cpu().numpy(), 'lengths': lengths.cpu().numpy(), 'angles': angles.cpu().numpy(),
                        'frac_coords': cur_frac_coords.cpu().numpy(), 'atom_types': cur_atom_types.cpu().numpy(),
@@ -668,7 +680,7 @@ class CDiVAE_v3(BaseModule):
                 zd_p_loc, zd_p_scale = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain]], device=self.device), embed=True)
                 zy_p_loc, zy_p_scale = self.pzy(torch.tensor([norm_hoas], device=self.device).view(-1, 1)) 
                 
-                pzd = dist.Normal(zd_p_loc, zd_p_scale)
+                pzd = dist.Normal(zd_p_loc, 0.0001)
                 zd = pzd.sample()
                 zd_per_hoa = zd.repeat(num_samples_per_domain, 1)
 
@@ -880,8 +892,8 @@ class CDiVAE_v3(BaseModule):
             pred_si_ratio_per_crystal, batch)
         coord_loss = self.coord_loss(
             pred_cart_coord_diff, noisy_frac_coords, used_sigmas_per_atom, batch)
-        # type_loss = self.type_loss(pred_atom_types, batch.atom_types,
-        #                           type_noise, batch)
+        type_loss = self.type_loss(pred_atom_types, batch.atom_types,
+                                   type_noise, batch)
 
         kld_loss_d = self.kld_loss(zd_q_loc, zd_q_scale, zd_p_loc, zd_p_scale, zd)
         kld_loss_y = self.kld_loss(zy_q_loc, zy_q_scale, zy_p_loc, zy_p_scale, zy)
