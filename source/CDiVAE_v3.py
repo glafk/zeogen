@@ -465,14 +465,14 @@ class CDiVAE_v3(BaseModule):
         hoa_std_pred = self.hoa_std_predictor(zd)
         norm_hoa_pred = self.norm_hoa_predictor(zy)       
 
-        add_object({
-            'pred_domains': domain_pred,
-            'gt_domains': batch.zeolite_code,
-            'zd': zd,
-            'hidden_d': hidden_d,
-            'zd_q_loc': zd_q_loc,
-            'zd_q_scale': zd_q_scale
-        }, os.path.join(f"{PROJECT_ROOT}/zd_logs", "zds_inspection.pickle"))
+        # add_object({
+        #     'pred_domains': domain_pred,
+        #     'gt_domains': batch.zeolite_code,
+        #     'zd': zd,
+        #     'hidden_d': hidden_d,
+        #     'zd_q_loc': zd_q_loc,
+        #     'zd_q_scale': zd_q_scale
+        # }, os.path.join(f"{PROJECT_ROOT}/zd_logs", "zds_inspection.pickle"))
 
         # Predict parameters of conditional distributions
         # Do proper one hot encoding
@@ -867,7 +867,7 @@ class CDiVAE_v3(BaseModule):
         pred_si_ratio_per_crystal = outputs['pred_si_ratio_per_crystal']
         pred_cart_coord_diff = outputs['pred_cart_coord_diff']
         pred_atom_types = outputs['pred_atom_types']
-        type_loss = outputs['type_loss']
+        # type_loss = outputs['type_loss']
         noisy_frac_coords = outputs['noisy_frac_coords']
         used_sigmas_per_atom = outputs['used_sigmas_per_atom']
         type_noise = outputs['type_noise']
@@ -964,8 +964,8 @@ class CDiVAE_v3(BaseModule):
             # evaluate atom type prediction.
             pred_atom_types = outputs['pred_atom_types']
             target_atom_types = outputs['target_atom_types']
-            flattened_pred_atom_types = [pred for predictions in pred_atom_types for pred in predictions]
-            pred_atom_types = torch.tensor(flattened_pred_atom_types).to(self.device)
+            # flattened_pred_atom_types = [pred for predictions in pred_atom_types for pred in predictions]
+            pred_atom_types = pred_atom_types.argmax(dim=-1)
             type_accuracy = pred_atom_types == (target_atom_types - 13)
             type_accuracy = scatter(type_accuracy.float(
             ), batch.batch, dim=0, reduce='mean').mean()
