@@ -62,8 +62,8 @@ def run_training(cfg: DictConfig):
     hydra.utils.log.info(f"Passing scalers from datamodule to model>")
     model.lengths_scaler = datamodule.lengths_scaler.copy()
     model.prop_scaler = datamodule.prop_scaler.copy()
-    model.prop_mu_scaler = datamodule.prop_mu_scaler.copy()
-    model.prop_std_scaler = datamodule.prop_std_scaler.copy()
+    # model.prop_mu_scaler = datamodule.prop_mu_scaler.copy()
+    # model.prop_std_scaler = datamodule.prop_std_scaler.copy()
 
     # Logger instantiation/configuration
     wandb_logger = None
@@ -437,7 +437,7 @@ def run_sampling(cfg: DictConfig, model: DiffusionModel = None):
         # Clean up the file so that it doesn't hang around
         os.remove(samples_path)
 
-@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="cdivae_v3")
+@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="cdvae_base")
 def main(cfg: DictConfig):
 
     model = None

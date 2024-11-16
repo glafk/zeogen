@@ -524,7 +524,7 @@ class DiffusionModel(BaseModule):
 
     def type_loss(self, pred_atom_types, target_atom_types,
                   type_noise, batch):
-        target_atom_types = target_atom_types
+        target_atom_types = target_atom_types - 13
         loss = F.cross_entropy(
             pred_atom_types, target_atom_types, reduction='none')
         # rescale loss according to noise

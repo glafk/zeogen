@@ -1,4 +1,4 @@
-expname: non_zero_std_debug_activations
+expname: cdvae_recover_results
 
 # metadata specialised for each experiment
 core:

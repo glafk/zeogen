@@ -36,6 +36,7 @@ class GemNetTEncoderExt(nn.Module):
         )
 
         self.fc_mu = nn.Linear(num_targets, num_targets)
+        # TODO: Place a hard sigmoid here to limit variance
         self.fc_var = nn.Sequential(nn.Linear(num_targets, num_targets), nn.Softplus())
 
     def forward(self, data, uniform_types=False):
