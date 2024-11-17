@@ -1,0 +1,28 @@
+expname: fit_scaling_factors_cdvae_base
+
+# metadata specialised for each experiment
+core:
+  version: 0.0.1
+  tags:
+    - ${now:%Y-%m-%d}
+
+hydra:
+  run:
+    dir: ${oc.env:HYDRA_JOBS}/singlerun/${now:%Y-%m-%d}/${expname}/
+
+# fitting process parameters
+fit:
+  encoder_scaling_factors: ${oc.env:PROJECT_ROOT}/source/scaling_factors/cdvae_base/scaling_factors_total_dataset_encoder.json
+  decoder_scaling_factors: ${oc.env:PROJECT_ROOT}/source/scaling_factors/cdvae_base/scaling_factors_total_dataset_decoder.json
+  # x_encoder_scaling_factors: ${oc.env:PROJECT_ROOT}/source/scaling_factors/x_encoder_scaling_factors_total_dataset_CDiVAE.json
+  lengths_scaler_file: ${oc.env:PROJECT_ROOT}/source/scaling_factors/cdvae_base/lengths_scaler_total_dataset.pt
+  prop_scaler_file: ${oc.env:PROJECT_ROOT}/source/scaling_factors/cdvae_base/prop_scaler_total_dataset.pt
+  num_batches: 128
+  # num_batches: 496
+  comment: "gemnet scaling factors for combined total dataset based on CDivAE model"
+
+defaults:
+  - data: data_combined
+  - model: cdvae_base
+  - optim: optim
+  - train: train

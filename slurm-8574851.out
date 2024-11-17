@@ -1,0 +1,59 @@
+/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/defaults_list.py:251: UserWarning: In 'fit_scaling_cdvae_base': Defaults list is missing `_self_`. See https://hydra.cc/docs/1.2/upgrades/1.0_to_1.1/default_composition_order for more information
+  warnings.warn(msg, UserWarning)
+WARNING:root:Already found existing file: /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdvae_base/scaling_factors_total_dataset_encoder.json
+WARNING:root:Already found existing file: /home//dglavinkov/ondemand/zeogen//source/scaling_factors/cdvae_base/scaling_factors_total_dataset_encoder.json
+Working directory: /gpfs/home5/dglavinkov/ondemand/zeogen
+Setting up data module
+{'encoder': {'_target_': 'encoder.GemNetTEncoder', 'hidden_size': 128, 'num_targets': '$(model.latent_dim)', 'max_neighbors': '${model.max_neighbors}', 'radius': '${model.radius}', 'scale_file': '${oc.env:PROJECT_ROOT}/source/scaling_factors/cdvae_base/scaling_factors_total_dataset_encoder.json'}, 'decoder': {'_target_': 'decoder.GemNetTDecoder', 'hidden_dim_atom_emb': 128, 'hidden_dim_edge_emb': 128, 'latent_dim': '${model.total_latent_dim}', 'max_neighbors': '${model.max_neighbors}', 'radius': '${model.radius}', 'scale_file': '${oc.env:PROJECT_ROOT}/source/scaling_factors/cdvae_base/scaling_factors_total_dataset_decoder.json'}, '_target_': 'cdvae.DiffusionModel', 'hidden_dim': 256, 'total_latent_dim': 256, 'fc_num_layers': 2, 'max_atoms': '${data.max_atoms}', 'cost_natom': 1.0, 'cost_coord': 10.0, 'cost_type': 1.0, 'cost_lattice': 10.0, 'cost_composition': 1.0, 'cost_edge': 10.0, 'cost_property': 1.0, 'beta': 0.01, 'teacher_forcing_lattice': True, 'teacher_forcing_max_epoch': '${data.teacher_forcing_max_epoch}', 'max_neighbors': 20, 'radius': 7.0, 'sigma_begin': 5.0, 'sigma_end': 0.05, 'type_sigma_begin': 0.2, 'type_sigma_end': 0.05, 'num_noise_level': 50, 'predict_property': False, 'load_model': False, 'model_location': 'wandb', 'ckpt_path': '${oc.env:PROJECT_ROOT}/model_checkpoints/model-150-epochs-MFI-only.ckpt', 'experiment_name_to_load': 'cont_training_50_100_epochs_total_dataset', 'run_training': True, 'resume_from_checkpoint': False, 'run_reconstruction': False, 'num_reconstructions': 10, 'reconstructions_file': 'reconstructions-${expname}.pickle', 'save_reconstructions_online': True, 'run_sampling': False, 'num_samples': 30, 'samples_file': 'samples-${expname}.pickle', 'save_samples_online': True}
+Traceback (most recent call last):
+  File "/home/dglavinkov/ondemand/zeogen/source/fit_scaling_cdvae_base.py", line 156, in <module>
+    fit_scaling()
+  File "/home/dglavinkov/ondemand/zeogen/source/fit_scaling_cdvae_base.py", line 100, in fit_scaling
+    cfg.model.cdvae_base.encoder.gemnet_encoder.scale_file = encoder_scale_file
+    ^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/omegaconf/dictconfig.py", line 359, in __getattr__
+    self._format_and_raise(key=key, value=None, cause=e)
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/omegaconf/base.py", line 231, in _format_and_raise
+    format_and_raise(
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/omegaconf/_utils.py", line 819, in format_and_raise
+    _raise(ex, cause)
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/omegaconf/_utils.py", line 797, in _raise
+    raise ex.with_traceback(sys.exc_info()[2])  # set env var OC_CAUSE=1 for full trace
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/omegaconf/dictconfig.py", line 351, in __getattr__
+    return self._get_impl(
+           ^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/omegaconf/dictconfig.py", line 442, in _get_impl
+    node = self._get_child(
+           ^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/omegaconf/basecontainer.py", line 73, in _get_child
+    child = self._get_node(
+            ^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/omegaconf/dictconfig.py", line 475, in _get_node
+    self._validate_get(key)
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/omegaconf/dictconfig.py", line 164, in _validate_get
+    self._format_and_raise(
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/omegaconf/base.py", line 231, in _format_and_raise
+    format_and_raise(
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/omegaconf/_utils.py", line 899, in format_and_raise
+    _raise(ex, cause)
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/omegaconf/_utils.py", line 797, in _raise
+    raise ex.with_traceback(sys.exc_info()[2])  # set env var OC_CAUSE=1 for full trace
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+omegaconf.errors.ConfigAttributeError: Key 'cdvae_base' is not in struct
+    full_key: model.cdvae_base
+    object_type=dict
+
+JOB STATISTICS
+==============
+Job ID: 8574851
+Cluster: snellius
+User/Group: dglavinkov/dglavinkov
+State: FAILED (exit code 1)
+Nodes: 1
+Cores per node: 9
+CPU Utilized: 00:00:07
+CPU Efficiency: 4.32% of 00:02:42 core-walltime
+Job Wall-clock time: 00:00:18
+Memory Utilized: 2.33 MB
+Memory Efficiency: 0.00% of 60.00 GB

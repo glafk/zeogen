@@ -1,0 +1,72 @@
+/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/defaults_list.py:251: UserWarning: In 'fit_scaling_cdvae_base': Defaults list is missing `_self_`. See https://hydra.cc/docs/1.2/upgrades/1.0_to_1.1/default_composition_order for more information
+  warnings.warn(msg, UserWarning)
+Traceback (most recent call last):
+  File "/home/dglavinkov/ondemand/zeogen/source/fit_scaling_cdvae_base.py", line 153, in <module>
+    fit_scaling()
+  File "/home/dglavinkov/ondemand/zeogen/source/fit_scaling_cdvae_base.py", line 51, in fit_scaling
+    cfg = compose(config_name="fit_scaling_cdvae_base")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/compose.py", line 38, in compose
+    cfg = gh.hydra.compose_config(
+          ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/hydra.py", line 594, in compose_config
+    cfg = self.config_loader.load_configuration(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/config_loader_impl.py", line 142, in load_configuration
+    return self._load_configuration_impl(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/config_loader_impl.py", line 253, in _load_configuration_impl
+    defaults_list = create_defaults_list(
+                    ^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/defaults_list.py", line 745, in create_defaults_list
+    defaults, tree = _create_defaults_list(
+                     ^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/defaults_list.py", line 715, in _create_defaults_list
+    defaults_tree = _create_defaults_tree(
+                    ^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/defaults_list.py", line 356, in _create_defaults_tree
+    ret = _create_defaults_tree_impl(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/defaults_list.py", line 457, in _create_defaults_tree_impl
+    return _expand_virtual_root(repo, root, overrides, skip_missing)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/defaults_list.py", line 280, in _expand_virtual_root
+    subtree = _create_defaults_tree_impl(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/defaults_list.py", line 573, in _create_defaults_tree_impl
+    add_child(children, new_root)
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/defaults_list.py", line 520, in add_child
+    subtree_ = _create_defaults_tree_impl(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/defaults_list.py", line 488, in _create_defaults_tree_impl
+    config_not_found_error(repo=repo, tree=root)
+  File "/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/defaults_list.py", line 799, in config_not_found_error
+    raise MissingConfigException(
+hydra.errors.MissingConfigException: In 'fit_scaling_cdvae_base': Could not find 'model/cdvae_base'
+
+Available options in 'model':
+	cdivae
+	cdivae_nox
+	cdivae_v2
+	cdivae_v3
+	cdvae
+	hoa_predictor
+Config search path:
+	provider=hydra, path=pkg://hydra.conf
+	provider=main, path=file:///gpfs/home5/dglavinkov/ondemand/zeogen/conf
+	provider=hydra-colorlog, path=pkg://hydra_plugins.hydra_colorlog.conf
+	provider=schema, path=structured://
+
+JOB STATISTICS
+==============
+Job ID: 8574448
+Cluster: snellius
+User/Group: dglavinkov/dglavinkov
+State: FAILED (exit code 1)
+Nodes: 1
+Cores per node: 9
+CPU Utilized: 00:00:03
+CPU Efficiency: 2.56% of 00:01:57 core-walltime
+Job Wall-clock time: 00:00:13
+Memory Utilized: 2.35 MB
+Memory Efficiency: 0.00% of 60.00 GB

@@ -37,8 +37,13 @@ def build_mlp(in_dim, hidden_dim, fc_num_layers, out_dim, final_activation=None)
         mods.append(nn.ReLU())
     elif final_activation == "hard_sigmoid":
         mods.append(nn.Hardsigmoid())
+    elif final_activation == "softmax":
+        mods.append(nn.Softmax(dim=-1))  # softmax often needs a dimension argument
+    elif final_activation == "selu":
+        mods.append(nn.SELU())
 
     return nn.Sequential(*mods)
+
 
 
 # This class code is repeated in the GEMNet file. TODO: Remove repetition
@@ -79,7 +84,7 @@ class DiffusionModel(BaseModule):
         self.fc_num_atoms = build_mlp(self.hparams.total_latent_dim, self.hparams.hidden_dim,
                                       self.hparams.fc_num_layers, self.hparams.max_atoms+1)
         self.fc_lengths = build_mlp(self.hparams.total_latent_dim, self.hparams.hidden_dim,
-                                    self.hparams.fc_num_layers, 3, final_activation="relu")
+                                    self.hparams.fc_num_layers, 3, final_activation="selu")
         self.fc_angles = build_mlp(self.hparams.total_latent_dim, self.hparams.hidden_dim,
                                    self.hparams.fc_num_layers, 3, final_activation='sigmoid')
         self.fc_composition = build_mlp(self.hparams.total_latent_dim, self.hparams.hidden_dim,
@@ -138,6 +143,7 @@ class DiffusionModel(BaseModule):
             num_atoms = self.predict_num_atoms(z)
             lengths = self.predict_lenghts(z, gt_num_atoms)
             angles = self.predict_angles(z)
+            lengths_and_angles = torch.cat([lengths, angles], dim=-1)
             composition_per_atom = self.predict_composition(z, gt_num_atoms)
             if self.hparams.teacher_forcing_lattice and teacher_forcing:
                 lengths = gt_lengths
@@ -146,10 +152,10 @@ class DiffusionModel(BaseModule):
             num_atoms = self.predict_num_atoms(z)
             lengths = self.predict_lenghts(z, num_atoms)
             angles = self.predict_angles(z)
+            lengths_and_angles = torch.cat([lengths, angles], dim=-1)
             composition_per_atom = self.predict_composition(z, num_atoms)
 
-        lengths_and_angles = torch.cat([lengths, angles], dim=-1)
-        return num_atoms, lengths_and_angles, lengths, angles, composition_per_atom
+        return num_atoms, lengths_and_angles, lengths.clone().detach(), angles.clone().detach(), composition_per_atom
 
     def forward(self, batch, teacher_forcing=False, training=False):
         mu, log_var, z, hidden = self.encode(batch)
@@ -331,7 +337,7 @@ class DiffusionModel(BaseModule):
     def predict_lenghts(self, z, num_atoms):
         self.lengths_scaler.match_device(z)
         pred_lengths = self.fc_lengths(z)
-        pred_lengths = self.lengths_scaler.inverse_transform(pred_lengths)
+        pred_lengths = self.lengths_scaler.inverse_transform_backprob_compat(pred_lengths)
         if self.hparams.data["lattice_scale_method"] == 'scale_length':
             pred_lengths = pred_lengths * num_atoms.argmax(dim=-1).view(-1, 1).float()**(1/3)
 
