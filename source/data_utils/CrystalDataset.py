@@ -10,6 +10,17 @@ from data_utils.crystal_utils import (
     preprocess, preprocess_tensors, add_scaled_lattice_prop)
 
 
+ZEOLITE_CODES_MAPPING = {'DDRch1': 0, 'DDRch2': 1, 'FAU': 2, 
+                         'FAUch': 3, 'ITW': 4, 'MEL': 5, 
+                         'MELch': 6, 'MFI': 7, 'MOR': 8, 
+                         'RHO': 9, 'TON': 10, 'TON2': 11, 
+                         'TON3': 12, 'TON4': 13, 'TONch': 14, 
+                         'BEC': 15, 'CHA': 16, 'ERI': 17, 
+                         'FER': 18, 'HEU': 19, 'LTA': 20, 
+                         'LTL': 21, 'MER': 22, 'MTW': 23, 
+                         'NAT': 24, 'YFI': 25, "DDR": 26}
+
+
 class CrystDataset(Dataset):
     def __init__(self, name: str, path: str,
                  prop: str, niggli: bool, primitive: bool,
@@ -32,7 +43,7 @@ class CrystDataset(Dataset):
 
         cwd = os.getcwd()
 
-        input_files = [f"{os.path.join(cwd, "../../data/MOR_dataloader_test_100/")}{file}" for file in pickle.load(self.path)]
+        input_files = [f"{os.path.join(cwd, '../../data/MOR_dataloader_test_100/')}{file}" for file in pickle.load(self.path)]
         self.cached_data = preprocess(
             input_files,
             preprocess_workers,
@@ -71,6 +82,8 @@ class CrystDataset(Dataset):
             num_bonds=edge_indices.shape[0],
             num_nodes=num_atoms,  # special attribute used for batching in pytorch geometric
             y=prop.view(1, -1),
+            zeolite_code=data_dict["zeolite_code"],
+            zeolite_code_enc=ZEOLITE_CODES_MAPPING[data_dict["zeolite_code"]]
         )
         return data
 
@@ -81,7 +94,8 @@ class CrystDataset(Dataset):
 class TensorCrystDataset(Dataset):
     def __init__(self, path, niggli, primitive,
                  graph_method, preprocess_workers,
-                 lattice_scale_method, prop, num_records=None, **kwargs):
+                 lattice_scale_method, prop, num_records=None,
+                 top_k=None, sort="smallest", **kwargs):
         super().__init__()
         self.niggli = niggli
         self.primitive = primitive
@@ -90,6 +104,9 @@ class TensorCrystDataset(Dataset):
         self.path = path
         self.prop = prop
         self.num_records = num_records
+        self.top_k = top_k
+        self.sort = sort
+
 
         # Read the tensors from path to crystal_array_list
         crystal_array_list = pickle.load(open(path, 'rb'))
@@ -98,7 +115,9 @@ class TensorCrystDataset(Dataset):
         self.cached_data = preprocess_tensors(
             crystal_array_list,
             graph_method=self.graph_method,
-            num_records=self.num_records)
+            num_records=self.num_records,
+            top_k=self.top_k,
+            sort=self.sort)
 
         add_scaled_lattice_prop(self.cached_data, lattice_scale_method)
         self.lattice_scaler = None
@@ -128,7 +147,9 @@ class TensorCrystDataset(Dataset):
             num_atoms=num_atoms,
             num_bonds=edge_indices.shape[0],
             num_nodes=num_atoms,  # special attribute used for batching in pytorch geometric
-            y=prop.view(1, -1)
+            y=prop.view(1, -1),
+            zeolite_code=data_dict["zeolite_code"],
+            zeolite_code_enc=ZEOLITE_CODES_MAPPING[data_dict["zeolite_code"]]
         )
         return data
 

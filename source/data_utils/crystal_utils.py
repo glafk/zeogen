@@ -630,7 +630,23 @@ def preprocess(input_files, num_workers, niggli, primitive, graph_method,
 # Array shape
 # arr = [{frac_coords: [list], atom_types: [list], lengths: [list], angles: [list], adsorption_cap: float]}]
 # lengths = [a,b,c]; angles = [alpha, beta, gamma)
-def preprocess_tensors(crystal_dict_list, graph_method, num_records=None):
+def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, top_k=None, sort="smallest"):
+    """
+    Preprocess crystal data to generate tensors with optional filtering for the top_k
+    zeolite types based on unit cell size (number of atoms).
+
+    Parameters:
+        crystal_dict_list (list): List of dictionaries containing crystal information.
+        graph_method (str): The method to use for generating graph arrays.
+        num_records (int, optional): Limit the number of records processed.
+        top_k (int, optional): Number of zeolite types to filter based on unit cell size.
+                               If None, no filtering is applied.
+        sort (str, optional): Determines whether to select the smallest or largest unit cells.
+                              Options: "smallest" (default) or "largest".
+
+    Returns:
+        list: Preprocessed results, ordered by batch index.
+    """
     def process_one(batch_idx, crystal_dict, graph_method):
         frac_coords = crystal_dict['frac_coords']
         atom_types = crystal_dict['atom_types']
@@ -638,23 +654,70 @@ def preprocess_tensors(crystal_dict_list, graph_method, num_records=None):
         angles = crystal_dict['angles']
         hoa = crystal_dict['hoa']
         crystal = Structure(
-            lattice=Lattice.from_parameters(
-                *(lengths + angles)),
+            lattice=Lattice.from_parameters(*(lengths + angles)),
             species=atom_types,
             coords=frac_coords,
-            coords_are_cartesian=False)
+            coords_are_cartesian=False
+        )
         graph_arrays = build_crystal_graph(crystal, graph_method)
-        result_dict = {
+        return {
             'batch_idx': batch_idx,
             'graph_arrays': graph_arrays,
-            'hoa': hoa
+            'hoa': hoa,
+            'zeolite_code': crystal_dict['zeolite_code'],
+            # 'zeolite_code': "MOR",
+            # 'zeolite_code_enc': crystal_dict['zeolite_code_enc']
         }
-        return result_dict
 
-    # Limit number of items temporarily for testing purporses
+    # If top_k is provided, filter by zeolite type
+    if top_k is not None:
+        # Create a mapping of zeolite type to all its crystals
+        zeolite_to_crystals = {}
+        for crystal in crystal_dict_list:
+            if "zeolite_code" in crystal:
+                zeolite_code = crystal["zeolite_code"]
+                if zeolite_code not in zeolite_to_crystals:
+                    zeolite_to_crystals[zeolite_code] = []
+                zeolite_to_crystals[zeolite_code].append(crystal)
+
+        # Count atoms for each zeolite type
+        zeolite_atom_counts = []
+        for zeolite_code, crystals in zeolite_to_crystals.items():
+            # Use the first crystal to determine atom count
+            first_crystal = crystals[0]
+            frac_coords = first_crystal['frac_coords']
+            atom_types = first_crystal['atom_types']
+            lengths = first_crystal['lengths']
+            angles = first_crystal['angles']
+
+            # Create a pymatgen Structure to count the atoms
+            crystal_structure = Structure(
+                lattice=Lattice.from_parameters(*(lengths + angles)),
+                species=atom_types,
+                coords=frac_coords,
+                coords_are_cartesian=False
+            )
+            atom_count = len(crystal_structure.sites)
+            zeolite_atom_counts.append((atom_count, zeolite_code))
+
+        # Sort by atom count (ascending for "smallest", descending for "largest")
+        reverse_sort = sort == "largest"
+        zeolite_atom_counts.sort(key=lambda x: x[0], reverse=reverse_sort)
+
+        # Select the top_k zeolite types
+        selected_zeolite_codes = {entry[1] for entry in zeolite_atom_counts[:top_k]}
+
+        # Filter crystals belonging to the selected types
+        crystal_dict_list = [
+            crystal for crystal in crystal_dict_list
+            if crystal.get("zeolite_code") in selected_zeolite_codes
+        ]
+
+    # Limit the number of records if specified
     if num_records is not None:
         crystal_dict_list = crystal_dict_list[:num_records]
-    
+
+    # Process the crystals in parallel
     unordered_results = p_umap(
         process_one,
         list(range(len(crystal_dict_list))),
@@ -662,8 +725,9 @@ def preprocess_tensors(crystal_dict_list, graph_method, num_records=None):
         [graph_method] * len(crystal_dict_list),
         num_cpus=4
     )
-    ordered_results = list(
-        sorted(unordered_results, key=lambda x: x['batch_idx']))
+    
+    # Order the results by batch index
+    ordered_results = sorted(unordered_results, key=lambda x: x['batch_idx'])
     return ordered_results
 
 

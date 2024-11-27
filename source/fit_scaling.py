@@ -47,34 +47,37 @@ os.chdir(PROJECT_ROOT)
 #@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="diffusion")
 def fit_scaling(): 
 
-    num_batches = 16  # number of batches to use to fit a single variable
-    scale_file = "source/gemnet/scaling_factors_gemnet_diffusion.json"
+    num_batches = 128  # number of batches to use to fit a single variable
+    decoder_scale_file = "source/scaling/total_dataset/scaling_factors_gemnet_legacy_run_decoder.json"
+    encoder_scale_file = "source/scaling/total_dataset/scaling_factors_gemnet_legacy_run_encoder.json"
     # Print current directory
     print(f"DIR {os.getcwd()}")
-    logging.info(f"Target scale file: {scale_file}")
+    # logging.info(f"Target scale file: {scale_file}")
 
     def initialize_scale_file(scale_file):
         # initialize file
         preset = {"comment": "gemnet scaling factors"}
         write_json(scale_file, preset)
 
-    if os.path.exists(scale_file):
-        logging.warning(f"Already found existing file: {scale_file}")
-        flag = input(
-            "Do you want to continue and overwrite the file (1), "
-            "only fit the variables not fitted yet (2), or exit (3)? "
-        )
-        if str(flag) == "1":
-            logging.info("Overwriting the current file.")
-            initialize_scale_file(scale_file)
-        elif str(flag) == "2":
-            logging.info("Only fitting unfitted variables.")
+    for scale_file in [encoder_scale_file, decoder_scale_file]:
+        if os.path.exists(scale_file):
+            logging.warning(f"Already found existing file: {scale_file}")
+            flag = 1
+            #flag = input(
+            #    "Do you want to continue and overwrite the file (1), "
+            #    "only fit the variables not fitted yet (2), or exit (3)? "
+            #)
+            if str(flag) == "1":
+                logging.info("Overwriting the current file.")
+                initialize_scale_file(scale_file)
+            elif str(flag) == "2":
+                logging.info("Only fitting unfitted variables.")
+            else:
+                print(flag)
+                logging.info("Exiting script")
+                sys.exit()
         else:
-            print(flag)
-            logging.info("Exiting script")
-            sys.exit()
-    else:
-        initialize_scale_file(scale_file)
+            initialize_scale_file(scale_file)
 
     AutomaticFit.set2fitmode()
 
@@ -99,12 +102,13 @@ def fit_scaling():
         hydra.utils.log.info(f"Passing scaler from datamodule to model <{datamodule.scaler}>")
         model.lattice_scaler = datamodule.lattice_scaler.copy()
         model.scaler = datamodule.scaler.copy()
-        torch.save(datamodule.lattice_scaler, 'lattice_scaler_fit.pt')
-        torch.save(datamodule.scaler, 'prop_scaler_fit.pt')
+        torch.save(datamodule.lattice_scaler, 'lattice_scaler_legacy.pt')
+        torch.save(datamodule.scaler, 'prop_scaler_legacy.pt')
 
         # Get the test dataloader from the datamodule
         train_dataloader = datamodule.train_dataloader()
 
+    model = model.to('cuda')
     # Fitting loop
     logging.info("Start fitting")
     print("Queue")
@@ -112,13 +116,13 @@ def fit_scaling():
     print(f"Active var: {AutomaticFit.activeVar}")
     if not AutomaticFit.fitting_completed():
         with torch.no_grad():
-            # model.eval()
+            model.eval()
             # print(dir(train_dataloader))
             # print(type(train_dataloader.dataset)) 
             progress_bar = trange(len(AutomaticFit.queue) + 1)
             for _ in progress_bar:
                 for batch_idx, batch in enumerate(islice(train_dataloader, num_batches)):
-    
+                    batch = batch.to("cuda")
                     # Perform forward pass
                     predictions = model(
                         batch

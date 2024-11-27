@@ -1,3 +1,4 @@
+import os
 import random
 from typing import Optional, Sequence
 from pathlib import Path
@@ -77,8 +78,18 @@ class CrystDataModule(pl.LightningDataModule):
         """
         print("Setting up data module")
         if stage == "fit":
-            self.train_dataset = hydra.utils.instantiate(self.datasets.train)
-            self.val_dataset = hydra.utils.instantiate(self.datasets.val)
+            train_preprocessed_path = self.datasets.train.path.split('.')[0] + '_preprocessed.pt'
+            val_preprocessed_path = self.datasets.val.path.split('.')[0] + '_preprocessed.pt'
+            if os.path.exists(train_preprocessed_path) and os.path.exists(val_preprocessed_path):
+                self.train_dataset = torch.load(train_preprocessed_path)
+                self.val_dataset = torch.load(val_preprocessed_path)
+            else:
+                self.train_dataset = hydra.utils.instantiate(self.datasets.train)
+                self.val_dataset = hydra.utils.instantiate(self.datasets.val)
+
+                # Save preprocessed data
+                torch.save(self.train_dataset, train_preprocessed_path)
+                torch.save(self.val_dataset, val_preprocessed_path)
 
             self.train_dataset.lattice_scaler = self.lattice_scaler
             self.train_dataset.scaler = self.scaler
@@ -86,7 +97,14 @@ class CrystDataModule(pl.LightningDataModule):
             self.val_dataset.scaler = self.scaler
 
         if stage == "test" or stage == "predict":
-            self.test_dataset = hydra.utils.instantiate(self.datasets.test)
+            test_preprocessed_path = self.datasets.test.path.split('.')[0] + '_preprocessed.pt'
+            if os.path.exists(test_preprocessed_path):
+                self.test_dataset = torch.load(test_preprocessed_path)
+            else:
+                self.test_dataset = hydra.utils.instantiate(self.datasets.test)
+                # Save preprocessed data
+                torch.save(self.test_dataset, test_preprocessed_path)
+
             print("Instantiating test dataset") 
             self.test_dataset.lattice_scaler = self.lattice_scaler
             self.test_dataset.scaler = self.scaler
@@ -107,7 +125,7 @@ class CrystDataModule(pl.LightningDataModule):
             batch_size=self.batch_size.train,
             num_workers=self.num_workers.train,
             worker_init_fn=worker_init_fn,
-            persistent_workers=True
+            # persistent_workers=True
         )
 
     def val_dataloader(self) -> Sequence[DataLoader]:
@@ -121,7 +139,7 @@ class CrystDataModule(pl.LightningDataModule):
                 batch_size=self.batch_size.val,
                 num_workers=self.num_workers.val,
                 worker_init_fn=worker_init_fn,
-                persistent_workers=True
+                # persistent_workers=True
             )
 
     def test_dataloader(self) -> Sequence[DataLoader]:
@@ -133,7 +151,7 @@ class CrystDataModule(pl.LightningDataModule):
                 batch_size=self.batch_size.test,
                 num_workers=self.num_workers.test,
                 worker_init_fn=worker_init_fn,
-                persistent_workers=True
+                # persistent_workers=True
             )
 
     def predict_dataloader(self) -> Sequence[DataLoader]:
@@ -145,7 +163,7 @@ class CrystDataModule(pl.LightningDataModule):
                 batch_size=self.batch_size.predict,
                 num_workers=self.num_workers.predict,
                 worker_init_fn=worker_init_fn,
-                persistent_workers=True
+                # persistent_workers=True
             )
 
     def __repr__(self) -> str:

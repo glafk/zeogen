@@ -14,6 +14,8 @@ from torch.nn import functional as F
 from torch_scatter import scatter
 from tqdm import tqdm
 import pickle
+from utils import add_object
+import torch.distributions as dist
 
 from data_utils.crystal_utils import frac_to_cart_coords, cart_to_frac_coords, min_distance_sqr_pbc, mard, lengths_angles_to_volume
 
@@ -23,12 +25,51 @@ env.load_envs()
 MAX_ATOMIC_NUM = 100
 PROJECT_ROOT = Path(env.get_env("PROJECT_ROOT"))
 
+ZEOLITE_CODES_MAPPING = {'DDRch1': 0, 'DDRch2': 1, 'FAU': 2, 
+                         'FAUch': 3, 'ITW': 4, 'MEL': 5, 
+                         'MELch': 6, 'MFI': 7, 'MOR': 8, 
+                         'RHO': 9, 'TON': 10, 'TON2': 11, 
+                         'TON3': 12, 'TON4': 13, 'TONch': 14, 
+                         'BEC': 15, 'CHA': 16, 'ERI': 17, 
+                         'FER': 18, 'HEU': 19, 'LTA': 20, 
+                         'LTL': 21, 'MER': 22, 'MTW': 23, 
+                         'NAT': 24, 'YFI': 25, "DDR": 26}
+
+
 def build_mlp(in_dim, hidden_dim, fc_num_layers, out_dim):
     mods = [nn.Linear(in_dim, hidden_dim), nn.ReLU()]
     for i in range(fc_num_layers-1):
         mods += [nn.Linear(hidden_dim, hidden_dim), nn.ReLU()]
     mods += [nn.Linear(hidden_dim, out_dim)]
     return nn.Sequential(*mods)
+
+
+class CondPrior(nn.Module):
+    def __init__(self, cond_dim, z_dim, embed=False):
+        super(CondPrior, self).__init__()
+        self.emb = nn.Embedding(len(ZEOLITE_CODES_MAPPING.keys()), 128)
+        if embed:
+            self.fc1 = nn.Sequential(nn.Linear(128, z_dim, bias=False), nn.BatchNorm1d(z_dim), nn.ReLU())
+        else:
+            self.fc1 = nn.Sequential(nn.Linear(cond_dim, z_dim, bias=False), nn.BatchNorm1d(z_dim), nn.ReLU())
+        self.fc21 = nn.Sequential(nn.Linear(z_dim, z_dim))
+        self.fc22 = nn.Sequential(nn.Linear(z_dim, z_dim), nn.Softplus())
+
+        torch.nn.init.xavier_uniform_(self.fc1[0].weight)
+        torch.nn.init.xavier_uniform_(self.fc21[0].weight)
+        self.fc21[0].bias.data.zero_()
+        torch.nn.init.xavier_uniform_(self.fc22[0].weight)
+        self.fc22[0].bias.data.zero_()
+
+    def forward(self, condition, embed=True):
+        if embed:
+            condition = self.emb(condition)
+        
+        hidden = self.fc1(condition)
+        z_loc = self.fc21(hidden)
+        z_log_var = self.fc22(hidden) + 1e-7
+
+        return z_loc, z_log_var
 
 
 # This class code is repeated in the GEMNet file. TODO: Remove repetition
@@ -86,6 +127,13 @@ class DiffusionModel(BaseModule):
             self.hparams.num_noise_level)), dtype=torch.float32)
 
         self.type_sigmas = nn.Parameter(type_sigmas, requires_grad=False)
+
+        self.conditional = False
+        print(self.hparams.keys())
+        if self.hparams.conditional:
+            self.pz = CondPrior(1, self.hparams.latent_dim, embed=True)
+            self.conditional = True
+    
 
         # These are passed from the datamodule after both it and the model have been initialized
         self.lattice_scaler = None
@@ -184,8 +232,18 @@ class DiffusionModel(BaseModule):
         # SO HERE I NEED TO SETUP A NETWORK WITH THIS MODEL'S DECODER SO THAT I CAN REPLICATE THE DIFFUSION PROCESS, BUT WITHOUT ANYTHING ELSE FROM THIS MODEL FOR NOW
         # TODO: Ask at the meeting: Can we pass the angles and lengths from the ground truth to the decoder?
         # Would that make the training better?
-        pred_cart_coord_diff, pred_atom_types = self.decoder(
-            z, noisy_frac_coords, rand_atom_types, batch.num_atoms, pred_lengths, pred_angles)
+        try:
+            pred_cart_coord_diff, pred_atom_types = self.decoder(
+                z, noisy_frac_coords, rand_atom_types, batch.num_atoms, pred_lengths, pred_angles)
+        except Exception as e:
+            # Handle the case where atoms have 0 neighors in the computational graph 
+            # and the forward pass fails
+            # Pass the ground truths to the decoder
+            pred_cart_coord_diff, pred_atom_types = self.decoder(z, noisy_frac_coords, rand_atom_types, batch.num_atoms, batch.lengths, batch.angles)
+
+        if self.conditional:
+            p_mu, p_log_var = self.pz(batch['zeolite_code_enc'], embed=True)
+
 
         # compute loss.
         num_atom_loss = self.num_atom_loss(pred_num_atoms, batch)
@@ -197,7 +255,7 @@ class DiffusionModel(BaseModule):
         type_loss = self.type_loss(pred_atom_types, batch.atom_types,
                                    used_type_sigmas_per_atom, batch)
 
-        kld_loss = self.kld_loss(mu, log_var)
+        kld_loss = self.kld_loss(mu, log_var, p_mu, p_log_var)
 
         if self.hparams.predict_property:
             property_loss = self.property_loss(z, batch)
@@ -367,17 +425,21 @@ class DiffusionModel(BaseModule):
                     all_noise_cart.append(noise_cart)
                     all_atom_types.append(cur_atom_types)
 
-        output_dict = {'num_atoms': num_atoms, 'lengths': lengths, 'angles': angles,
-                       'frac_coords': cur_frac_coords, 'atom_types': cur_atom_types,
+        output_dict = {'z': z.cpu().numpy(),
+                       'num_atoms': num_atoms.cpu().numpy(), 
+                       'lengths': lengths.cpu().numpy(), 
+                       'angles': angles.cpu().numpy(),
+                       'frac_coords': cur_frac_coords.cpu().numpy(),
+                       'atom_types': cur_atom_types.cpu().numpy(),
                        'is_traj': False}
 
         if ld_kwargs.save_traj:
             output_dict.update(dict(
-                all_frac_coords=torch.stack(all_frac_coords, dim=0),
-                all_atom_types=torch.stack(all_atom_types, dim=0),
-                all_pred_cart_coord_diff=torch.stack(
-                    all_pred_cart_coord_diff, dim=0),
-                all_noise_cart=torch.stack(all_noise_cart, dim=0),
+                all_frac_coords=torch.stack(all_frac_coords, dim=0).cpu().numpy(),
+                all_atom_types=torch.stack(all_atom_types, dim=0).cpu().numpy(),
+                # all_pred_cart_coord_diff=torch.stack(
+                #     all_pred_cart_coord_diff, dim=0),
+                # all_noise_cart=torch.stack(all_noise_cart, dim=0),
                 is_traj=True))
 
         return output_dict
@@ -385,8 +447,7 @@ class DiffusionModel(BaseModule):
     def sample(self, num_samples, ld_kwargs, save_samples=False, samples_file="samples.pickle"):
         # Here in the sampling part I will need to figure out how to force the model to sample from the part of the distribution where the representations of the "high-capacity" crystals lie
         print(f"Saving sampled crystals - {save_samples}.")
-        print(self.device)
-        z = torch.randn(num_samples, self.hparams.hidden_dim,
+        z = torch.randn(num_samples, self.hparams.latent_dim,
                         device=self.device)
         samples = self.langevin_dynamics(z, ld_kwargs)
 
@@ -404,11 +465,11 @@ class DiffusionModel(BaseModule):
         reconstruction = self.langevin_dynamics(z, ld_kwargs)
 
         print(f"Saving reconstructions to {reconstructions_file}.")
-        with open(os.path.join(f"{PROJECT_ROOT}/reconstructions", reconstructions_file), "ab") as f:
-            pickle.dump(reconstruction, f)
+        reconstructions_path = os.path.join(f"{PROJECT_ROOT}/reconstructions", reconstructions_file)
+        gt_path = os.path.join(f"{PROJECT_ROOT}/reconstructions", reconstructions_file.split('.')[0] + "_gt.pickle")
 
-        with open(reconstructions_file.split('.')[0] + "_gt.pickle", "ab") as f:
-            pickle.dump(batch, f)
+        add_object(reconstruction, reconstructions_path)
+        add_object(batch, gt_path)
 
     def num_atom_loss(self, pred_num_atoms, batch):
         return F.cross_entropy(pred_num_atoms, batch.num_atoms)
@@ -464,10 +525,18 @@ class DiffusionModel(BaseModule):
         loss = loss / used_type_sigmas_per_atom
         return scatter(loss, batch.batch, reduce='mean').mean()
 
-    def kld_loss(self, mu, log_var):
-        kld_loss = torch.mean(
-            -0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1), dim=0)
-        return kld_loss
+    def kld_loss(self, mu1, log_var1, mu2, log_var2):
+        var1 = log_var1.exp()  # Variance of q1
+        var2 = log_var2.exp()  # Variance of q2
+
+        kld = 0.5 * torch.sum(
+            log_var2 - log_var1
+            - 1
+            + var1 / var2
+            + (mu2 - mu1).pow(2) / var2,
+            dim=1  # Sum over dimensions of the latent space
+        )
+        return kld.mean()  # Mean over the batch
 
     def training_step(self, batch: Any, batch_idx: int) -> torch.Tensor:
         teacher_forcing = (

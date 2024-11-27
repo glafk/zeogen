@@ -11,7 +11,7 @@ hydra:
     dir: ${oc.env:HYDRA_JOBS}/singlerun/${now:%Y-%m-%d}/${expname}/
   
 defaults:
-  - data: data_combined
+  - data: data_combined_total
   - model: diffusion
   - optim: optim
   - train: train

@@ -169,3 +169,5 @@ parsed_samples/
 # model_checkpoints/
 source/notebooks/parsed_samples/
 
+samples/
+reconstructions/

@@ -59,9 +59,9 @@ class AutomaticFit:
         logging.debug(f"Add {self._name} to queue.")
         # check that same variable is not added twice
         for var in AutomaticFit.queue:
-            if self._name == var._name:
+            if self._name == var._name and self.scale_file == var.scale_file:
                 raise ValueError(
-                    f"Variable with the same name ({self._name}) was already added to queue!"
+                    f"Variable with the same name ({self._name}) and destination file was already added to queue!"
                 )
         AutomaticFit.queue += [self]
 
