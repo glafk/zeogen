@@ -665,9 +665,42 @@ def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, top_k=
             'graph_arrays': graph_arrays,
             'hoa': hoa,
             'zeolite_code': crystal_dict['zeolite_code'],
+            'norm_hoa': crystal_dict["norm_hoa"]
             # 'zeolite_code': "MOR",
             # 'zeolite_code_enc': crystal_dict['zeolite_code_enc']
         }
+
+    # Extract HOA and zeolite codes
+    hoa = np.array([entry['hoa'] for entry in crystal_dict_list])
+    zeo_code = np.array([entry['zeolite_code'] for entry in crystal_dict_list])
+    # zeo_code = np.array(["MOR" for entry in crystal_dict_list])
+
+    # Find unique zeolite codes
+    unique_zeo_codes = np.unique(zeo_code)
+
+    # Find the maximum HOA for each zeolite type
+    mean_hoa_per_zeo_code = {}
+    std_hoa_per_zeo_code = {}
+    for code in unique_zeo_codes:
+        # Get the HOA values corresponding to the current zeolite code
+        hoa_values_for_code = np.array([entry['hoa'] for entry in crystal_dict_list if entry['zeolite_code'] == code])
+        # hoa_values_for_code = np.array([entry['hoa'] for entry in crystal_dict_list if "MOR" == code])
+        mean_hoa_per_zeo_code[code] = np.mean(hoa_values_for_code)
+        std_hoa_per_zeo_code[code] = np.std(hoa_values_for_code)
+
+    # Add normalized HOA
+    for entry in crystal_dict_list:
+        mean_hoa = mean_hoa_per_zeo_code[entry['zeolite_code']]
+        std_hoa = std_hoa_per_zeo_code[entry['zeolite_code']]
+        # mean_hoa = mean_hoa_per_zeo_code["MOR"]
+        # std_hoa = std_hoa_per_zeo_code["MOR"]
+        entry['hoa_mu'] = mean_hoa
+        entry['hoa_std'] = std_hoa
+        entry['norm_hoa'] = (entry['hoa'] - mean_hoa) / std_hoa
+
+    # Optionally clean up if needed
+    del hoa
+    del zeo_code
 
     # If top_k is provided, filter by zeolite type
     if top_k is not None:

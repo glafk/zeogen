@@ -49,9 +49,10 @@ class CondPrior(nn.Module):
         super(CondPrior, self).__init__()
         self.emb = nn.Embedding(len(ZEOLITE_CODES_MAPPING.keys()), 128)
         if embed:
-            self.fc1 = nn.Sequential(nn.Linear(128, z_dim, bias=False), nn.BatchNorm1d(z_dim), nn.ReLU())
+            # The +1 is to account for the normalized HOA
+            self.fc1 = nn.Sequential(nn.Linear(128 + 1, z_dim, bias=False), nn.BatchNorm1d(z_dim), nn.ReLU())
         else:
-            self.fc1 = nn.Sequential(nn.Linear(cond_dim, z_dim, bias=False), nn.BatchNorm1d(z_dim), nn.ReLU())
+            self.fc1 = nn.Sequential(nn.Linear(cond_dim + 1, z_dim, bias=False), nn.BatchNorm1d(z_dim), nn.ReLU())
         self.fc21 = nn.Sequential(nn.Linear(z_dim, z_dim))
         self.fc22 = nn.Sequential(nn.Linear(z_dim, z_dim), nn.Softplus())
 
@@ -61,9 +62,13 @@ class CondPrior(nn.Module):
         torch.nn.init.xavier_uniform_(self.fc22[0].weight)
         self.fc22[0].bias.data.zero_()
 
-    def forward(self, condition, embed=True):
+    def forward(self, condition_frame, condition_hoa, embed=True):
         if embed:
-            condition = self.emb(condition)
+            condition = self.emb(condition_frame)
+            # print("Condition shape")
+            # print(condition.shape)
+            # print(condition_hoa.shape)
+            condition = torch.cat([condition, condition_hoa.unsqueeze(1)], dim=1)
         
         hidden = self.fc1(condition)
         z_loc = self.fc21(hidden)
@@ -158,8 +163,9 @@ class DiffusionModel(BaseModule):
         hidden = self.encoder(batch)
         mu = self.fc_mu(hidden)
         log_var = self.fc_var(hidden)
+        log_var = torch.clamp(log_var, min=-5, max=5)
         z = self.reparameterize(mu, log_var)
-        return mu, log_var, z
+        return mu, log_var, z, hidden
 
     def decode_stats(self, z, gt_num_atoms=None, gt_lengths=None, gt_angles=None,
                      teacher_forcing=False):
@@ -184,7 +190,7 @@ class DiffusionModel(BaseModule):
 
     def forward(self, batch, teacher_forcing=False, training=False):
         # hacky way to resolve the NaN issue. Will need more careful debugging later.
-        mu, log_var, z = self.encode(batch)
+        mu, log_var, z, hidden = self.encode(batch)
 
         (pred_num_atoms, pred_lengths_and_angles, pred_lengths, pred_angles,
          pred_composition_per_atom) = self.decode_stats(
@@ -211,8 +217,21 @@ class DiffusionModel(BaseModule):
         atom_type_probs = (
             F.one_hot(batch.atom_types - 1, num_classes=MAX_ATOMIC_NUM) +
             pred_composition_probs * used_type_sigmas_per_atom[:, None])
-        rand_atom_types = torch.multinomial(
-            atom_type_probs, num_samples=1).squeeze(1) + 1
+        try:
+            rand_atom_types = torch.multinomial(
+                atom_type_probs, num_samples=1).squeeze(1) + 1
+        except Exception as e:
+            error_obj = {
+                "batch": batch,
+                "hidden": hidden,
+                "z": z,
+                "mu": mu,
+                "log_var": log_var,
+                "atom_type_probs": atom_type_probs
+            }
+
+            with open("instable_types.pickle", "wb") as f:
+                pickle.dump(error_obj)
 
         # add noise to the cart coords
         # TODO: Investigate: is it needed to add noise to the cart coords?
@@ -242,7 +261,7 @@ class DiffusionModel(BaseModule):
             pred_cart_coord_diff, pred_atom_types = self.decoder(z, noisy_frac_coords, rand_atom_types, batch.num_atoms, batch.lengths, batch.angles)
 
         if self.conditional:
-            p_mu, p_log_var = self.pz(batch['zeolite_code_enc'], embed=True)
+            p_mu, p_log_var = self.pz(batch['zeolite_code_enc'], batch["norm_hoa"], embed=True)
 
 
         # compute loss.
@@ -444,12 +463,32 @@ class DiffusionModel(BaseModule):
 
         return output_dict
 
-    def sample(self, num_samples, ld_kwargs, save_samples=False, samples_file="samples.pickle"):
+    def sample(self, num_samples, ld_kwargs, save_samples=False, samples_file="samples.pickle", domains=None, hoas=None):
         # Here in the sampling part I will need to figure out how to force the model to sample from the part of the distribution where the representations of the "high-capacity" crystals lie
-        print(f"Saving sampled crystals - {save_samples}.")
-        z = torch.randn(num_samples, self.hparams.latent_dim,
-                        device=self.device)
+        if self.conditional:
+            assert num_samples == len(hoas)
+            zs = []
+            for domain in domains:
+                for hoa in hoas:
+                    z_mu, z_log_var = self.pz(torch.tensor([ZEOLITE_CODES_MAPPING[domain]], device=self.device), 
+                                              torch.tensor([hoa], device=self.device), 
+                                              embed=True)
+                    pz = dist.Normal(z_mu.squeeze(), z_log_var.exp().squeeze())
+                    sample_n = pz.sample((1,))
+                    zs.append(sample_n)
+
+            z = torch.cat(zs)
+        else:
+            print(f"Saving sampled crystals - {save_samples}.")
+            z = torch.randn(num_samples, self.hparams.latent_dim,
+                            device=self.device)
+        
         samples = self.langevin_dynamics(z, ld_kwargs)
+
+        # if self.conditional:
+        #     domains_list = [domain for domain in domains for _ in range(num_samples)]
+        #     for i in range(len(domains_list)):
+        #         samples[i]["domain"] = domains_list[i]
 
         if save_samples:
             print(f"Saving samples to {samples_file}.")
@@ -460,7 +499,7 @@ class DiffusionModel(BaseModule):
 
     def reconstruct(self, batch, ld_kwargs, reconstructions_file="reconstructions.pickle"):
         # Reconstruct materials from dataset sample
-        mu, log_var, z = self.encode(batch)
+        mu, log_var, z, hidden = self.encode(batch)
 
         reconstruction = self.langevin_dynamics(z, ld_kwargs)
 

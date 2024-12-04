@@ -126,7 +126,7 @@ def run_reconstruction(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
         batch = batch.to("cuda")
         with torch.no_grad():  # No need to track gradients during inference
             model.reconstruct(batch, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.0001, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}),
-                              reconstructions_file="reconstructions-legacy-150-epochs_conditional_256_ld_small_dataset.pickle")
+                              reconstructions_file="reconstructions-legacy-150e-cond_256_10_smallest.pickle")
     
 def run_sampling(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
     if cfg.train.deterministic:
@@ -159,18 +159,26 @@ def run_sampling(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
 
     model = model.to("cuda")
 
-    model.sample(30, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.0001, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}), save_samples=True, samples_file="samples_legacy_150_epochs_8_latent_dim.pickle")
+    model.sample(5, omegaconf.DictConfig({"n_step_each": 100, 
+                                           "step_lr": 0.0001, 
+                                           "min_sigma": 0.01, 
+                                           "save_traj": True, 
+                                           "disable_bar": False}), 
+                                           save_samples=True, 
+                                           samples_file="samples-legacy-150e-cond_256_10_smallest.pickle",
+                                           domains=["NAT", "ITW", "TON", "LTA", "MTW"],
+                                           hoas=[0, 0.5, 1.0, 1.5, 2.0])
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="diffusion")
 def main(cfg: omegaconf.DictConfig):
     # Run training and sampling loop
-    run_diffusion(cfg)
+    # run_diffusion(cfg)
     
     # Run only sampling from saved model
-    # run_sampling(cfg)
+    run_sampling(cfg)
 
     # Run reconstruction from saved model
-    # run_reconstruction(cfg)
+    run_reconstruction(cfg)
 
 if __name__ == "__main__":
     main()

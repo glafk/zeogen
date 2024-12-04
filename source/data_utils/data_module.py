@@ -159,7 +159,7 @@ class CrystDataModule(pl.LightningDataModule):
             f.writelines(["predict dataloader accessed"])
         return DataLoader(
                 self.predict_dataset,
-                shuffle=False,
+                shuffle=True,
                 batch_size=self.batch_size.predict,
                 num_workers=self.num_workers.predict,
                 worker_init_fn=worker_init_fn,
