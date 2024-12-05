@@ -172,13 +172,13 @@ def run_sampling(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="diffusion")
 def main(cfg: omegaconf.DictConfig):
     # Run training and sampling loop
-    # run_diffusion(cfg)
+    run_diffusion(cfg)
     
     # Run only sampling from saved model
-    run_sampling(cfg)
+    # run_sampling(cfg)
 
     # Run reconstruction from saved model
-    run_reconstruction(cfg)
+    # run_reconstruction(cfg)
 
 if __name__ == "__main__":
     main()

@@ -45,14 +45,21 @@ def build_mlp(in_dim, hidden_dim, fc_num_layers, out_dim):
 
 
 class CondPrior(nn.Module):
-    def __init__(self, cond_dim, z_dim, embed=False):
+    def __init__(self, cond_dim, z_dim, embed=True, hoa_conditional=False):
         super(CondPrior, self).__init__()
         self.emb = nn.Embedding(len(ZEOLITE_CODES_MAPPING.keys()), 128)
         if embed:
             # The +1 is to account for the normalized HOA
-            self.fc1 = nn.Sequential(nn.Linear(128 + 1, z_dim, bias=False), nn.BatchNorm1d(z_dim), nn.ReLU())
+            if hoa_conditional:
+                self.fc1 = nn.Sequential(nn.Linear(128 + 1, z_dim, bias=False), nn.BatchNorm1d(z_dim), nn.ReLU())
+            else:
+                self.fc1 = nn.Sequential(nn.Linear(128, z_dim, bias=False), nn.BatchNorm1d(z_dim), nn.ReLU())
         else:
-            self.fc1 = nn.Sequential(nn.Linear(cond_dim + 1, z_dim, bias=False), nn.BatchNorm1d(z_dim), nn.ReLU())
+            if hoa_conditional:
+                self.fc1 = nn.Sequential(nn.Linear(cond_dim + 1, z_dim, bias=False), nn.BatchNorm1d(z_dim), nn.ReLU())
+            else:
+                self.fc1 = nn.Sequential(nn.Linear(cond_dim, z_dim, bias=False), nn.BatchNorm1d(z_dim), nn.ReLU())
+
         self.fc21 = nn.Sequential(nn.Linear(z_dim, z_dim))
         self.fc22 = nn.Sequential(nn.Linear(z_dim, z_dim), nn.Softplus())
 
@@ -62,13 +69,13 @@ class CondPrior(nn.Module):
         torch.nn.init.xavier_uniform_(self.fc22[0].weight)
         self.fc22[0].bias.data.zero_()
 
-    def forward(self, condition_frame, condition_hoa, embed=True):
+    def forward(self, condition_frame, condition_hoa=None, embed=True, hoa_conditional=False):
         if embed:
-            condition = self.emb(condition_frame)
-            # print("Condition shape")
-            # print(condition.shape)
-            # print(condition_hoa.shape)
-            condition = torch.cat([condition, condition_hoa.unsqueeze(1)], dim=1)
+            if hoa_conditional:
+                condition = self.emb(condition_frame)
+                condition = torch.cat([condition, condition_hoa.unsqueeze(1)], dim=1)
+            else:
+                condition = self.emb(condition_frame)
         
         hidden = self.fc1(condition)
         z_loc = self.fc21(hidden)
@@ -134,10 +141,16 @@ class DiffusionModel(BaseModule):
         self.type_sigmas = nn.Parameter(type_sigmas, requires_grad=False)
 
         self.conditional = False
-        print(self.hparams.keys())
+        self.hoa_conditional = False
         if self.hparams.conditional:
-            self.pz = CondPrior(1, self.hparams.latent_dim, embed=True)
-            self.conditional = True
+            if not self.hparams.hoa_conditional:
+                self.pz = CondPrior(1, self.hparams.latent_dim, embed=True, hoa_conditional=False)
+                self.conditional = True
+                self.hoa_conditional = False
+            else:
+                self.pz = CondPrior(1, self.hparams.latent_dim, embed=True, hoa_conditional=True)
+                self.conditional = True
+                self.hoa_conditional = False
     
 
         # These are passed from the datamodule after both it and the model have been initialized
@@ -261,8 +274,7 @@ class DiffusionModel(BaseModule):
             pred_cart_coord_diff, pred_atom_types = self.decoder(z, noisy_frac_coords, rand_atom_types, batch.num_atoms, batch.lengths, batch.angles)
 
         if self.conditional:
-            p_mu, p_log_var = self.pz(batch['zeolite_code_enc'], batch["norm_hoa"], embed=True)
-
+            p_mu, p_log_var = self.pz(batch['zeolite_code_enc'], batch["norm_hoa"], embed=True, hoa_conditional=self.hoa_conditional)
 
         # compute loss.
         num_atom_loss = self.num_atom_loss(pred_num_atoms, batch)
@@ -466,18 +478,30 @@ class DiffusionModel(BaseModule):
     def sample(self, num_samples, ld_kwargs, save_samples=False, samples_file="samples.pickle", domains=None, hoas=None):
         # Here in the sampling part I will need to figure out how to force the model to sample from the part of the distribution where the representations of the "high-capacity" crystals lie
         if self.conditional:
-            assert num_samples == len(hoas)
-            zs = []
-            for domain in domains:
-                for hoa in hoas:
+            if self.hoa_conditional:
+                assert num_samples == len(hoas)
+                zs = []
+                for domain in domains:
+                    for hoa in hoas:
+                        z_mu, z_log_var = self.pz(torch.tensor([ZEOLITE_CODES_MAPPING[domain]], device=self.device), 
+                                                torch.tensor([hoa], device=self.device), 
+                                                embed=True)
+                        pz = dist.Normal(z_mu.squeeze(), z_log_var.exp().squeeze())
+                        sample_n = pz.sample((1,))
+                        zs.append(sample_n)
+
+                z = torch.cat(zs)
+            else:
+                zs = []
+                for domain in domains:
                     z_mu, z_log_var = self.pz(torch.tensor([ZEOLITE_CODES_MAPPING[domain]], device=self.device), 
-                                              torch.tensor([hoa], device=self.device), 
-                                              embed=True)
+                                            torch.tensor([hoa], device=self.device), 
+                                            embed=True, hoa_conditional=False)
                     pz = dist.Normal(z_mu.squeeze(), z_log_var.exp().squeeze())
                     sample_n = pz.sample((1,))
                     zs.append(sample_n)
 
-            z = torch.cat(zs)
+                z = torch.cat(zs)
         else:
             print(f"Saving sampled crystals - {save_samples}.")
             z = torch.randn(num_samples, self.hparams.latent_dim,

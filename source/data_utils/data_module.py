@@ -11,6 +11,8 @@ from torch_geometric.loader import DataLoader
 import hydra
 from omegaconf import DictConfig
 
+from data_utils.balanced_sampler import SamplerFactory
+print("Imported balanced_sampler")
 from data_utils.crystal_utils import get_scaler_from_data_list
 
 
@@ -116,47 +118,57 @@ class CrystDataModule(pl.LightningDataModule):
             self.predict_dataset.scaler = self.scaler 
 
     def train_dataloader(self) -> DataLoader:
-        with open("train_dataloader.txt", "w+") as f:
-            f.writelines(["train dataloader accessed"])
+        classes = set([item["zeolite_code"] for item in self.train_dataset.cached_data])
+        class_idx = {framework: [idx for idx, item in list(enumerate(self.train_dataset.cached_data)) if item["zeolite_code"] == framework] for framework in classes}
+
+        batch_sampler = SamplerFactory().get(
+            class_idxs=class_idx,
+            batch_size=self.batch_size.train,
+            n_batches=len(self.datasets.train) // batch_size,
+            alpha=1
+        )
 
         return DataLoader(
             self.train_dataset,
-            shuffle=True,
-            batch_size=self.batch_size.train,
-            num_workers=self.num_workers.train,
-            worker_init_fn=worker_init_fn,
-            # persistent_workers=True
+            batch_sampler=batch_sampler
         )
 
     def val_dataloader(self) -> Sequence[DataLoader]:
 
-        with open("val_dataloader.txt", "w+") as f:
-            f.writelines(["val dataloader accessed"])
+        classes = set([item["zeolite_code"] for item in self.val_dataset.cached_data])
+        class_idx = {framework: [idx for idx, item in list(enumerate(self.val_dataset.cached_data)) if item["zeolite_code"] == framework] for framework in classes}
+        
+        batch_sampler = SamplerFactory().get(
+            class_idxs=class_idx,
+            batch_size=self.batch_size.val,
+            n_batches=len(self.datasets.val) // batch_size,
+            alpha=1
+        )
 
         return DataLoader(
-                self.val_dataset,
-                shuffle=False,
-                batch_size=self.batch_size.val,
-                num_workers=self.num_workers.val,
-                worker_init_fn=worker_init_fn,
-                # persistent_workers=True
-            )
+            self.train_dataset,
+            batch_sampler=batch_sampler
+        )
 
     def test_dataloader(self) -> Sequence[DataLoader]:
-        with open("test_dataloader.txt", "w+") as f:
-            f.writelines(["test dataloader accessed"])
+
+        classes = set([item["zeolite_code"] for item in self.test_dataset.cached_data])
+        class_idx = {framework: [idx for idx, item in list(enumerate(self.test_dataset.cached_data)) if item["zeolite_code"] == framework] for framework in classes}
+        
+        batch_sampler = SamplerFactory().get(
+            class_idxs=class_idx,
+            batch_size=self.batch_size.test,
+            n_batches=len(self.datasets.test) // batch_size,
+            alpha=1
+        )
+
         return DataLoader(
-                self.test_dataset,
-                shuffle=False,
-                batch_size=self.batch_size.test,
-                num_workers=self.num_workers.test,
-                worker_init_fn=worker_init_fn,
-                # persistent_workers=True
-            )
+            self.train_dataset,
+            batch_sampler=batch_sampler
+        )
 
     def predict_dataloader(self) -> Sequence[DataLoader]:
-        with open("predict_dataloader.txt", "w+") as f:
-            f.writelines(["predict dataloader accessed"])
+ 
         return DataLoader(
                 self.predict_dataset,
                 shuffle=True,

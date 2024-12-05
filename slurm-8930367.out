@@ -1,0 +1,208 @@
+/home/dglavinkov/ondemand/zeogen_legacy/zeogen/source/main.py:172: UserWarning: 
+The version_base parameter is not specified.
+Please specify a compatability version level, or None.
+Will assume defaults for version 1.1
+  @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="diffusion")
+/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/defaults_list.py:251: UserWarning: In 'diffusion': Defaults list is missing `_self_`. See https://hydra.cc/docs/1.2/upgrades/1.0_to_1.1/default_composition_order for more information
+  warnings.warn(msg, UserWarning)
+/gpfs/home5/dglavinkov/ondemand/thesis/lib/python3.11/site-packages/hydra/_internal/hydra.py:119: UserWarning: Future Hydra versions will no longer change working directory at job runtime by default.
+See https://hydra.cc/docs/1.2/upgrades/1.1_to_1.2/changes_to_job_working_dir/ for more information.
+  ret = run_job(
+[2024-12-05 04:00:25,995][hydra.utils][INFO] - Instantiating <data_utils.data_module.CrystDataModule>
+/gpfs/home5/dglavinkov/ondemand/zeogen_legacy/zeogen/source/data_utils/data_module.py:189: UserWarning: 
+The version_base parameter is not specified.
+Please specify a compatability version level, or None.
+Will assume defaults for version 1.1
+  @hydra.main(config_path="C:/TUE/thesis/zeogen/conf", config_name="test")
+Imported balanced_sampler
+[2024-12-05 04:00:26,022][hydra.utils][INFO] - Instantiating <diffusion_model.DiffusionModel>
+Instantiating triplet interaction
+Instantiating TripInteraction_1
+Instantiating autoscaleFit for TripInteraction_1_had_rbf
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_1_sum_cbf
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_1_sum
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_2
+Instantiating autoscaleFit for TripInteraction_2_had_rbf
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_2_sum_cbf
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_2_sum
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_3
+Instantiating autoscaleFit for TripInteraction_3_had_rbf
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_3_sum_cbf
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_3_sum
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_0_sum
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_0_had
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_1_sum
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_1_had
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_2_sum
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_2_had
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_3_sum
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_3_had
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating gemnet model
+Instantiating triplet interaction
+Instantiating TripInteraction_1
+Instantiating autoscaleFit for TripInteraction_1_had_rbf
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_1_sum_cbf
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_1_sum
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_2
+Instantiating autoscaleFit for TripInteraction_2_had_rbf
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_2_sum_cbf
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_2_sum
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating triplet interaction
+Instantiating TripInteraction_3
+Instantiating autoscaleFit for TripInteraction_3_had_rbf
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for TripInteraction_3_sum_cbf
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for AtomUpdate_3_sum
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_0_sum
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_0_had
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_1_sum
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_1_had
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_2_sum
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_2_had
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_3_sum
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+Instantiating autoscaleFit for OutBlock_3_had
+AutomaticFit init called.
+Fitting mode:  False
+Fitted:  True
+[2024-12-05 04:00:27,074][hydra.utils][INFO] - Passing scaler from datamodule to model <StandardScalerTorch(means: 39.333839416503906, stds: 7.465821266174316)>
+[2024-12-05 04:00:27,078][hydra.utils][INFO] - Instantiating <WandbLogger>
+[2024-12-05 04:00:27,081][hydra.utils][INFO] - W&B is now watching <{cfg.logging.wandb_watch.log}>!
+wandb: WARNING Path /home//dglavinkov/ondemand/zeogen_legacy/zeogen/wandb/wandb/ wasn't writable, using system temp directory.
+wandb: Using wandb-core as the SDK backend. Please refer to https://wandb.me/wandb-core for more information.
+wandb: WARNING Path /home//dglavinkov/ondemand/zeogen_legacy/zeogen/wandb/wandb/ wasn't writable, using system temp directory
+wandb: Currently logged in as: glafk. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.18.1
+wandb: Run data is saved locally in ./wandb/run-20241205_040029-qdp7lv66
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run train_150_epochs_256_ld_cond_total_balanced
+wandb: ⭐️ View project at https://wandb.ai/glafk/zeogen
+wandb: 🚀 View run at https://wandb.ai/glafk/zeogen/runs/qdp7lv66
+wandb: logging graph, to disable use `wandb.watch(log_graph=False)`
+[2024-12-05 04:00:30,325][hydra.utils][INFO] - Instantiating the Trainer
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+[2024-12-05 04:00:30,429][hydra.utils][INFO] - Starting training!
+You are using a CUDA device ('NVIDIA A100-SXM4-40GB MIG 3g.20gb') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+Setting up data module
+Pickle file /home//dglavinkov/ondemand/zeogen_legacy/zeogen//data/combined_dataset_total/combined_train.pickle was loaded successfully.
+15507
+  0%|          | 0/5345 [00:00<?, ?it/s]/gpfs/home5/dglavinkov/ondemand/zeogen_legacy/zeogen/source/data_utils/crystal_utils.py:155: FutureWarning: with_local_env_strategy is deprecated, and will be removed on 2025-03-20
+Use from_local_env_strategy in pymatgen.analysis.graphs instead.
+Deprecated on 2024-03-29.
+  crystal_graph = StructureGraph.with_local_env_strategy(
+/gpfs/home5/dglavinkov/ondemand/zeogen_legacy/zeogen/source/data_utils/crystal_utils.py:155: FutureWarning: with_local_env_strategy is deprecated, and will be removed on 2025-03-20
+Use from_local_env_strategy in pymatgen.analysis.graphs instead.
+Deprecated on 2024-03-29.
+  crystal_graph = StructureGraph.with_local_env_strategy(
+/gpfs/home5/dglavinkov/ondemand/zeogen_legacy/zeogen/source/data_utils/crystal_utils.py:155: FutureWarning: with_local_env_strategy is deprecated, and will be removed on 2025-03-20
+Use from_local_env_strategy in pymatgen.analysis.graphs instead.
+Deprecated on 2024-03-29.
+  crystal_graph = StructureGraph.with_local_env_strategy(
+/gpfs/home5/dglavinkov/ondemand/zeogen_legacy/zeogen/source/data_utils/crystal_utils.py:155: FutureWarning: with_local_env_strategy is deprecated, and will be removed on 2025-03-20
+Use from_local_env_strategy in pymatgen.analysis.graphs instead.
+Deprecated on 2024-03-29.
+  crystal_graph = StructureGraph.with_local_env_strategy(
+  0%|          | 1/5345 [00:00<15:57,  5.58it/s]  0%|          | 5/5345 [00:00<05:20, 16.66it/s]  0%|          | 9/5345 [00:00<04:19, 20.56it/s]  0%|          | 13/5345 [00:00<03:57, 22.46it/s]  0%|          | 17/5345 [00:00<03:46, 23.54it/s]  0%|          | 21/5345 [00:00<03:40, 24.15it/s]  0%|          | 25/5345 [00:01<03:37, 24.47it/s]  1%|          | 29/5345 [00:01<03:34, 24.79it/s]  1%|          | 33/5345 [00:01<03:32, 24.98it/s]  1%|          | 37/5345 [00:01<03:31, 25.14it/s]  1%|          | 41/5345 [00:01<03:30, 25.23it/s]  1%|          | 45/5345 [00:01<03:29, 25.30it/s]  1%|          | 49/5345 [00:02<03:28, 25.38it/s]  1%|          | 53/5345 [00:02<03:28, 25.41it/s]  1%|          | 57/5345 [00:02<03:28, 25.42it/s]  1%|          | 61/5345 [00:02<03:28, 25.30it/s]  1%|          | 65/5345 [00:02<03:28, 25.35it/s]  1%|▏         | 69/5345 [00:02<03:27, 25.37it/s]  1%|▏         | 73/5345 [00:03<03:27, 25.40it/s]  1%|▏         | 77/5345 [00:03<03:27, 25.41it/s]  2%|▏         | 81/5345 [00:03<03:27, 25.43it/s]  2%|▏         | 85/5345 [00:03<03:27, 25.34it/s]  2%|▏         | 89/5345 [00:03<03:27, 25.38it/s]  2%|▏         | 93/5345 [00:03<03:26, 25.41it/s]  2%|▏         | 97/5345 [00:03<03:26, 25.44it/s]  2%|▏         | 101/5345 [00:04<03:26, 25.44it/s]  2%|▏         | 105/5345 [00:04<03:25, 25.46it/s]  2%|▏         | 109/5345 [00:04<03:25, 25.46it/s]  2%|▏         | 113/5345 [00:04<03:26, 25.38it/s]  2%|▏         | 117/5345 [00:04<03:26, 25.37it/s]  2%|▏         | 121/5345 [00:04<03:25, 25.42it/s]  2%|▏         | 125/5345 [00:05<03:25, 25.43it/s]  2%|▏         | 129/5345 [00:05<03:24, 25.45it/s]  2%|▏         | 133/5345 [00:05<03:24, 25.46it/s]  3%|▎         | 137/5345 [00:05<03:24, 25.46it/s]  3%|▎         | 141/5345 [00:05<03:24, 25.45it/s]  3%|▎         | 145/5345 [00:05<03:24, 25.47it/s]  3%|▎         | 149/5345 [00:05<03:24, 25.46it/s]  3%|▎         | 153/5345 [00:06<03:24, 25.40it/s]  3%|▎         | 157/5345 [00:06<03:24, 25.41it/s]  3%|▎         | 161/5345 [00:06<03:23, 25.43it/s]  3%|▎         | 165/5345 [00:06<03:23, 25.43it/s]  3%|▎         | 169/5345 [00:06<03:23, 25.47it/s]  3%|▎         | 173/5345 [00:06<03:23, 25.47it/s]  3%|▎         | 177/5345 [00:07<03:22, 25.48it/s]  3%|▎         | 181/5345 [00:07<03:22, 25.49it/s]  3%|▎         | 185/5345 [00:07<03:22, 25.48it/s]  4%|▎         | 189/5345 [00:07<03:22, 25.46it/s]  4%|▎         | 193/5345 [00:07<03:22, 25.45it/s]  4%|▎         | 197/5345 [00:07<03:22, 25.48it/s]  4%|▍         | 201/5345 [00:08<03:23, 25.33it/s]  4%|▍         | 205/5345 [00:08<03:22, 25.38it/s]  4%|▍         | 209/5345 [00:08<03:22, 25.39it/s]  4%|▍         | 213/5345 [00:08<03:22, 25.39it/s]  4%|▍         | 217/5345 [00:08<03:21, 25.45it/s]  4%|▍         | 221/5345 [00:08<03:21, 25.42it/s]  4%|▍         | 225/5345 [00:08<03:21, 25.44it/s]  4%|▍         | 229/5345 [00:09<03:21, 25.45it/s]  4%|▍         | 232/5345 [00:09<03:13, 26.41it/s]  4%|▍         | 235/5345 [00:09<03:32, 24.05it/s]  4%|▍         | 239/5345 [00:09<03:29, 24.41it/s]  5%|▍         | 243/5345 [00:09<03:26, 24.65it/s]  5%|▍         | 247/5345 [00:09<03:25, 24.80it/s]  5%|▍         | 251/5345 [00:10<03:24, 24.93it/s]  5%|▍         | 255/5345 [00:10<03:23, 25.00it/s]  5%|▍         | 259/5345 [00:10<03:23, 25.04it/s]  5%|▍         | 263/5345 [00:10<03:22, 25.08it/s]  5%|▍         | 267/5345 [00:10<03:22, 25.05it/s]  5%|▌         | 271/5345 [00:10<03:22, 25.10it/s]  5%|▌         | 275/5345 [00:10<03:21, 25.11it/s]  5%|▌         | 279/5345 [00:11<03:21, 25.14it/s]  5%|▌         | 283/5345 [00:11<03:21, 25.15it/s]  5%|▌         | 287/5345 [00:11<03:21, 25.16it/s]  5%|▌         | 291/5345 [00:11<03:20, 25.17it/s]  6%|▌         | 295/5345 [00:11<03:20, 25.19it/s]  6%|▌         | 299/5345 [00:11<03:20, 25.19it/s]  6%|▌         | 303/5345 [00:12<03:20, 25.19it/s]  6%|▌         | 307/5345 [00:12<03:19, 25.20it/s]  6%|▌         | 311/5345 [00:12<03:19, 25.17it/s]  6%|▌         | 315/5345 [00:12<03:19, 25.18it/s]  6%|▌         | 319/5345 [00:12<03:19, 25.17it/s]  6%|▌         | 323/5345 [00:12<03:19, 25.18it/s]  6%|▌         | 327/5345 [00:13<03:19, 25.18it/s]  6%|▌         | 331/5345 [00:13<03:19, 25.17it/s]  6%|▋         | 335/5345 [00:13<03:19, 25.16it/s]  6%|▋         | 339/5345 [00:13<03:18, 25.16it/s]  6%|▋         | 343/5345 [00:13<03:18, 25.19it/s]  6%|▋         | 347/5345 [00:13<03:18, 25.18it/s]  7%|▋         | 351/5345 [00:14<03:19, 25.05it/s]  7%|▋         | 355/5345 [00:14<03:18, 25.09it/s]  7%|▋         | 359/5345 [00:14<03:18, 25.11it/s]  7%|▋         | 363/5345 [00:14<03:18, 25.14it/s]  7%|▋         | 367/5345 [00:14<03:17, 25.17it/s]  7%|▋         | 371/5345 [00:14<03:17, 25.22it/s]  7%|▋         | 375/5345 [00:14<03:16, 25.30it/s]  7%|▋         | 379/5345 [00:15<03:16, 25.33it/s]  7%|▋         | 383/5345 [00:15<03:15, 25.37it/s]  7%|▋         | 387/5345 [00:15<03:15, 25.40it/s]  7%|▋         | 391/5345 [00:15<03:14, 25.42it/s]  7%|▋         | 395/5345 [00:15<03:14, 25.42it/s]  7%|▋         | 399/5345 [00:15<03:14, 25.45it/s]  8%|▊         | 403/5345 [00:16<03:14, 25.44it/s]  8%|▊         | 407/5345 [00:16<03:13, 25.47it/s]  8%|▊         | 411/5345 [00:16<03:13, 25.48it/s]  8%|▊         | 415/5345 [00:16<03:13, 25.49it/s]  8%|▊         | 419/5345 [00:16<03:13, 25.48it/s]  8%|▊         | 423/5345 [00:16<03:13, 25.49it/s]  8%|▊         | 427/5345 [00:17<03:13, 25.45it/s]  8%|▊         | 431/5345 [00:17<03:12, 25.47it/s]  8%|▊         | 435/5345 [00:17<03:12, 25.50it/s]  8%|▊         | 439/5345 [00:17<03:12, 25.47it/s]  8%|▊         | 443/5345 [00:17<03:12, 25.47it/s]  8%|▊         | 447/5345 [00:17<03:12, 25.45it/s]  8%|▊         | 451/5345 [00:17<03:12, 25.44it/s]  9%|▊         | 455/5345 [00:18<03:12, 25.45it/s]  9%|▊         | 459/5345 [00:18<03:12, 25.37it/s]  9%|▊         | 463/5345 [00:18<03:12, 25.39it/s]  9%|▊         | 467/5345 [00:18<03:12, 25.41it/s]  9%|▉         | 471/5345 [00:18<03:11, 25.44it/s]  9%|▉         | 475/5345 [00:18<03:11, 25.45it/s]  9%|▉         | 479/5345 [00:19<03:11, 25.47it/s]  9%|▉         | 483/5345 [00:19<03:10, 25.47it/s]  9%|▉         | 487/5345 [00:19<03:10, 25.47it/s]  9%|▉         | 491/5345 [00:19<03:10, 25.47it/s]  9%|▉         | 495/5345 [00:19<03:10, 25.52it/s]  9%|▉         | 499/5345 [00:19<03:10, 25.48it/s]  9%|▉         | 503/5345 [00:19<03:09, 25.49it/s]  9%|▉         | 507/5345 [00:20<03:09, 25.50it/s] 10%|▉         | 511/5345 [00:20<03:09, 25.48it/s] 10%|▉         | 515/5345 [00:20<03:09, 25.50it/s] 10%|▉         | 519/5345 [00:20<03:09, 25.49it/s] 10%|▉         | 523/5345 [00:20<03:09, 25.46it/s] 10%|▉         | 527/5345 [00:20<03:08, 25.50it/s] 10%|▉         | 531/5345 [00:21<03:08, 25.50it/s] 10%|█         | 535/5345 [00:21<03:08, 25.50it/s] 10%|█         | 539/5345 [00:21<03:08, 25.51it/s] 10%|█         | 543/5345 [00:21<03:08, 25.52it/s] 10%|█         | 547/5345 [00:21<03:08, 25.49it/s] 10%|█         | 551/5345 [00:21<03:08, 25.46it/s] 10%|█         | 555/5345 [00:22<03:08, 25.47it/s] 10%|█         | 559/5345 [00:22<03:07, 25.47it/s] 11%|█         | 563/5345 [00:22<03:07, 25.47it/s] 11%|█         | 567/5345 [00:22<03:07, 25.48it/s] 11%|█         | 571/5345 [00:22<03:07, 25.49it/s] 11%|█         | 575/5345 [00:22<03:07, 25.49it/s] 11%|█         | 579/5345 [00:22<03:06, 25.49it/s] 11%|█         | 583/5345 [00:23<03:06, 25.48it/s] 11%|█         | 587/5345 [00:23<03:06, 25.48it/s] 11%|█         | 591/5345 [00:23<03:06, 25.51it/s] 11%|█         | 595/5345 [00:23<03:06, 25.48it/s] 11%|█         | 598/5345 [00:23<03:00, 26.36it/s] 11%|█         | 601/5345 [00:23<03:17, 23.97it/s] 11%|█▏        | 605/5345 [00:24<03:14, 24.36it/s] 11%|█▏        | 609/5345 [00:24<03:12, 24.60it/s] 11%|█▏        | 613/5345 [00:24<03:10, 24.79it/s] 12%|█▏        | 617/5345 [00:24<03:09, 24.90it/s] 12%|█▏        | 621/5345 [00:24<03:09, 24.99it/s] 12%|█▏        | 625/5345 [00:24<03:08, 25.03it/s] 12%|█▏        | 629/5345 [00:24<03:08, 25.07it/s] 12%|█▏        | 633/5345 [00:25<03:07, 25.07it/s] 12%|█▏        | 637/5345 [00:25<03:07, 25.08it/s] 12%|█▏        | 641/5345 [00:25<03:07, 25.13it/s] 12%|█▏        | 645/5345 [00:25<03:06, 25.15it/s] 12%|█▏        | 649/5345 [00:25<03:06, 25.15it/s] 12%|█▏        | 653/5345 [00:25<03:06, 25.18it/s] 12%|█▏        | 657/5345 [00:26<03:06, 25.18it/s] 12%|█▏        | 661/5345 [00:26<03:05, 25.19it/s] 12%|█▏        | 665/5345 [00:26<03:05, 25.21it/s] 13%|█▎        | 669/5345 [00:26<03:05, 25.18it/s] 13%|█▎        | 673/5345 [00:26<03:05, 25.19it/s] 13%|█▎        | 677/5345 [00:26<03:05, 25.18it/s] 13%|█▎        | 681/5345 [00:27<03:05, 25.20it/s] 13%|█▎        | 685/5345 [00:27<03:04, 25.19it/s] 13%|█▎        | 689/5345 [00:27<03:04, 25.20it/s] 13%|█▎        | 693/5345 [00:27<03:04, 25.19it/s] 13%|█▎        | 697/5345 [00:27<03:04, 25.19it/s] 13%|█▎        | 701/5345 [00:27<03:04, 25.19it/s] 13%|█▎        | 705/5345 [00:27<03:04, 25.19it/s] 13%|█▎        | 709/5345 [00:28<03:03, 25.20it/s] 13%|█▎        | 713/5345 [00:28<03:03, 25.18it/s] 13%|█▎        | 717/5345 [00:28<03:03, 25.17it/s] 13%|█▎        | 721/5345 [00:28<03:03, 25.15it/s] 14%|█▎        | 725/5345 [00:28<03:03, 25.19it/s] 14%|█▎        | 729/5345 [00:28<03:02, 25.25it/s] 14%|█▎        | 733/5345 [00:29<03:02, 25.32it/s] 14%|█▍        | 737/5345 [00:29<03:01, 25.37it/s] 14%|█▍        | 741/5345 [00:29<03:01, 25.41it/s] 14%|█▍        | 745/5345 [00:29<03:00, 25.45it/s] 14%|█▍        | 749/5345 [00:29<03:00, 25.45it/s] 14%|█▍        | 753/5345 [00:29<03:00, 25.45it/s] 14%|█▍        | 757/5345 [00:30<03:00, 25.45it/s] 14%|█▍        | 761/5345 [00:30<03:00, 25.41it/s] 14%|█▍        | 765/5345 [00:30<03:00, 25.41it/s] 14%|█▍        | 769/5345 [00:30<02:59, 25.45it/s] 14%|█▍        | 773/5345 [00:30<02:59, 25.44it/s] 15%|█▍        | 777/5345 [00:30<03:00, 25.29it/s] 15%|█▍        | 781/5345 [00:30<03:00, 25.35it/s] 15%|█▍        | 785/5345 [00:31<02:59, 25.35it/s] 15%|█▍        | 789/5345 [00:31<02:59, 25.42it/s] 15%|█▍        | 793/5345 [00:31<02:58, 25.47it/s] 15%|█▍        | 797/5345 [00:31<02:57, 25.60it/s] 15%|█▍        | 801/5345 [00:31<02:56, 25.69it/s] 15%|█▌        | 805/5345 [00:31<02:56, 25.76it/s] 15%|█▌        | 809/5345 [00:32<02:55, 25.80it/s] 15%|█▌        | 813/5345 [00:32<02:55, 25.86it/s] 15%|█▌        | 817/5345 [00:32<02:55, 25.86it/s] 15%|█▌        | 821/5345 [00:32<02:54, 25.87it/s] 15%|█▌        | 825/5345 [00:32<02:54, 25.88it/s] 16%|█▌        | 829/5345 [00:32<02:54, 25.89it/s] 16%|█▌        | 833/5345 [00:33<02:54, 25.93it/s] 16%|█▌        | 837/5345 [00:33<02:53, 25.92it/s] 16%|█▌        | 841/5345 [00:33<02:53, 25.94it/s] 16%|█▌        | 845/5345 [00:33<02:53, 25.92it/s] 16%|█▌        | 849/5345 [00:33<02:53, 25.92it/s] 16%|█▌        | 853/5345 [00:33<02:53, 25.92it/s] 16%|█▌        | 857/5345 [00:33<02:52, 25.95it/s] 16%|█▌        | 861/5345 [00:34<02:52, 25.92it/s] 16%|█▌        | 865/5345 [00:34<02:52, 25.95it/s] 16%|█▋        | 869/5345 [00:34<02:52, 25.95it/s] 16%|█▋        | 873/5345 [00:34<02:52, 25.96it/s] 16%|█▋        | 877/5345 [00:34<02:51, 25.98it/s] 16%|█▋        | 881/5345 [00:34<02:52, 25.95it/s] 17%|█▋        | 885/5345 [00:35<02:51, 25.95it/s] 17%|█▋        | 889/5345 [00:35<02:51, 25.95it/s] 17%|█▋        | 893/5345 [00:35<02:51, 25.95it/s] 17%|█▋        | 897/5345 [00:35<02:51, 25.97it/s] 17%|█▋        | 901/5345 [00:35<02:51, 25.94it/s] 17%|█▋        | 905/5345 [00:35<02:51, 25.93it/s] 17%|█▋        | 909/5345 [00:35<02:51, 25.94it/s] 17%|█▋        | 913/5345 [00:36<02:50, 25.95it/s] 17%|█▋        | 917/5345 [00:36<02:50, 25.95it/s] 17%|█▋        | 921/5345 [00:36<02:50, 25.96it/s] 17%|█▋        | 925/5345 [00:36<02:50, 25.96it/s] 17%|█▋        | 929/5345 [00:36<02:50, 25.95it/s] 17%|█▋        | 933/5345 [00:36<02:50, 25.92it/s] 18%|█▊        | 937/5345 [00:37<02:50, 25.90it/s] 18%|█▊        | 941/5345 [00:37<02:49, 25.92it/s] 18%|█▊        | 945/5345 [00:37<02:49, 25.95it/s] 18%|█▊        | 949/5345 [00:37<02:49, 25.95it/s] 18%|█▊        | 953/5345 [00:37<02:49, 25.96it/s] 18%|█▊        | 957/5345 [00:37<02:49, 25.93it/s] 18%|█▊        | 960/5345 [00:37<02:43, 26.76it/s] 18%|█▊        | 963/5345 [00:38<02:58, 24.58it/s] 18%|█▊        | 966/5345 [00:38<02:50, 25.62it/s] 18%|█▊        | 969/5345 [00:38<02:46, 26.23it/s] 18%|█▊        | 972/5345 [00:38<02:43, 26.80it/s] 18%|█▊        | 975/5345 [00:38<02:59, 24.36it/s] 18%|█▊        | 979/5345 [00:38<02:55, 24.81it/s] 18%|█▊        | 983/5345 [00:38<02:53, 25.08it/s] 18%|█▊        | 987/5345 [00:38<02:52, 25.25it/s] 19%|█▊        | 991/5345 [00:39<02:51, 25.38it/s] 19%|█▊        | 995/5345 [00:39<02:50, 25.47it/s] 19%|█▊        | 999/5345 [00:39<02:50, 25.55it/s] 19%|█▉        | 1003/5345 [00:39<02:49, 25.59it/s] 19%|█▉        | 1007/5345 [00:39<02:49, 25.62it/s] 19%|█▉        | 1011/5345 [00:39<02:49, 25.63it/s] 19%|█▉        | 1015/5345 [00:40<02:48, 25.66it/s] 19%|█▉        | 1019/5345 [00:40<02:48, 25.60it/s] 19%|█▉        | 1023/5345 [00:40<02:48, 25.63it/s] 19%|█▉        | 1027/5345 [00:40<02:48, 25.65it/s] 19%|█▉        | 1031/5345 [00:40<02:48, 25.67it/s] 19%|█▉        | 1035/5345 [00:40<02:47, 25.69it/s] 19%|█▉        | 1039/5345 [00:40<02:47, 25.72it/s] 20%|█▉        | 1043/5345 [00:41<02:47, 25.72it/s] 20%|█▉        | 1047/5345 [00:41<02:47, 25.71it/s] 20%|█▉        | 1051/5345 [00:41<02:47, 25.69it/s] 20%|█▉        | 1055/5345 [00:41<02:46, 25.70it/s] 20%|█▉        | 1059/5345 [00:41<02:46, 25.69it/s] 20%|█▉        | 1063/5345 [00:41<02:46, 25.68it/s] 20%|█▉        | 1067/5345 [00:42<02:46, 25.65it/s] 20%|██        | 1071/5345 [00:42<02:46, 25.68it/s] 20%|██        | 1075/5345 [00:42<02:46, 25.67it/s] 20%|██        | 1079/5345 [00:42<02:46, 25.69it/s] 20%|██        | 1083/5345 [00:42<02:45, 25.68it/s] 20%|██        | 1087/5345 [00:42<02:45, 25.70it/s] 20%|██        | 1091/5345 [00:43<02:45, 25.69it/s] 20%|██        | 1095/5345 [00:43<02:45, 25.70it/s] 21%|██        | 1099/5345 [00:43<02:45, 25.68it/s] 21%|██        | 1103/5345 [00:43<02:44, 25.72it/s] 21%|██        | 1107/5345 [00:43<02:44, 25.74it/s] 21%|██        | 1111/5345 [00:43<02:44, 25.81it/s] 21%|██        | 1115/5345 [00:43<02:43, 25.83it/s] 21%|██        | 1119/5345 [00:44<02:43, 25.88it/s] 21%|██        | 1123/5345 [00:44<02:43, 25.88it/s] 21%|██        | 1127/5345 [00:44<02:42, 25.91it/s] 21%|██        | 1131/5345 [00:44<02:42, 25.94it/s] 21%|██        | 1135/5345 [00:44<02:42, 25.93it/s] 21%|██▏       | 1139/5345 [00:44<02:42, 25.93it/s] 21%|██▏       | 1143/5345 [00:45<02:42, 25.93it/s] 21%|██▏       | 1147/5345 [00:45<02:41, 25.94it/s] 22%|██▏       | 1151/5345 [00:45<02:41, 25.97it/s] 22%|██▏       | 1155/5345 [00:45<02:41, 25.95it/s] 22%|██▏       | 1159/5345 [00:45<02:41, 25.96it/s] 22%|██▏       | 1163/5345 [00:45<02:41, 25.96it/s] 22%|██▏       | 1167/5345 [00:45<02:41, 25.95it/s] 22%|██▏       | 1171/5345 [00:46<02:40, 25.94it/s] 22%|██▏       | 1175/5345 [00:46<02:40, 25.96it/s] 22%|██▏       | 1179/5345 [00:46<02:40, 25.95it/s] 22%|██▏       | 1183/5345 [00:46<02:40, 25.94it/s] 22%|██▏       | 1187/5345 [00:46<02:40, 25.94it/s] 22%|██▏       | 1191/5345 [00:46<02:40, 25.95it/s] 22%|██▏       | 1195/5345 [00:47<02:40, 25.93it/s] 22%|██▏       | 1199/5345 [00:47<02:39, 25.94it/s] 23%|██▎       | 1203/5345 [00:47<02:39, 25.93it/s] 23%|██▎       | 1207/5345 [00:47<02:39, 25.95it/s] 23%|██▎       | 1211/5345 [00:47<02:39, 25.97it/s] 23%|██▎       | 1215/5345 [00:47<02:39, 25.96it/s] 23%|██▎       | 1219/5345 [00:47<02:39, 25.92it/s] 23%|██▎       | 1223/5345 [00:48<02:38, 25.95it/s] 23%|██▎       | 1227/5345 [00:48<02:38, 25.96it/s] 23%|██▎       | 1231/5345 [00:48<02:38, 25.99it/s] 23%|██▎       | 1235/5345 [00:48<02:38, 25.99it/s] 23%|██▎       | 1239/5345 [00:48<02:38, 25.99it/s] 23%|██▎       | 1243/5345 [00:48<02:37, 25.97it/s] 23%|██▎       | 1247/5345 [00:49<02:37, 25.96it/s] 23%|██▎       | 1251/5345 [00:49<02:37, 25.96it/s] 23%|██▎       | 1255/5345 [00:49<02:37, 25.96it/s] 24%|██▎       | 1259/5345 [00:49<02:37, 25.96it/s] 24%|██▎       | 1263/5345 [00:49<02:37, 25.96it/s] 24%|██▎       | 1267/5345 [00:49<02:37, 25.95it/s] 24%|██▍       | 1271/5345 [00:49<02:37, 25.92it/s] 24%|██▍       | 1275/5345 [00:50<02:36, 25.94it/s] 24%|██▍       | 1279/5345 [00:50<02:36, 25.95it/s] 24%|██▍       | 1283/5345 [00:50<02:36, 25.92it/s] 24%|██▍       | 1287/5345 [00:50<02:36, 25.91it/s] 24%|██▍       | 1291/5345 [00:50<02:36, 25.91it/s] 24%|██▍       | 1295/5345 [00:50<02:36, 25.93it/s] 24%|██▍       | 1298/5345 [00:50<02:31, 26.77it/s] 24%|██▍       | 1301/5345 [00:51<02:42, 24.92it/s] 24%|██▍       | 1304/5345 [00:51<02:49, 23.88it/s] 24%|██▍       | 1308/5345 [00:51<02:44, 24.49it/s] 25%|██▍       | 1312/5345 [00:51<02:42, 24.87it/s] 25%|██▍       | 1316/5345 [00:51<02:40, 25.14it/s] 25%|██▍       | 1320/5345 [00:51<02:38, 25.33it/s] 25%|██▍       | 1324/5345 [00:52<02:37, 25.45it/s] 25%|██▍       | 1328/5345 [00:52<02:37, 25.50it/s] 25%|██▍       | 1332/5345 [00:52<02:37, 25.45it/s] 25%|██▍       | 1336/5345 [00:52<02:37, 25.52it/s] 25%|██▌       | 1340/5345 [00:52<02:36, 25.58it/s] 25%|██▌       | 1344/5345 [00:52<02:36, 25.61it/s] 25%|██▌       | 1348/5345 [00:52<02:36, 25.60it/s] 25%|██▌       | 1352/5345 [00:53<02:35, 25.62it/s] 25%|██▌       | 1356/5345 [00:53<02:35, 25.63it/s] 25%|██▌       | 1360/5345 [00:53<02:35, 25.70it/s] 26%|██▌       | 1364/5345 [00:53<02:34, 25.78it/s] 26%|██▌       | 1368/5345 [00:53<02:34, 25.82it/s] 26%|██▌       | 1372/5345 [00:53<02:33, 25.84it/s] 26%|██▌       | 1376/5345 [00:54<02:33, 25.85it/s] 26%|██▌       | 1380/5345 [00:54<02:33, 25.87it/s] 26%|██▌       | 1384/5345 [00:54<02:33, 25.87it/s] 26%|██▌       | 1388/5345 [00:54<02:32, 25.90it/s] 26%|██▌       | 1392/5345 [00:54<02:32, 25.87it/s] 26%|██▌       | 1396/5345 [00:54<02:32, 25.85it/s] 26%|██▌       | 1400/5345 [00:54<02:32, 25.86it/s] 26%|██▋       | 1404/5345 [00:55<02:32, 25.85it/s] 26%|██▋       | 1408/5345 [00:55<02:32, 25.86it/s] 26%|██▋       | 1412/5345 [00:55<02:32, 25.73it/s] 26%|██▋       | 1416/5345 [00:55<02:33, 25.61it/s] 27%|██▋       | 1420/5345 [00:55<02:33, 25.50it/s] 27%|██▋       | 1424/5345 [00:55<02:33, 25.48it/s] 27%|██▋       | 1428/5345 [00:56<02:34, 25.42it/s] 27%|██▋       | 1432/5345 [00:56<02:33, 25.43it/s] 27%|██▋       | 1436/5345 [00:56<02:33, 25.39it/s] 27%|██▋       | 1440/5345 [00:56<02:33, 25.38it/s] 27%|██▋       | 1444/5345 [00:56<02:33, 25.38it/s] 27%|██▋       | 1448/5345 [00:56<02:33, 25.36it/s] 27%|██▋       | 1452/5345 [00:57<02:33, 25.36it/s] 27%|██▋       | 1456/5345 [00:57<02:33, 25.36it/s] 27%|██▋       | 1460/5345 [00:57<02:33, 25.33it/s] 27%|██▋       | 1464/5345 [00:57<02:33, 25.36it/s] 27%|██▋       | 1468/5345 [00:57<02:32, 25.37it/s] 28%|██▊       | 1472/5345 [00:57<02:33, 25.31it/s] 28%|██▊       | 1476/5345 [00:57<02:32, 25.30it/s] 28%|██▊       | 1480/5345 [00:58<02:32, 25.31it/s] 28%|██▊       | 1484/5345 [00:58<02:32, 25.33it/s] 28%|██▊       | 1488/5345 [00:58<02:31, 25.38it/s] 28%|██▊       | 1492/5345 [00:58<02:31, 25.38it/s] 28%|██▊       | 1496/5345 [00:58<02:31, 25.38it/s] 28%|██▊       | 1500/5345 [00:58<02:31, 25.37it/s] 28%|██▊       | 1504/5345 [00:59<02:31, 25.33it/s] 28%|██▊       | 1508/5345 [00:59<02:31, 25.34it/s] 28%|██▊       | 1512/5345 [00:59<02:31, 25.32it/s] 28%|██▊       | 1516/5345 [00:59<02:31, 25.32it/s] 28%|██▊       | 1520/5345 [00:59<02:31, 25.29it/s] 29%|██▊       | 1524/5345 [00:59<02:31, 25.29it/s] 29%|██▊       | 1528/5345 [01:00<02:30, 25.33it/s] 29%|██▊       | 1532/5345 [01:00<02:30, 25.33it/s] 29%|██▊       | 1536/5345 [01:00<02:30, 25.36it/s] 29%|██▉       | 1540/5345 [01:00<02:30, 25.30it/s] 29%|██▉       | 1544/5345 [01:00<02:30, 25.33it/s] 29%|██▉       | 1548/5345 [01:00<02:30, 25.31it/s] 29%|██▉       | 1552/5345 [01:00<02:29, 25.31it/s] 29%|██▉       | 1556/5345 [01:01<02:29, 25.32it/s] 29%|██▉       | 1560/5345 [01:01<02:29, 25.33it/s] 29%|██▉       | 1564/5345 [01:01<02:29, 25.30it/s] 29%|██▉       | 1568/5345 [01:01<02:29, 25.31it/s] 29%|██▉       | 1572/5345 [01:01<02:29, 25.29it/s] 29%|██▉       | 1576/5345 [01:01<02:28, 25.32it/s] 30%|██▉       | 1580/5345 [01:02<02:28, 25.33it/s] 30%|██▉       | 1584/5345 [01:02<02:28, 25.33it/s] 30%|██▉       | 1588/5345 [01:02<02:28, 25.32it/s] 30%|██▉       | 1592/5345 [01:02<02:28, 25.34it/s] 30%|██▉       | 1596/5345 [01:02<02:28, 25.31it/s] 30%|██▉       | 1600/5345 [01:02<02:27, 25.33it/s] 30%|███       | 1604/5345 [01:03<02:27, 25.32it/s] 30%|███       | 1608/5345 [01:03<02:27, 25.33it/s] 30%|███       | 1612/5345 [01:03<02:28, 25.21it/s] 30%|███       | 1616/5345 [01:03<02:27, 25.25it/s] 30%|███       | 1620/5345 [01:03<02:27, 25.25it/s] 30%|███       | 1624/5345 [01:03<02:27, 25.30it/s] 30%|███       | 1628/5345 [01:03<02:26, 25.31it/s] 31%|███       | 1632/5345 [01:04<02:26, 25.29it/s] 31%|███       | 1636/5345 [01:04<02:26, 25.29it/s] 31%|███       | 1640/5345 [01:04<02:26, 25.30it/s] 31%|███       | 1644/5345 [01:04<02:26, 25.31it/s] 31%|███       | 1648/5345 [01:04<02:25, 25.35it/s] 31%|███       | 1652/5345 [01:04<02:25, 25.35it/s] 31%|███       | 1656/5345 [01:05<02:25, 25.34it/s] 31%|███       | 1660/5345 [01:05<02:25, 25.34it/s] 31%|███       | 1664/5345 [01:05<02:25, 25.36it/s] 31%|███       | 1668/5345 [01:05<02:25, 25.34it/s] 31%|███▏      | 1671/5345 [01:05<02:19, 26.33it/s] 31%|███▏      | 1674/5345 [01:05<02:27, 24.89it/s] 31%|███▏      | 1678/5345 [01:05<02:26, 24.98it/s] 31%|███▏      | 1682/5345 [01:06<02:26, 25.02it/s] 32%|███▏      | 1686/5345 [01:06<02:26, 25.05it/s] 32%|███▏      | 1690/5345 [01:06<02:25, 25.08it/s] 32%|███▏      | 1694/5345 [01:06<02:25, 25.09it/s] 32%|███▏      | 1698/5345 [01:06<02:25, 25.14it/s] 32%|███▏      | 1702/5345 [01:06<02:24, 25.15it/s] 32%|███▏      | 1706/5345 [01:07<02:24, 25.15it/s] 32%|███▏      | 1710/5345 [01:07<02:24, 25.12it/s] 32%|███▏      | 1714/5345 [01:07<02:24, 25.13it/s] 32%|███▏      | 1718/5345 [01:07<02:24, 25.14it/s] 32%|███▏      | 1722/5345 [01:07<02:26, 24.65it/s] 32%|███▏      | 1726/5345 [01:07<02:25, 24.89it/s] 32%|███▏      | 1730/5345 [01:08<02:25, 24.88it/s] 32%|███▏      | 1734/5345 [01:08<02:24, 24.94it/s] 33%|███▎      | 1738/5345 [01:08<02:24, 24.99it/s] 33%|███▎      | 1742/5345 [01:08<02:23, 25.08it/s] 33%|███▎      | 1746/5345 [01:08<02:23, 25.10it/s] 33%|███▎      | 1750/5345 [01:08<02:23, 25.13it/s] 33%|███▎      | 1754/5345 [01:09<02:22, 25.13it/s] 33%|███▎      | 1758/5345 [01:09<02:23, 24.99it/s] 33%|███▎      | 1762/5345 [01:09<02:23, 25.05it/s] 33%|███▎      | 1766/5345 [01:09<02:22, 25.09it/s] 33%|███▎      | 1770/5345 [01:09<02:22, 25.12it/s] 33%|███▎      | 1774/5345 [01:09<02:22, 25.11it/s] 33%|███▎      | 1778/5345 [01:09<02:21, 25.16it/s] 33%|███▎      | 1782/5345 [01:10<02:21, 25.17it/s] 33%|███▎      | 1786/5345 [01:10<02:21, 25.15it/s] 33%|███▎      | 1790/5345 [01:10<02:21, 25.18it/s] 34%|███▎      | 1794/5345 [01:10<02:21, 25.15it/s] 34%|███▎      | 1798/5345 [01:10<02:20, 25.17it/s] 34%|███▎      | 1802/5345 [01:10<02:20, 25.17it/s] 34%|███▍      | 1806/5345 [01:11<02:20, 25.15it/s] 34%|███▍      | 1810/5345 [01:11<02:20, 25.16it/s] 34%|███▍      | 1814/5345 [01:11<02:20, 25.17it/s] 34%|███▍      | 1818/5345 [01:11<02:20, 25.15it/s] 34%|███▍      | 1822/5345 [01:11<02:20, 25.15it/s] 34%|███▍      | 1826/5345 [01:11<02:19, 25.16it/s] 34%|███▍      | 1830/5345 [01:12<02:19, 25.15it/s] 34%|███▍      | 1834/5345 [01:12<02:19, 25.15it/s] 34%|███▍      | 1838/5345 [01:12<02:19, 25.18it/s] 34%|███▍      | 1842/5345 [01:12<02:19, 25.19it/s] 35%|███▍      | 1846/5345 [01:12<02:18, 25.19it/s] 35%|███▍      | 1850/5345 [01:12<02:18, 25.19it/s] 35%|███▍      | 1854/5345 [01:12<02:18, 25.18it/s] 35%|███▍      | 1858/5345 [01:13<02:18, 25.19it/s] 35%|███▍      | 1862/5345 [01:13<02:18, 25.21it/s] 35%|███▍      | 1866/5345 [01:13<02:17, 25.22it/s] 35%|███▍      | 1870/5345 [01:13<02:17, 25.21it/s] 35%|███▌      | 1874/5345 [01:13<02:17, 25.26it/s] 35%|███▌      | 1878/5345 [01:13<02:17, 25.29it/s] 35%|███▌      | 1882/5345 [01:14<02:16, 25.31it/s] 35%|███▌      | 1886/5345 [01:14<02:16, 25.37it/s] 35%|███▌      | 1890/5345 [01:14<02:15, 25.41it/s] 35%|███▌      | 1894/5345 [01:14<02:15, 25.40it/s] 36%|███▌      | 1898/5345 [01:14<02:24, 23.87it/s] 36%|███▌      | 1902/5345 [01:14<02:30, 22.95it/s] 36%|███▌      | 1906/5345 [01:15<02:33, 22.34it/s] 36%|███▌      | 1910/5345 [01:15<02:36, 21.92it/s] 36%|███▌      | 1914/5345 [01:15<02:38, 21.66it/s] 36%|███▌      | 1918/5345 [01:15<02:39, 21.47it/s] 36%|███▌      | 1922/5345 [01:15<02:40, 21.34it/s] 36%|███▌      | 1926/5345 [01:16<02:40, 21.24it/s] 36%|███▌      | 1930/5345 [01:16<02:41, 21.19it/s] 36%|███▌      | 1934/5345 [01:16<02:41, 21.13it/s] 36%|███▋      | 1938/5345 [01:16<02:41, 21.07it/s] 36%|███▋      | 1942/5345 [01:16<02:41, 21.02it/s] 36%|███▋      | 1946/5345 [01:17<02:42, 20.97it/s] 36%|███▋      | 1950/5345 [01:17<02:41, 21.01it/s] 37%|███▋      | 1954/5345 [01:17<02:41, 21.01it/s] 37%|███▋      | 1958/5345 [01:17<02:41, 21.02it/s] 37%|███▋      | 1962/5345 [01:17<02:40, 21.02it/s] 37%|███▋      | 1966/5345 [01:17<02:40, 21.02it/s] 37%|███▋      | 1970/5345 [01:18<02:40, 21.03it/s] 37%|███▋      | 1974/5345 [01:18<02:40, 21.03it/s] 37%|███▋      | 1978/5345 [01:18<02:40, 21.02it/s] 37%|███▋      | 1982/5345 [01:18<02:39, 21.03it/s] 37%|███▋      | 1986/5345 [01:18<02:39, 21.04it/s] 37%|███▋      | 1990/5345 [01:19<02:39, 20.97it/s] 37%|███▋      | 1994/5345 [01:19<02:39, 20.97it/s] 37%|███▋      | 1998/5345 [01:19<02:39, 21.00it/s] 37%|███▋      | 2002/5345 [01:19<02:39, 21.01it/s]

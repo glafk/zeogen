@@ -1,4 +1,4 @@
-expname: sample_recon_150_epochs_256_ld_hoa_conditonal_total
+expname: train_150_epochs_256_ld_cond_total_balanced
 
 # metadata specialised for each experiment
 core:
