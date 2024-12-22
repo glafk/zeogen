@@ -11,7 +11,7 @@ from torch_geometric.loader import DataLoader
 import hydra
 from omegaconf import DictConfig
 
-from data_utils.balanced_sampler import SamplerFactory
+from data_utils.sampler import ZeoSampler
 print("Imported balanced_sampler")
 from data_utils.crystal_utils import get_scaler_from_data_list
 
@@ -80,8 +80,8 @@ class CrystDataModule(pl.LightningDataModule):
         """
         print("Setting up data module")
         if stage == "fit":
-            train_preprocessed_path = self.datasets.train.path.split('.')[0] + '_preprocessed.pt'
-            val_preprocessed_path = self.datasets.val.path.split('.')[0] + '_preprocessed.pt'
+            train_preprocessed_path = self.datasets.train.path.split('.')[0] + '_preprocessed_small_lt50.pt'
+            val_preprocessed_path = self.datasets.val.path.split('.')[0] + '_preprocessed_small_lt50.pt'
             if os.path.exists(train_preprocessed_path) and os.path.exists(val_preprocessed_path):
                 self.train_dataset = torch.load(train_preprocessed_path)
                 self.val_dataset = torch.load(val_preprocessed_path)
@@ -99,7 +99,7 @@ class CrystDataModule(pl.LightningDataModule):
             self.val_dataset.scaler = self.scaler
 
         if stage == "test" or stage == "predict":
-            test_preprocessed_path = self.datasets.test.path.split('.')[0] + '_preprocessed.pt'
+            test_preprocessed_path = self.datasets.test.path.split('.')[0] + '_preprocessed_small_lt50.pt'
             if os.path.exists(test_preprocessed_path):
                 self.test_dataset = torch.load(test_preprocessed_path)
             else:
@@ -118,15 +118,8 @@ class CrystDataModule(pl.LightningDataModule):
             self.predict_dataset.scaler = self.scaler 
 
     def train_dataloader(self) -> DataLoader:
-        classes = set([item["zeolite_code"] for item in self.train_dataset.cached_data])
-        class_idx = {framework: [idx for idx, item in list(enumerate(self.train_dataset.cached_data)) if item["zeolite_code"] == framework] for framework in classes}
-
-        batch_sampler = SamplerFactory().get(
-            class_idxs=class_idx,
-            batch_size=self.batch_size.train,
-            n_batches=len(self.datasets.train) // batch_size,
-            alpha=1
-        )
+        zeo_codes = []
+        batch_sampler = ZeoSampler(self.train_dataset.zeolite_codes, batch_size=self.batch_size.train)
 
         return DataLoader(
             self.train_dataset,
@@ -134,16 +127,7 @@ class CrystDataModule(pl.LightningDataModule):
         )
 
     def val_dataloader(self) -> Sequence[DataLoader]:
-
-        classes = set([item["zeolite_code"] for item in self.val_dataset.cached_data])
-        class_idx = {framework: [idx for idx, item in list(enumerate(self.val_dataset.cached_data)) if item["zeolite_code"] == framework] for framework in classes}
-        
-        batch_sampler = SamplerFactory().get(
-            class_idxs=class_idx,
-            batch_size=self.batch_size.val,
-            n_batches=len(self.datasets.val) // batch_size,
-            alpha=1
-        )
+        batch_sampler = ZeoSampler(self.val_dataset.zeolite_codes, batch_size=self.batch_size.val)
 
         return DataLoader(
             self.train_dataset,
@@ -151,16 +135,7 @@ class CrystDataModule(pl.LightningDataModule):
         )
 
     def test_dataloader(self) -> Sequence[DataLoader]:
-
-        classes = set([item["zeolite_code"] for item in self.test_dataset.cached_data])
-        class_idx = {framework: [idx for idx, item in list(enumerate(self.test_dataset.cached_data)) if item["zeolite_code"] == framework] for framework in classes}
-        
-        batch_sampler = SamplerFactory().get(
-            class_idxs=class_idx,
-            batch_size=self.batch_size.test,
-            n_batches=len(self.datasets.test) // batch_size,
-            alpha=1
-        )
+        batch_sampler = ZeoSampler(self.test_dataset.zeolite_codes, batch_size=self.batch_size.test)
 
         return DataLoader(
             self.train_dataset,

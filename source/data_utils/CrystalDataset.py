@@ -20,6 +20,10 @@ ZEOLITE_CODES_MAPPING = {'DDRch1': 0, 'DDRch2': 1, 'FAU': 2,
                          'LTL': 21, 'MER': 22, 'MTW': 23, 
                          'NAT': 24, 'YFI': 25, "DDR": 26}
 
+ZEOLITE_CODES_MAPPING_SMALL = {'DDR': 1, 'FAU': 2, 'ITW': 3, 'MEL': 4, 'MFI': 5, 'MOR': 6, 
+                               'RHO': 7, 'TON': 8, 'BEC': 9, 'CHA': 10, 'ERI': 11, 'FER': 12, 
+                               'HEU': 13, 'LTA': 14, 'LTL': 15, 'MER': 16, 'MTW': 17, 'NAT': 18, 'YFI': 19}
+
 
 class CrystDataset(Dataset):
     def __init__(self, name: str, path: str,
@@ -83,7 +87,7 @@ class CrystDataset(Dataset):
             num_nodes=num_atoms,  # special attribute used for batching in pytorch geometric
             y=prop.view(1, -1),
             zeolite_code=data_dict["zeolite_code"],
-            zeolite_code_enc=ZEOLITE_CODES_MAPPING[data_dict["zeolite_code"]]
+            zeolite_code_enc=ZEOLITE_CODES_MAPPING_SMALL[data_dict["zeolite_code"]]
         )
         return data
 
@@ -95,7 +99,7 @@ class TensorCrystDataset(Dataset):
     def __init__(self, path, niggli, primitive,
                  graph_method, preprocess_workers,
                  lattice_scale_method, prop, num_records=None,
-                 top_k=None, sort="smallest", **kwargs):
+                 top_k=None, max_zeolite_size=None, sort="smallest", **kwargs):
         super().__init__()
         self.niggli = niggli
         self.primitive = primitive
@@ -106,18 +110,22 @@ class TensorCrystDataset(Dataset):
         self.num_records = num_records
         self.top_k = top_k
         self.sort = sort
+        self.max_zeolite_size = max_zeolite_size
 
 
         # Read the tensors from path to crystal_array_list
         crystal_array_list = pickle.load(open(path, 'rb'))
         print(f"Pickle file {path} was loaded successfully.")
         print(len(crystal_array_list))
+        print(self.max_zeolite_size)
+        self.zeolite_codes = [data['zeolite_code'] for data in crystal_array_list]
         self.cached_data = preprocess_tensors(
             crystal_array_list,
             graph_method=self.graph_method,
             num_records=self.num_records,
             top_k=self.top_k,
-            sort=self.sort)
+            sort=self.sort,
+            max_zeolite_size=self.max_zeolite_size)
 
         add_scaled_lattice_prop(self.cached_data, lattice_scale_method)
         self.lattice_scaler = None

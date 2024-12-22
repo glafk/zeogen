@@ -178,7 +178,7 @@ class WeightedRandomBatchSampler(BatchSampler):
 
         sample_weights = []
         for c, weight in enumerate(class_weights):
-            sample_weights.extend([weight] * len(class_idxs[class_idxs.keys()[c]]))
+            sample_weights.extend([weight] * len(class_idxs[list(class_idxs.keys())[c]]))
 
         self.sampler = WeightedRandomSampler(sample_weights, batch_size, replacement=True)
         self.n_batches = n_batches

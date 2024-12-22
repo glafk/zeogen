@@ -630,7 +630,7 @@ def preprocess(input_files, num_workers, niggli, primitive, graph_method,
 # Array shape
 # arr = [{frac_coords: [list], atom_types: [list], lengths: [list], angles: [list], adsorption_cap: float]}]
 # lengths = [a,b,c]; angles = [alpha, beta, gamma)
-def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, top_k=None, sort="smallest"):
+def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, top_k=None, sort="smallest", max_zeolite_size=None):
     """
     Preprocess crystal data to generate tensors with optional filtering for the top_k
     zeolite types based on unit cell size (number of atoms).
@@ -745,6 +745,10 @@ def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, top_k=
             crystal for crystal in crystal_dict_list
             if crystal.get("zeolite_code") in selected_zeolite_codes
         ]
+
+    # If maximun size is indicated, filter out the larger zeolites
+    if max_zeolite_size is not None:
+        crystal_dict_list = [crystal for crystal in crystal_dict_list if len(crystal['frac_coords']) <= max_zeolite_size]
 
     # Limit the number of records if specified
     if num_records is not None:

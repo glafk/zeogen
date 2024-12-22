@@ -168,6 +168,7 @@ cython_debug/
 parsed_samples/
 # model_checkpoints/
 source/notebooks/parsed_samples/
+data/combined_dataset_small/*.pt
 
 samples/
 reconstructions/

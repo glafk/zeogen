@@ -1,4 +1,4 @@
-root_path: ${oc.env:PROJECT_ROOT}/data/combined_dataset_total
+root_path: ${oc.env:PROJECT_ROOT}/data/combined_dataset_small
 prop: hoa
 num_targets: 1
 niggli: false
@@ -30,8 +30,9 @@ datamodule:
       graph_method: ${data.graph_method}
       lattice_scale_method: ${data.lattice_scale_method}
       preprocess_workers: ${data.preprocess_workers}
-      top_k: 10
-      sort: "smallest"
+      max_zeolite_size: 50
+      #top_k: 10
+      #sort: "smallest"
       # num_records: 64
 
     val:
@@ -44,8 +45,9 @@ datamodule:
       graph_method: ${data.graph_method}
       lattice_scale_method: ${data.lattice_scale_method}
       preprocess_workers: ${data.preprocess_workers}
-      top_k: 10
-      sort: "smallest"
+      max_zeolite_size: 50
+      #top_k: 10
+      #sort: "smallest"
       # num_records: 64
 
     test:
@@ -58,8 +60,9 @@ datamodule:
       graph_method: ${data.graph_method}
       lattice_scale_method: ${data.lattice_scale_method}
       preprocess_workers: ${data.preprocess_workers}
-      top_k: 10
-      sort: "smallest"
+      max_zeolite_size: 50
+      #top_k: 10
+      #sort: "smallest"
       # num_records: 16
 
     predict:
@@ -72,8 +75,9 @@ datamodule:
       graph_method: ${data.graph_method}
       lattice_scale_method: ${data.lattice_scale_method}
       preprocess_workers: ${data.preprocess_workers}
-      top_k: 10
-      sort: "smallest"
+      max_zeolite_size: 50
+      #top_k: 10
+      #sort: "smallest"
       num_records: 10
 
   # Comment out the scaler_path to fit to the new dataset. To be added in the future 

@@ -22,7 +22,7 @@ from data_utils.crystal_utils import frac_to_cart_coords, cart_to_frac_coords, m
 # Load environment variables
 env.load_envs()
 
-MAX_ATOMIC_NUM = 100
+MAX_ATOMIC_NUM = 20
 PROJECT_ROOT = Path(env.get_env("PROJECT_ROOT"))
 
 ZEOLITE_CODES_MAPPING = {'DDRch1': 0, 'DDRch2': 1, 'FAU': 2, 
@@ -35,6 +35,9 @@ ZEOLITE_CODES_MAPPING = {'DDRch1': 0, 'DDRch2': 1, 'FAU': 2,
                          'LTL': 21, 'MER': 22, 'MTW': 23, 
                          'NAT': 24, 'YFI': 25, "DDR": 26}
 
+ZEOLITE_CODES_MAPPING_SMALL = {'DDR': 1, 'FAU': 2, 'ITW': 3, 'MEL': 4, 'MFI': 5, 'MOR': 6, 
+                               'RHO': 7, 'TON': 8, 'BEC': 9, 'CHA': 10, 'ERI': 11, 'FER': 12, 
+                               'HEU': 13, 'LTA': 14, 'LTL': 15, 'MER': 16, 'MTW': 17, 'NAT': 18, 'YFI': 19}
 
 def build_mlp(in_dim, hidden_dim, fc_num_layers, out_dim):
     mods = [nn.Linear(in_dim, hidden_dim), nn.ReLU()]
@@ -47,7 +50,7 @@ def build_mlp(in_dim, hidden_dim, fc_num_layers, out_dim):
 class CondPrior(nn.Module):
     def __init__(self, cond_dim, z_dim, embed=True, hoa_conditional=False):
         super(CondPrior, self).__init__()
-        self.emb = nn.Embedding(len(ZEOLITE_CODES_MAPPING.keys()), 128)
+        self.emb = nn.Embedding(len(ZEOLITE_CODES_MAPPING_SMALL.keys()), 128)
         if embed:
             # The +1 is to account for the normalized HOA
             if hoa_conditional:
@@ -483,7 +486,7 @@ class DiffusionModel(BaseModule):
                 zs = []
                 for domain in domains:
                     for hoa in hoas:
-                        z_mu, z_log_var = self.pz(torch.tensor([ZEOLITE_CODES_MAPPING[domain]], device=self.device), 
+                        z_mu, z_log_var = self.pz(torch.tensor([ZEOLITE_CODES_MAPPING_SMALL[domain]], device=self.device), 
                                                 torch.tensor([hoa], device=self.device), 
                                                 embed=True)
                         pz = dist.Normal(z_mu.squeeze(), z_log_var.exp().squeeze())
@@ -494,7 +497,7 @@ class DiffusionModel(BaseModule):
             else:
                 zs = []
                 for domain in domains:
-                    z_mu, z_log_var = self.pz(torch.tensor([ZEOLITE_CODES_MAPPING[domain]], device=self.device), 
+                    z_mu, z_log_var = self.pz(torch.tensor([ZEOLITE_CODES_MAPPING_SMALL[domain]], device=self.device), 
                                             torch.tensor([hoa], device=self.device), 
                                             embed=True, hoa_conditional=False)
                     pz = dist.Normal(z_mu.squeeze(), z_log_var.exp().squeeze())
