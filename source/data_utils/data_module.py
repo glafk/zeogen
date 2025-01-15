@@ -11,6 +11,7 @@ from torch_geometric.loader import DataLoader
 import hydra
 from omegaconf import DictConfig
 
+from data_utils.sampler import ZeoSampler
 from data_utils.crystal_utils import get_scaler_from_data_list
 
 
@@ -39,18 +40,25 @@ class CrystDataModule(pl.LightningDataModule):
         num_workers: DictConfig,
         batch_size: DictConfig,
         scaler_path=None,
+        samples_per_code=None,
+        lattice_scaler_name=None,
+        prop_scaler_name=None,
+        prop_mu_scaler_name=None,
+        prop_std_scaler_name=None
     ):
         super().__init__()
         self.datasets = datasets
         self.num_workers = num_workers
         self.batch_size = batch_size
+        self.samples_per_code = samples_per_code
 
         self.train_dataset: Optional[Dataset] = None
         self.val_datasets: Optional[Sequence[Dataset]] = None
         self.test_datasets: Optional[Sequence[Dataset]] = None
 
         # TODO: Change this to be parametrizable
-        self.get_scaler(scaler_path, lengths_scaler="lengths_scaler_total_dataset.pt", prop_scaler="prop_scaler_total_dataset.pt", prop_mu_scaler="prop_mu_scaler_total_dataset.pt", prop_std_scaler="prop_std_scaler_total_dataset.pt")
+        self.get_scaler(scaler_path, lengths_scaler=lattice_scaler_name, prop_scaler=prop_scaler_name, prop_mu_scaler=prop_mu_scaler_name, prop_std_scaler=prop_std_scaler_name)
+
 
     def prepare_data(self) -> None:
         # download only
@@ -60,7 +68,7 @@ class CrystDataModule(pl.LightningDataModule):
         # Load once to compute property scaler
         if scaler_path is None:
             # temporarily change this to the test dataset to generate the scaling factors
-            print("Generating scaling factors")
+            # print("Generating scaling factors")
             # test_dataset = hydra.utils.instantiate(self.datasets.test)
             train_dataset = hydra.utils.instantiate(self.datasets.train)
             self.lengths_scaler = get_scaler_from_data_list(
@@ -151,9 +159,10 @@ class CrystDataModule(pl.LightningDataModule):
             self.predict_dataset.prop_std_scaler = self.prop_std_scaler 
 
     def train_dataloader(self) -> DataLoader:
+        batch_sampler = ZeoSampler(self.train_dataset.zeolite_codes, batch_size=self.batch_size.train, n_samples=self.samples_per_code, origin="TRAIN")
         return DataLoader(
             self.train_dataset,
-            shuffle=True,
+            batch_sampler=batch_sampler,
             batch_size=self.batch_size.train,
             num_workers=self.num_workers.train,
             worker_init_fn=worker_init_fn,
@@ -161,9 +170,11 @@ class CrystDataModule(pl.LightningDataModule):
         )
 
     def val_dataloader(self) -> Sequence[DataLoader]:
+        batch_sampler = ZeoSampler(self.val_dataset.zeolite_codes, batch_size=self.batch_size.train, n_samples=self.samples_per_code, origin="VAL")
+
         return DataLoader(
                 self.val_dataset,
-                shuffle=False,
+                batch_sampler=batch_sampler,
                 batch_size=self.batch_size.val,
                 num_workers=self.num_workers.val,
                 worker_init_fn=worker_init_fn,
@@ -171,9 +182,11 @@ class CrystDataModule(pl.LightningDataModule):
             )
 
     def test_dataloader(self) -> Sequence[DataLoader]:
+        batch_sampler = ZeoSampler(self.test_dataset.zeolite_codes, batch_size=self.batch_size.train, n_samples=self.samples_per_code, origin="TEST")
+
         return DataLoader(
                 self.test_dataset,
-                shuffle=False,
+                batch_sampler=batch_sampler,
                 batch_size=self.batch_size.test,
                 num_workers=self.num_workers.test,
                 worker_init_fn=worker_init_fn,
