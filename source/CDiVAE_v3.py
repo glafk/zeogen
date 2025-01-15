@@ -22,13 +22,12 @@ from scipy.optimize import linear_sum_assignment
 
 from utils import add_object, log_config_to_wandb, masked_bce_loss
 from data_utils.crystal_utils import frac_to_cart_coords, cart_to_frac_coords, min_distance_sqr_pbc, mard, lengths_angles_to_volume
+from codes_mapping import ZEOLITE_CODES_MAPPING
 
 # Load environment variables
 env.load_envs()
 
 PROJECT_ROOT = Path(env.get_env("PROJECT_ROOT"))
-
-ZEOLITE_CODES_MAPPING = {'DDRch1': 0, 'DDRch2': 1, 'FAU': 2, 'FAUch': 3, 'ITW': 4, 'MEL': 5, 'MELch': 6, 'MFI': 7, 'MOR': 8, 'RHO': 9, 'TON': 10, 'TON2': 11, 'TON3': 12, 'TON4': 13, 'TONch': 14, 'BEC': 15, 'CHA': 16, 'ERI': 17, 'FER': 18, 'HEU': 19, 'LTA': 20, 'LTL': 21, 'MER': 22, 'MTW': 23, 'NAT': 24, 'YFI': 25, "DDR": 26}
 
 
 def permutate_al_atoms(frac_coords: torch.Tensor, atom_types: torch.Tensor, sigma: float) -> torch.Tensor:
@@ -197,12 +196,14 @@ class CDiVAE_v3(BaseModule):
 
         self.fc_num_atoms = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
                                       self.hparams.fc_num_layers, self.hparams.max_atoms+1)
-        self.fc_lengths = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
-                                    self.hparams.fc_num_layers, 3, final_activation="selu")
-        self.fc_angles = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
-                                   self.hparams.fc_num_layers, 3, final_activation='sigmoid')
-        self.fc_composition = build_mlp(self.hparams.class_latent_dim, self.hparams.hidden_dim,
-                                        self.hparams.fc_num_layers, 1, final_activation="hard_sigmoid")
+        self.fc_lattice = build_mlp(self.hparams.latent_dim, self.hparams.hidden_dim,
+                                    self.hparams.fc_num_layers, 6)
+        # self.fc_lengths = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
+        #                             self.hparams.fc_num_layers, 3, final_activation="selu")
+        # self.fc_angles = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
+        #                            self.hparams.fc_num_layers, 3, final_activation='sigmoid')
+        # self.fc_composition = build_mlp(self.hparams.class_latent_dim, self.hparams.hidden_dim,
+        #                                 self.hparams.fc_num_layers, 1, final_activation="hard_sigmoid")
 
         # self.crf_layer = CRF(2, batch_first=True)
 
@@ -247,11 +248,15 @@ class CDiVAE_v3(BaseModule):
         # and the original DIVA implementation
         # DIVA - mu_d -> zd_q_loc, log_var_d -> zd_q_scale 
         zd_q_loc, zd_q_scale, hidden_d = self.zd_encoder(batch, uniform_types=False)
+        zd_q_scale = torch.clamp(zd_q_scale, min=1e-5, max=1e+5)
+        # Clamp the variance
         qzd = self.reparameterize(zd_q_loc, zd_q_scale)
         zd = qzd.rsample()
 
         # DIVA - mu_y -> zy_q_loc, log_var_y -> zy_q_scale
         zy_q_loc, zy_q_scale, hidden_y = self.zy_encoder(batch)
+        # Clamp the variance
+        zd_y_scale = torch.clamp(zd_y_scale, min=1e-5, max=1e+5)
         qzy = self.reparameterize(zy_q_loc, zy_q_scale)
         zy = qzy.rsample()
 
@@ -268,9 +273,11 @@ class CDiVAE_v3(BaseModule):
         """
         if gt_num_atoms is not None and teacher_forcing:
             num_atoms = self.predict_num_atoms(zd)
-            lengths = self.predict_lenghts(zd, gt_num_atoms)
-            angles = self.predict_angles(zd)
-            lengths_and_angles = torch.cat([lengths, angles], dim=-1)
+            lengths_and_angles, lengths, angles = (
+                self.predict_lattice(zd, gt_num_atoms))
+            # lengths = self.predict_lenghts(zd, gt_num_atoms)
+            # angles = self.predict_angles(zd)
+            # lengths_and_angles = torch.cat([lengths, angles], dim=-1)
             # The new composition prediction would predict a tensor of size
             # [batch_size, max_atoms] so that for each crystal in the batch
             # there will be a prediction for each individual atom_num
@@ -290,9 +297,11 @@ class CDiVAE_v3(BaseModule):
         else:
             num_atoms = self.predict_num_atoms(zd)
             num_atoms_copy = num_atoms.clone().detach()
-            lengths = self.predict_lenghts(zd, num_atoms_copy.argmax(dim=-1))
-            angles = self.predict_angles(zd)
-            lengths_and_angles = torch.cat([lengths, angles], dim=-1)
+            lengths_and_angles, lengths, angles = (
+                self.predict_lattice(zd, num_atoms_copy.argmax(dim=-1)))
+            # lengths = self.predict_lenghts(zd, num_atoms_copy.argmax(dim=-1))
+            # angles = self.predict_angles(zd)
+            # lengths_and_angles = torch.cat([lengths, angles], dim=-1)
             composition_per_crystal = self.predict_composition(zy)
             lengths = lengths.clone().detach()
             angles = angles.clone().detach()
@@ -517,6 +526,19 @@ class CDiVAE_v3(BaseModule):
     # region PREDICT HELPERS
     def predict_num_atoms(self, z):
         return self.fc_num_atoms(z)
+
+    def predict_lattice(self, z, num_atoms):
+        self.lattice_scaler.match_device(z)
+        pred_lengths_and_angles = self.fc_lattice(z)  # (N, 6)
+        scaled_preds = self.lattice_scaler.inverse_transform(
+            pred_lengths_and_angles)
+        pred_lengths = scaled_preds[:, :3]
+        pred_angles = scaled_preds[:, 3:]
+        # TODO: Reverser the changes so that lattice_scale_method is an attribute and not an indexer
+        if self.hparams.data["lattice_scale_method"] == 'scale_length':
+            pred_lengths = pred_lengths * num_atoms.view(-1, 1).float()**(1/3)
+        # <pred_lengths_and_angles> is scaled.
+        return pred_lengths_and_angles, pred_lengths, pred_angles
 
     def predict_lenghts(self, z, num_atoms):
         self.lengths_scaler.match_device(z)

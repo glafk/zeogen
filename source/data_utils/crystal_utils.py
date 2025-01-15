@@ -730,7 +730,8 @@ def add_scaled_lengths_prop(data_list, lattice_scale_method):
         if lattice_scale_method == 'scale_length':
             lengths = lengths / float(num_atoms)**(1/3)
 
-        dict['scaled_lengths'] = lengths
+        # dict['scaled_lengths'] = lengths
+        dict['scaled_lengths'] = np.concatenate([lengths, angles])
 
 
 def mard(targets, preds):
