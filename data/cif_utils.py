@@ -92,15 +92,23 @@ def read_cif_files(root_dir):
     for root, dirs, files in os.walk(root_dir):
         basename = os.path.basename(root)
         if 'data' not in basename:
-            zeolite_code = os.path.basename(root)
+            if "dir" in root:
+                print(f"Root {os.path.basename(root).split("_")[0]}")
+                zeolite_code = os.path.basename(root).split("_")[0]
+            else:
+               print(f"Root {os.path.basename(root)}")
+               zeolite_code = os.path.basename(root) 
+               print(f"Zeo code {zeolite_code}")
             dirname = os.path.dirname(root)
             lines = []
             with open(f"{dirname}/hoa_{zeolite_code}.dat", 'rb') as f:
                 lines_in_file = f.readlines()
                 # Ignore first line (Header)
                 lines = lines_in_file[1:]
-
-            hoa = np.array([float(line.split()[1]) for line in lines])
+            print(lines[0])
+            print(lines[0].split())
+            print(zeolite_code)
+            hoa = np.array([float(line.split()[1]) for line in lines if len(line) > 1])
             for file in files:
                 if file.endswith('.cif'):
                     dirname = os.path.dirname(root)
@@ -129,10 +137,14 @@ def split_data(data, train_ratio=0.6, val_ratio=0.2, test_ratio=0.2):
     return train_data, val_data, test_data
 
 def save_data_splits(zeolite_data, output_dir):
+    # List of reserved names in Windows
+    reserved_names = {"CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"}
     for zeolite_code, data in zeolite_data.items():
         train_data, val_data, test_data = split_data(data)
-        
-        zeolite_folder = os.path.join(output_dir, zeolite_code)
+        if zeolite_code in reserved_names:
+            zeolite_folder = os.path.join(output_dir, zeolite_code + "dir")
+        else:
+            zeolite_folder = os.path.join(output_dir, zeolite_code)
         os.makedirs(zeolite_folder, exist_ok=True)
         
         with open(os.path.join(zeolite_folder, 'train.pkl'), 'wb') as f:

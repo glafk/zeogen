@@ -637,7 +637,7 @@ def preprocess(input_files, num_workers, niggli, primitive, graph_method,
 # Array shape
 # arr = [{frac_coords: [list], atom_types: [list], lengths: [list], angles: [list], adsorption_cap: float]}]
 # lengths = [a,b,c]; angles = [alpha, beta, gamma)
-def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, prop_name='hoa'):
+def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, prop_name='hoa', max_zeolite_size=None):
     def process_one(batch_idx, crystal_dict, graph_method, prop_name):
         frac_coords = crystal_dict['frac_coords']
         atom_types = crystal_dict['atom_types']
@@ -660,7 +660,7 @@ def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, prop_n
             'norm_hoa': crystal_dict['norm_hoa'],
             'zeolite_code': crystal_dict['zeolite_code'],
             # 'zeolite_code': "MOR",
-            # 'zeolite_code_enc': crystal_dict['zeolite_code_enc'],
+            'zeolite_code_enc': crystal_dict['zeolite_code_enc'],
         }
         return result_dict
 
@@ -695,6 +695,10 @@ def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, prop_n
     # Optionally clean up if needed
     del hoa
     del zeo_code
+
+    # If maximun size is indicated, filter out the larger zeolites
+    if max_zeolite_size is not None:
+        crystal_dict_list = [crystal for crystal in crystal_dict_list if len(crystal['lengths']) <= max_zeolite_size]
 
     # Limit number of items temporarily for testing purporses
     if num_records is not None:
@@ -965,7 +969,8 @@ def reconstruction2cif(reconstruction: dict, path: str, trajectory_path: str=Non
 def save_samples_as_cifs(samples: dict, directory: str, 
                          save_trajectory=False, 
                          downsample_trajectory=True,
-                         downsample_frame_rate=10):
+                         downsample_frame_rate=10,
+                         one_dict = False):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
@@ -977,26 +982,41 @@ def save_samples_as_cifs(samples: dict, directory: str,
 
     individual_samples = []
 
+    if one_dict:
+        samples = [samples]
     # With the current setup, we have one item per domain in the list
     for item in samples:
+        print(item["all_atom_types"].shape)
         # Split atom types
         split_atom_types = np.split(item["atom_types"], np.cumsum(item["num_atoms"])[:-1])
-    # Split fractional coordinates
+        # Split fractional coordinates
         split_frac_coords = np.split(item["frac_coords"], np.cumsum(item["num_atoms"])[:-1])
 
         split_all_atoms_steps = np.split(item["all_atom_types"], np.cumsum(item["num_atoms"])[:-1], axis=1)
-        split_all_atoms_array = np.stack(split_all_atoms_steps)
+        # split_all_atoms_array = np.stack(split_all_atoms_steps)
         split_all_coords_steps = np.split(item["all_frac_coords"], np.cumsum(item["num_atoms"])[:-1], axis=1)
-        split_all_coords_array = np.stack(split_all_coords_steps)
+        # split_all_coords_array = np.stack(split_all_coords_steps)
 
         for i in range(len(item["num_atoms"])):
-            individual_samples.append({"atom_types": split_atom_types[i], "frac_coords": split_frac_coords[i], "lengths": item["lengths"][i], "angles": item["angles"][i], "domain": item["domains"][i], "norm_hoa": item["norm_hoas"][i], "pred_hoa": item["pred_hoas"][i], "all_atom_types": split_all_atoms_array[i], "all_frac_coords": split_all_coords_array[i]})
+            individual_samples.append({"atom_types": split_atom_types[i], 
+                                       "frac_coords": split_frac_coords[i], 
+                                       "lengths": item["lengths"][i], 
+                                       "angles": item["angles"][i], 
+                                       # "domain": item["domains"][i], 
+                                       # "norm_hoa": item["norm_hoas"][i], 
+                                       # "pred_hoa": item["pred_hoas"][i], 
+                                       "all_atom_types": split_all_atoms_steps[i], 
+                                       "all_frac_coords": split_all_coords_steps[i]})
 
-    for sample in individual_samples: # individual_samples:
-        filename = os.path.join(directory, f"sample_{sample['domain']}_{str(sample['norm_hoa']).replace('.', '_')}.cif")
+    # for sample in individual_samples: # individual_samples:
+    for i in range(len(individual_samples)):
+        sample = individual_samples[i]
+        # filename = os.path.join(directory, f"sample_{sample['domain']}_{str(sample['norm_hoa']).replace('.', '_')}.cif")
+        filename = os.path.join(directory, f"sample_{i}.cif")
 
         if sample.get("is_traj", True) and save_trajectory:
-            traj_directory = os.path.join(directory, f"trajectory_{sample['domain']}_{sample['norm_hoa']}_traj")
+            # traj_directory = os.path.join(directory, f"trajectory_{sample['domain']}_{sample['norm_hoa']}_traj")
+            traj_directory = os.path.join(directory, f"trajectory_sample_{i}_traj")
             if not os.path.exists(traj_directory):
                 os.makedirs(traj_directory)
             sample2cif(sample, filename, traj_directory, save_trajectory=True, downsample_trajectory=downsample_trajectory, downsample_frame_rate=downsample_frame_rate)

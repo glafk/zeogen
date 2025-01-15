@@ -351,7 +351,7 @@ class CDiVAE_v3(BaseModule):
             # Handle the case where atoms have 0 neighors in the computational graph 
             # and the forward pass fails
             # Pass the ground truths to the decoder
-            # pred_cart_coord_diff, pred_atom_types = self.decoder(z, noisy_frac_coords, rand_atom_types, batch.num_atoms, batch.lengths, batch.angles)
+            pred_cart_coord_diff, pred_atom_types = self.decoder(z, noisy_frac_coords, rand_atom_types, batch.num_atoms, batch.lengths, batch.angles)
             print("positions_exception", e)
             raise e
 

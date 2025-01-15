@@ -11,6 +11,8 @@ from data_utils.crystal_utils import (
 
 ZEOLITE_CODES_MAPPING = {'DDRch1': 0, 'DDRch2': 1, 'FAU': 2, 'FAUch': 3, 'ITW': 4, 'MEL': 5, 'MELch': 6, 'MFI': 7, 'MOR': 8, 'RHO': 9, 'TON': 10, 'TON2': 11, 'TON3': 12, 'TON4': 13, 'TONch': 14, 'BEC': 15, 'CHA': 16, 'ERI': 17, 'FER': 18, 'HEU': 19, 'LTA': 20, 'LTL': 21, 'MER': 22, 'MTW': 23, 'NAT': 24, 'YFI': 25, "DDR": 26}
 
+ZEOLITE_CODES_MAPPING_SMALL = {'DDR': 1, 'FAU': 2, 'ITW': 3, 'MEL': 4, 'MFI': 5, 'MOR': 6, 'RHO': 7, 'TON': 8, 'BEC': 9, 'CHA': 10, 'ERI': 11, 'FER': 12, 'HEU': 13, 'LTA': 14, 'LTL': 15, 'MER': 16, 'MTW': 17, 'NAT': 18, 'YFI': 19}
+
 class TensorCrystDataset(Dataset):
     def __init__(self, path, niggli, primitive,
                  graph_method, preprocess_workers,
@@ -67,7 +69,7 @@ class TensorCrystDataset(Dataset):
             num_bonds=edge_indices.shape[0],
             num_nodes=num_atoms,  # special attribute used for batching in pytorch geometric
             zeolite_code=data_dict["zeolite_code"],
-            zeolite_code_enc=ZEOLITE_CODES_MAPPING[data_dict["zeolite_code"]],
+            zeolite_code_enc=ZEOLITE_CODES_MAPPING_SMALL[data_dict["zeolite_code"]],
             # zeolite_code="MOR",
             # zeolite_code_enc=ZEOLITE_CODES_MAPPING["MOR"],
             hoa=torch.Tensor([data_dict[self.prop]]).view(1, -1),
