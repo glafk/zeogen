@@ -44,6 +44,7 @@ class CrystDataModule(pl.LightningDataModule):
         self.datasets = datasets
         self.num_workers = num_workers
         self.batch_size = batch_size
+        self.scaler_path = scaler_path
 
         self.train_dataset: Optional[Dataset] = None
         self.val_datasets: Optional[Sequence[Dataset]] = None
@@ -77,10 +78,10 @@ class CrystDataModule(pl.LightningDataModule):
                 key=train_dataset.prop + "_std")
 
             # Save scalers
-            torch.save(self.lengths_scaler, lengths_scaler)
-            torch.save(self.prop_scaler, prop_scaler)
-            torch.save(self.prop_mu_scaler, prop_mu_scaler)
-            torch.save(self.prop_std_scaler, prop_std_scaler)
+            torch.save(self.lengths_scaler, os.path.join(self.scaler_path, lengths_scaler))
+            torch.save(self.prop_scaler, os.path.join(self.scaler_path, prop_scaler))
+            torch.save(self.prop_mu_scaler, os.path.join(self.scaler_path, prop_mu_scaler))
+            torch.save(self.prop_std_scaler, os.path.join(self.scaler_path, prop_std_scaler))
             
         else:
             self.lengths_scaler = torch.load(

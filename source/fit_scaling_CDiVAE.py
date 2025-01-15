@@ -69,10 +69,11 @@ def fit_scaling():
         for scale_file in [d_scale_file, y_scale_file, pos_decoder_scale_file, types_decoder_scale_file]:
             if os.path.exists(scale_file):
                 logging.warning(f"Already found existing file: {scale_file}")
-                flag = input(
-                    "Do you want to continue and overwrite the file (1), "
-                    "only fit the variables not fitted yet (2), or exit (3)? "
-                )
+                # flag = input(
+                #     "Do you want to continue and overwrite the file (1), "
+                #     "only fit the variables not fitted yet (2), or exit (3)? "
+                # )
+                flag = 1
                 if str(flag) == "1":
                     logging.info("Overwriting the current file.")
                     initialize_scale_file(scale_file)
@@ -94,11 +95,11 @@ def fit_scaling():
         datamodule.setup("fit")
 
         # Change the model scale file to reflect the newly fitted file
-        cfg.model.cdivae_v2.encoders.domain_encoder.scale_file = d_scale_file
-        cfg.model.cdivae_v2.encoders.class_encoder.scale_file = y_scale_file
+        cfg.model.cdivae_v3.encoders.domain_encoder.scale_file = d_scale_file
+        cfg.model.cdivae_v3.encoders.class_encoder.scale_file = y_scale_file
         # cfg.model.residual_encoder.scale_file = x_scale_file
-        cfg.model.cdivae_v2.decoders.positions_decoder.scale_file = pos_decoder_scale_file
-        cfg.model.cdivae_v2.decoders.types_decoder.scale_file = types_decoder_scale_file
+        cfg.model.cdivae_v3.decoders.positions_decoder.scale_file = pos_decoder_scale_file
+        cfg.model.cdivae_v3.decoders.types_decoder.scale_file = types_decoder_scale_file
 
         # Instantiate the model
         model: pl.LightningModule = hydra.utils.instantiate(
