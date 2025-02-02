@@ -1,4 +1,4 @@
-expname: train_no_crf_layer_no_uniform_types
+expname: sample_zdivae_small
 # metadata specialised for each experiment
 core:
   version: 1.0.0
@@ -10,7 +10,7 @@ hydra:
     dir: ${oc.env:HYDRA_JOBS}/singlerun/${now:%Y-%m-%d}/${expname}/
 
 defaults:
-  - data: data_combined
+  - data: data_small
   - model: cdivae_v3
   - optim: optim
   - train: train

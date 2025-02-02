@@ -569,7 +569,7 @@ class CDiVAE_v3(BaseModule):
 
     # region SAMPLING
     @torch.no_grad()
-    def langevin_dynamics(self, zd, zy, ld_kwargs, domain, norm_hoas, pred_hoas, gt_num_atoms=None, gt_atom_types=None):
+    def langevin_dynamics(self, zd, zy, ld_kwargs, domain, norm_hoas, pred_hoas, pred_norm_hoas, pred_domains, gt_num_atoms=None, gt_atom_types=None):
         """
         decode crystral structure from latent embeddings.
         ld_kwargs: args for doing annealed langevin dynamics sampling:
@@ -643,17 +643,20 @@ class CDiVAE_v3(BaseModule):
                     # all_noise_cart.append(noise_cart)
                     all_atom_types.append(cur_atom_types)
 
-        crystal_logits = torch.split(pred_atom_types, num_atoms.clone().detach().cpu().numpy().tolist())
-        padded_logits = pad_sequence(crystal_logits, batch_first=True)
-        mask = pad_sequence([torch.ones(seq, dtype=torch.uint8) for seq in num_atoms], batch_first=True).to(self.device)
-        pred_atom_types = self.crf_layer.decode(padded_logits, mask=mask.bool())
-        cur_atom_types = torch.cat([torch.tensor(crystal) for crystal in pred_atom_types]).to(self.device) + 13
+        # Comment out the CRF layer for now
+        # crystal_logits = torch.split(pred_atom_types, num_atoms.clone().detach().cpu().numpy().tolist())
+        # padded_logits = pad_sequence(crystal_logits, batch_first=True)
+        # mask = pad_sequence([torch.ones(seq, dtype=torch.uint8) for seq in num_atoms], batch_first=True).to(self.device)
+        # pred_atom_types = self.crf_layer.decode(padded_logits, mask=mask.bool())
+        # cur_atom_types = torch.cat([torch.tensor(crystal) for crystal in pred_atom_types]).to(self.device) + 13
         
         output_dict = {'zd': zd.cpu().numpy(), 'zy': zy.cpu().numpy(),
                        'num_atoms': num_atoms.cpu().numpy(), 'lengths': lengths.cpu().numpy(), 'angles': angles.cpu().numpy(),
                        'frac_coords': cur_frac_coords.cpu().numpy(), 'atom_types': cur_atom_types.cpu().numpy(),
                        'domains': [domain] * len(norm_hoas), 'norm_hoas': norm_hoas,
                        'pred_hoas': pred_hoas.cpu().numpy(),
+                       'pred_norm_hoas': pred_norm_hoas.cpu().numpy(),
+                       'pred_domains': pred_domains.cpu().numpy(),
                        'is_traj': False}
 
         if ld_kwargs.save_traj:
@@ -702,7 +705,7 @@ class CDiVAE_v3(BaseModule):
                 zd_p_loc, zd_p_scale = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain]], device=self.device), embed=True)
                 zy_p_loc, zy_p_scale = self.pzy(torch.tensor([norm_hoas], device=self.device).view(-1, 1)) 
                 
-                pzd = dist.Normal(zd_p_loc, 0.0001)
+                pzd = dist.Normal(zd_p_loc, zd_p_scale)
                 zd = pzd.sample()
                 zd_per_hoa = zd.repeat(num_samples_per_domain, 1)
 
@@ -713,9 +716,10 @@ class CDiVAE_v3(BaseModule):
                 hoa_mu_pred = self.prop_mu_scaler.inverse_transform(hoa_mu_pred)
                 hoa_std_pred = self.hoa_std_predictor(zd_per_hoa)
                 hoa_std_pred = self.prop_std_scaler.inverse_transform(hoa_std_pred)
-                norm_hoa_pred = self.norm_hoa_predictor(zy)  
+                norm_hoa_pred = self.norm_hoa_predictor(zy)
+                domains_pred = self.domain_predictor(zd_per_hoa)
                 pred_hoas = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
-                samples = self.langevin_dynamics(zd_per_hoa, zy, ld_kwargs, domain, norm_hoas, pred_hoas)
+                samples = self.langevin_dynamics(zd_per_hoa, zy, ld_kwargs, domain, norm_hoas, pred_hoas, norm_hoa_pred, domains_pred)
                 all_samples.append(samples)
             else:
                 domain = domain.split('/')

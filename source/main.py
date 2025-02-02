@@ -297,7 +297,7 @@ def run_reconstruction_cdivae_v3(cfg: DictConfig, model: CDiVAE_v3 = None):
         os.remove(reconstructions_path)
         os.remove(ground_truth_path)
 
-def run_sampling_cdivae_v3(cfg: DictConfig, model: CDiVAE_v2  = None):
+def run_sampling_cdivae_v3(cfg: DictConfig, model: CDiVAE_v3 = None):
     # Instantiate wandb run
     wandb.init(project="zeogen", entity="glafk", name=cfg.expname)
     # Log the configuration using wandb.config
@@ -437,7 +437,7 @@ def run_sampling(cfg: DictConfig, model: DiffusionModel = None):
         # Clean up the file so that it doesn't hang around
         os.remove(samples_path)
 
-@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="cdvae_base")
+@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="cdivae_v3")
 def main(cfg: DictConfig):
 
     model = None
