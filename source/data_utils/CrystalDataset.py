@@ -14,7 +14,7 @@ from codes_mapping import ZEOLITE_CODES_MAPPING
 class TensorCrystDataset(Dataset):
     def __init__(self, path, niggli, primitive,
                  graph_method, preprocess_workers,
-                 lattice_scale_method, prop, num_records=None, **kwargs):
+                 lattice_scale_method, prop, num_records=None, max_zeolite_size=None, **kwargs):
         super().__init__()
         self.niggli = niggli
         self.primitive = primitive
@@ -23,6 +23,7 @@ class TensorCrystDataset(Dataset):
         self.path = path
         self.prop = prop
         self.num_records = num_records
+        self.max_zeolite_size = max_zeolite_size
 
         # Read the tensors from path to crystal_array_list
         crystal_array_list = pickle.load(open(path, 'rb'))
@@ -32,8 +33,10 @@ class TensorCrystDataset(Dataset):
             crystal_array_list,
             graph_method=self.graph_method,
             num_records=self.num_records,
-            prop_name=self.prop)
+            prop_name=self.prop,
+            max_zeolite_size=self.max_zeolite_size)
 
+        self.zeolite_codes = [data['zeolite_code'] for data in self.cached_data]
         add_scaled_lengths_prop(self.cached_data, lattice_scale_method)
         self.lattice_scaler = None
         self.prop_scaler = None

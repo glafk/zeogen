@@ -7,12 +7,12 @@ graph_method: crystalnn
 lattice_scale_method: scale_length
 preprocess_workers: 4
 readout: mean
-max_atoms: 1024
+max_atoms: 600
 otf_graph: false
 eval_model_name: diffusion
 
 
-train_max_epochs: 150
+train_max_epochs: 200
 early_stopping_patience: 10
 teacher_forcing_max_epoch: 20
 
@@ -82,9 +82,10 @@ datamodule:
 
   # Comment out the scaler_path to fit to the new dataset. To be added in the future 
   scaler_path: ${oc.env:PROJECT_ROOT}/source/scaling_factors/cdivae_v3
-  lengths_scaler_name: lattice_scaler_all_codes_lt50.pt
-  prop_scaler_name: prop_scaler_all_codes_lt50.pt
-  prop_mu_scaler: prop_mu_scaler_all_codes_lt50.pt, 
+  refit: False
+  lengths_scaler: lengths_scaler_all_codes_lt50.pt
+  prop_scaler: prop_scaler_all_codes_lt50.pt
+  prop_mu_scaler: prop_mu_scaler_all_codes_lt50.pt
   prop_std_scaler: prop_std_scaler_all_codes_lt50.pt
 
   samples_per_code: 80

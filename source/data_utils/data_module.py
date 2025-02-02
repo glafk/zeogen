@@ -41,10 +41,11 @@ class CrystDataModule(pl.LightningDataModule):
         batch_size: DictConfig,
         scaler_path=None,
         samples_per_code=None,
-        lattice_scaler_name=None,
-        prop_scaler_name=None,
-        prop_mu_scaler_name=None,
-        prop_std_scaler_name=None
+        lengths_scaler=None,
+        prop_scaler=None,
+        prop_mu_scaler=None,
+        prop_std_scaler=None,
+        refit=False
     ):
         super().__init__()
         self.datasets = datasets
@@ -58,16 +59,16 @@ class CrystDataModule(pl.LightningDataModule):
         self.test_datasets: Optional[Sequence[Dataset]] = None
 
         # TODO: Change this to be parametrizable
-        self.get_scaler(scaler_path, lengths_scaler=lattice_scaler_name, prop_scaler=prop_scaler_name, prop_mu_scaler=prop_mu_scaler_name, prop_std_scaler=prop_std_scaler_name)
+        self.get_scaler(scaler_path, refit=refit, lengths_scaler=lengths_scaler, prop_scaler=prop_scaler, prop_mu_scaler=prop_mu_scaler, prop_std_scaler=prop_std_scaler)
 
 
     def prepare_data(self) -> None:
         # download only
         pass
 
-    def get_scaler(self, scaler_path, lengths_scaler="lengths_scaler.pt", prop_scaler="prop_scaler.pt", prop_mu_scaler: str = "prop_mu_scaler.pt", prop_std_scaler: str = "prop_std_scaler.pt"):
+    def get_scaler(self, scaler_path, refit=False, lengths_scaler="lengths_scaler.pt", prop_scaler="prop_scaler.pt", prop_mu_scaler: str = "prop_mu_scaler.pt", prop_std_scaler: str = "prop_std_scaler.pt"):
         # Load once to compute property scaler
-        if scaler_path is None:
+        if refit:
             # temporarily change this to the test dataset to generate the scaling factors
             # print("Generating scaling factors")
             # test_dataset = hydra.utils.instantiate(self.datasets.test)
@@ -104,8 +105,8 @@ class CrystDataModule(pl.LightningDataModule):
         """
         print("Setting up data module")
         if stage == "fit":
-            train_preprocessed_path = self.datasets.train.path.split('.')[0] + '_preprocessed.pt'
-            val_preprocessed_path = self.datasets.val.path.split('.')[0] + '_preprocessed.pt'
+            train_preprocessed_path = self.datasets.train.path.split('.')[0] + '_preprocessed_lt50.pt'
+            val_preprocessed_path = self.datasets.val.path.split('.')[0] + '_preprocessed_lt50.pt'
             if os.path.exists(train_preprocessed_path) and os.path.exists(val_preprocessed_path):
                 self.train_dataset = torch.load(train_preprocessed_path)
                 self.val_dataset = torch.load(val_preprocessed_path)
@@ -128,7 +129,7 @@ class CrystDataModule(pl.LightningDataModule):
             self.val_dataset.prop_std_scaler = self.prop_std_scaler
 
         if stage == "test":
-            test_preprocessed_path = self.datasets.test.path.split('.')[0] + '_preprocessed.pt'
+            test_preprocessed_path = self.datasets.test.path.split('.')[0] + '_preprocessed_lt50.pt'
             if os.path.exists(test_preprocessed_path):
                 self.test_dataset = torch.load(test_preprocessed_path)
             else:
@@ -144,7 +145,7 @@ class CrystDataModule(pl.LightningDataModule):
             self.test_dataset.prop_std_scaler = self.prop_std_scaler
 
         if stage == "predict":
-            predict_preprocessed_path = self.datasets.predict.path.split('.')[0] + '_preprocessed.pt'
+            predict_preprocessed_path = self.datasets.predict.path.split('.')[0] + '_preprocessed_lt50.pt'
             if os.path.exists(predict_preprocessed_path):
                 self.predict_dataset = torch.load(predict_preprocessed_path)
             else:
@@ -164,31 +165,28 @@ class CrystDataModule(pl.LightningDataModule):
         return DataLoader(
             self.train_dataset,
             batch_sampler=batch_sampler,
-            batch_size=self.batch_size.train,
             num_workers=self.num_workers.train,
             worker_init_fn=worker_init_fn,
             persistent_workers=False
         )
 
     def val_dataloader(self) -> Sequence[DataLoader]:
-        batch_sampler = ZeoSampler(self.val_dataset.zeolite_codes, batch_size=self.batch_size.train, n_samples=self.samples_per_code, origin="VAL")
+        batch_sampler = ZeoSampler(self.val_dataset.zeolite_codes, batch_size=self.batch_size.val, n_samples=self.samples_per_code, origin="VAL")
 
         return DataLoader(
                 self.val_dataset,
                 batch_sampler=batch_sampler,
-                batch_size=self.batch_size.val,
                 num_workers=self.num_workers.val,
                 worker_init_fn=worker_init_fn,
                 persistent_workers=False
             )
 
     def test_dataloader(self) -> Sequence[DataLoader]:
-        batch_sampler = ZeoSampler(self.test_dataset.zeolite_codes, batch_size=self.batch_size.train, n_samples=self.samples_per_code, origin="TEST")
+        batch_sampler = ZeoSampler(self.test_dataset.zeolite_codes, batch_size=self.batch_size.test, n_samples=self.samples_per_code, origin="TEST")
 
         return DataLoader(
                 self.test_dataset,
                 batch_sampler=batch_sampler,
-                batch_size=self.batch_size.test,
                 num_workers=self.num_workers.test,
                 worker_init_fn=worker_init_fn,
                 persistent_workers=False

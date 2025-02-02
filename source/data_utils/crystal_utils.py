@@ -660,7 +660,7 @@ def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, prop_n
             'norm_hoa': crystal_dict['norm_hoa'],
             'zeolite_code': crystal_dict['zeolite_code'],
             # 'zeolite_code': "MOR",
-            'zeolite_code_enc': crystal_dict['zeolite_code_enc'],
+            # 'zeolite_code_enc': crystal_dict['zeolite_code_enc'],
         }
         return result_dict
 
@@ -698,7 +698,7 @@ def preprocess_tensors(crystal_dict_list, graph_method, num_records=None, prop_n
 
     # If maximun size is indicated, filter out the larger zeolites
     if max_zeolite_size is not None:
-        crystal_dict_list = [crystal for crystal in crystal_dict_list if len(crystal['lengths']) <= max_zeolite_size]
+        crystal_dict_list = [crystal for crystal in crystal_dict_list if len(crystal['frac_coords']) <= max_zeolite_size]
 
     # Limit number of items temporarily for testing purporses
     if num_records is not None:
@@ -730,8 +730,8 @@ def add_scaled_lengths_prop(data_list, lattice_scale_method):
         if lattice_scale_method == 'scale_length':
             lengths = lengths / float(num_atoms)**(1/3)
 
-        # dict['scaled_lengths'] = lengths
-        dict['scaled_lengths'] = np.concatenate([lengths, angles])
+        dict['scaled_lengths'] = lengths
+        # dict['scaled_lengths'] = np.concatenate([lengths, angles])
 
 
 def mard(targets, preds):

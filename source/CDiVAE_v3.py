@@ -106,7 +106,7 @@ def build_mlp(in_dim, hidden_dim, fc_num_layers, out_dim, final_activation=None)
 class CondPrior(nn.Module):
     def __init__(self, cond_dim, z_dim, embed=False):
         super(CondPrior, self).__init__()
-        self.emb = nn.Embedding(len(ZEOLITE_CODES_MAPPING.keys()), 128)
+        self.emb = nn.Embedding(len(ZEOLITE_CODES_MAPPING.keys())+1, 128)
         if embed:
             self.fc1 = nn.Sequential(nn.Linear(128, z_dim, bias=False), nn.BatchNorm1d(z_dim), nn.ReLU())
         else:
@@ -196,14 +196,14 @@ class CDiVAE_v3(BaseModule):
 
         self.fc_num_atoms = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
                                       self.hparams.fc_num_layers, self.hparams.max_atoms+1)
-        self.fc_lattice = build_mlp(self.hparams.latent_dim, self.hparams.hidden_dim,
-                                    self.hparams.fc_num_layers, 6)
-        # self.fc_lengths = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
-        #                             self.hparams.fc_num_layers, 3, final_activation="selu")
-        # self.fc_angles = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
-        #                            self.hparams.fc_num_layers, 3, final_activation='sigmoid')
-        # self.fc_composition = build_mlp(self.hparams.class_latent_dim, self.hparams.hidden_dim,
-        #                                 self.hparams.fc_num_layers, 1, final_activation="hard_sigmoid")
+        # self.fc_lattice = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
+        #                             self.hparams.fc_num_layers, 6)
+        self.fc_lengths = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
+                                    self.hparams.fc_num_layers, 3, final_activation="selu")
+        self.fc_angles = build_mlp(self.hparams.domain_latent_dim, self.hparams.hidden_dim,
+                                   self.hparams.fc_num_layers, 3, final_activation='sigmoid')
+        self.fc_composition = build_mlp(self.hparams.class_latent_dim, self.hparams.hidden_dim,
+                                        self.hparams.fc_num_layers, 1, final_activation="hard_sigmoid")
 
         # self.crf_layer = CRF(2, batch_first=True)
 
@@ -248,15 +248,15 @@ class CDiVAE_v3(BaseModule):
         # and the original DIVA implementation
         # DIVA - mu_d -> zd_q_loc, log_var_d -> zd_q_scale 
         zd_q_loc, zd_q_scale, hidden_d = self.zd_encoder(batch, uniform_types=False)
-        zd_q_scale = torch.clamp(zd_q_scale, min=1e-5, max=1e+5)
         # Clamp the variance
+        zd_q_scale = torch.clamp(zd_q_scale, min=1e-5, max=1e+5)
         qzd = self.reparameterize(zd_q_loc, zd_q_scale)
         zd = qzd.rsample()
 
         # DIVA - mu_y -> zy_q_loc, log_var_y -> zy_q_scale
         zy_q_loc, zy_q_scale, hidden_y = self.zy_encoder(batch)
         # Clamp the variance
-        zd_y_scale = torch.clamp(zd_y_scale, min=1e-5, max=1e+5)
+        zy_q_scale = torch.clamp(zy_q_scale, min=1e-5, max=1e+5)
         qzy = self.reparameterize(zy_q_loc, zy_q_scale)
         zy = qzy.rsample()
 
@@ -273,11 +273,11 @@ class CDiVAE_v3(BaseModule):
         """
         if gt_num_atoms is not None and teacher_forcing:
             num_atoms = self.predict_num_atoms(zd)
-            lengths_and_angles, lengths, angles = (
-                self.predict_lattice(zd, gt_num_atoms))
-            # lengths = self.predict_lenghts(zd, gt_num_atoms)
-            # angles = self.predict_angles(zd)
-            # lengths_and_angles = torch.cat([lengths, angles], dim=-1)
+            #lengths_and_angles, lengths, angles = (
+            #    self.predict_lattice(zd, gt_num_atoms))
+            lengths = self.predict_lenghts(zd, gt_num_atoms)
+            angles = self.predict_angles(zd)
+            lengths_and_angles = torch.cat([lengths, angles], dim=-1)
             # The new composition prediction would predict a tensor of size
             # [batch_size, max_atoms] so that for each crystal in the batch
             # there will be a prediction for each individual atom_num
@@ -297,11 +297,11 @@ class CDiVAE_v3(BaseModule):
         else:
             num_atoms = self.predict_num_atoms(zd)
             num_atoms_copy = num_atoms.clone().detach()
-            lengths_and_angles, lengths, angles = (
-                self.predict_lattice(zd, num_atoms_copy.argmax(dim=-1)))
-            # lengths = self.predict_lenghts(zd, num_atoms_copy.argmax(dim=-1))
-            # angles = self.predict_angles(zd)
-            # lengths_and_angles = torch.cat([lengths, angles], dim=-1)
+            # lengths_and_angles, lengths, angles = (
+            #     self.predict_lattice(zd, num_atoms_copy.argmax(dim=-1)))
+            lengths = self.predict_lenghts(zd, num_atoms_copy.argmax(dim=-1))
+            angles = self.predict_angles(zd)
+            lengths_and_angles = torch.cat([lengths, angles], dim=-1)
             composition_per_crystal = self.predict_composition(zy)
             lengths = lengths.clone().detach()
             angles = angles.clone().detach()
@@ -360,7 +360,7 @@ class CDiVAE_v3(BaseModule):
             # Handle the case where atoms have 0 neighors in the computational graph 
             # and the forward pass fails
             # Pass the ground truths to the decoder
-            pred_cart_coord_diff, pred_atom_types = self.decoder(z, noisy_frac_coords, rand_atom_types, batch.num_atoms, batch.lengths, batch.angles)
+            pred_cart_coord_diff, pred_atom_types = self.positions_decoder(zd, noisy_frac_coords, rand_atom_types, batch.num_atoms, batch.lengths, batch.angles)
             print("positions_exception", e)
             raise e
 
@@ -528,9 +528,11 @@ class CDiVAE_v3(BaseModule):
         return self.fc_num_atoms(z)
 
     def predict_lattice(self, z, num_atoms):
-        self.lattice_scaler.match_device(z)
+        self.lengths_scaler.match_device(z)
         pred_lengths_and_angles = self.fc_lattice(z)  # (N, 6)
-        scaled_preds = self.lattice_scaler.inverse_transform(
+        # Clamp the lengths and angles to ensure they are more than 0
+        pred_lengths_and_angles = torch.clamp(pred_lengths_and_angles, min=1e-5)
+        scaled_preds = self.lengths_scaler.inverse_transform(
             pred_lengths_and_angles)
         pred_lengths = scaled_preds[:, :3]
         pred_angles = scaled_preds[:, 3:]
@@ -880,7 +882,7 @@ class CDiVAE_v3(BaseModule):
 
     @torch.no_grad()
     def final_hoa_loss(self, pred_hoa, batch):
-        pred_hoa = self.prop_scaler.inverse_transform_backprob_compat(pred_hoa)
+       # pred_hoa = self.prop_scaler.inverse_transform_backprob_compat(pred_hoa)
         return F.l1_loss(pred_hoa, batch.hoa)
 
     def compute_loss(self, batch, outputs, prefix):
@@ -1014,8 +1016,8 @@ class CDiVAE_v3(BaseModule):
 
             
             # Evaluate final HOA prediction loss
-            hoa_pred = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
-            final_hoa_loss = self.final_hoa_loss(hoa_pred, batch)
+            hoa_pred = norm_hoa_pred * self.prop_std_scaler.inverse_transform(hoa_std_pred) + self.prop_mu_scaler.inverse_transform(hoa_mu_pred)
+            final_hoa_loss = self.final_hoa_loss(hoa_pred, batch) 
 
             log_dict.update({
                 f'{prefix}_norm_hoa_pred_loss': norm_hoa_pred_loss,
@@ -1103,6 +1105,6 @@ class CDiVAE_v3(BaseModule):
     #             print(f"{name} | Gradients: None")
     # endregion
 
-    def on_train_epoch_end(self):
-        torch.cuda.empty_cache()
-        gc.collect()
+    # def on_train_epoch_end(self):
+    #     torch.cuda.empty_cache()
+    #     gc.collect()

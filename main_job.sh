@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --gpus=1
 #SBATCH --partition=gpu_mig
-#SBATCH --time=12:00:00 
+#SBATCH --time=24:00:00 
 
 #Loading modules
 module load 2023
