@@ -708,8 +708,8 @@ class CDiVAE_v3(BaseModule):
                 zy_p_loc, zy_p_scale = self.pzy(torch.tensor([norm_hoas], device=self.device).view(-1, 1)) 
                 
                 pzd = dist.Normal(zd_p_loc, zd_p_scale)
-                zd = pzd.sample()
-                zd_per_hoa = zd.repeat(num_samples_per_domain, 1)
+                zd_per_hoa = pzd.sample(sample_shape=(num_samples_per_domain, 1)).squeeze()
+                # zd_per_hoa = zd.repeat(num_samples_per_domain, 1)
 
                 pzy = dist.Normal(zy_p_loc, zy_p_scale)
                 zy = pzy.sample()
@@ -722,7 +722,7 @@ class CDiVAE_v3(BaseModule):
                 domains_pred = self.domain_predictor(zd_per_hoa)
                 pred_hoas = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
                 samples = self.langevin_dynamics(zd_per_hoa, zy, ld_kwargs, domain, norm_hoas, pred_hoas, norm_hoa_pred, domains_pred)
-                all_samples.append(samples)
+                all_samples.extend(samples)
             else:
                 domain = domain.split('/')
                 # Here we are in the case where we condition on multiple domains and interpolate between them
@@ -733,10 +733,10 @@ class CDiVAE_v3(BaseModule):
                 # like interpolating with a weight of 0.1, 0.3, 0.6, 0.9
 
                 pzd_1 = dist.Normal(zd_p_loc_1, zd_p_scale_1)
-                zd_1 = pzd_1.sample()
+                zd_1 = pzd_1.sample(sample_shape=(num_samples_per_domain, 1)).squeeze()
 
                 pzd_2 = dist.Normal(zd_p_loc_2, zd_p_scale_2)
-                zd_2 = pzd_2.sample()
+                zd_2 = pzd_2.sample(sample_shape=(num_samples_per_domain, 1)).squeeze()
 
                 zd_interpolated = torch.lerp(zd_1, zd_2, 0.5)
                 zd_per_hoa = zd_interpolated.repeat(num_samples_per_domain, 1)
@@ -752,7 +752,7 @@ class CDiVAE_v3(BaseModule):
                 pred_hoas = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
 
                 samples = self.langevin_dynamics(zd_per_hoa, zy, ld_kwargs, domain, norm_hoas, pred_hoas)
-                all_samples.append(samples)
+                all_samples.extend(samples)
 
         return all_samples   
 
