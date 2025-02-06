@@ -39,6 +39,231 @@ ZEOLITE_CODES_MAPPING_SMALL = {'DDR': 1, 'FAU': 2, 'ITW': 3, 'MEL': 4, 'MFI': 5,
                                'RHO': 7, 'TON': 8, 'BEC': 9, 'CHA': 10, 'ERI': 11, 'FER': 12, 
                                'HEU': 13, 'LTA': 14, 'LTL': 15, 'MER': 16, 'MTW': 17, 'NAT': 18, 'YFI': 19}
 
+ZEOLITE_CODES_MAPPING_ALL_CODES = {'ACO': 1,
+ 'AEI': 2,
+ 'AEL': 3,
+ 'AEN': 4,
+ 'AET': 5,
+ 'AFG': 6,
+ 'AFI': 7,
+ 'AFN': 8,
+ 'AFO': 9,
+ 'AFR': 10,
+ 'AFS': 11,
+ 'AFT': 12,
+ 'AFV': 13,
+ 'AFX': 14,
+ 'AFY': 15,
+ 'AHT': 16,
+ 'ANO': 17,
+ 'APC': 18,
+ 'APD': 19,
+ 'AST': 20,
+ 'ASV': 21,
+ 'ATN': 22,
+ 'ATO': 23,
+ 'ATS': 24,
+ 'ATT': 25,
+ 'ATV': 26,
+ 'AVE': 27,
+ 'AVL': 28,
+ 'AWO': 29,
+ 'AWW': 30,
+ 'BCT': 31,
+ 'BIK': 32,
+ 'BOF': 33,
+ 'BOG': 34,
+ 'BOZ': 35,
+ 'BPH': 36,
+ 'BRE': 37,
+ 'BSV': 38,
+ 'CAN': 39,
+ 'CAS': 40,
+ 'CDO': 41,
+ 'CFI': 42,
+ 'CGF': 43,
+ 'CGS': 44,
+ 'CON': 45,
+ 'CSV': 46,
+ 'CZP': 47,
+ 'DAC': 48,
+ 'DFO': 49,
+ 'DFT': 50,
+ 'DOH': 51,
+ 'DON': 52,
+ 'EAB': 53,
+ 'EEI': 54,
+ 'EMT': 55,
+ 'EON': 56,
+ 'EOS': 57,
+ 'EPI': 58,
+ 'ESV': 59,
+ 'ETL': 60,
+ 'ETR': 61,
+ 'ETV': 62,
+ 'EUO': 63,
+ 'EWF': 64,
+ 'EWO': 65,
+ 'EWS': 66,
+ 'EZT': 67,
+ 'FAR': 68,
+ 'FRA': 69,
+ 'GIS': 70,
+ 'GIU': 71,
+ 'GME': 72,
+ 'GON': 73,
+ 'GOO': 74,
+ 'IFO': 75,
+ 'IFR': 76,
+ 'IFW': 77,
+ 'IFY': 78,
+ 'IHW': 79,
+ 'IRN': 80,
+ 'IRR': 81,
+ 'ISV': 82,
+ 'ITE': 83,
+ 'ITG': 84,
+ 'ITH': 85,
+ 'ITR': 86,
+ 'ITT': 87,
+ 'ITW': 88,
+ 'IWR': 89,
+ 'IWS': 90,
+ 'IWV': 91,
+ 'IWW': 92,
+ 'JNT': 93,
+ 'JOZ': 94,
+ 'JRY': 95,
+ 'JSN': 96,
+ 'JSR': 97,
+ 'JST': 98,
+ 'JSW': 99,
+ 'JSY': 100,
+ 'JZT': 101,
+ 'KFI': 102,
+ 'LAU': 103,
+ 'LEV': 104,
+ 'LIO': 105,
+ 'LOS': 106,
+ 'LOV': 107,
+ 'LTF': 108,
+ 'LTJ': 109,
+ 'MAR': 110,
+ 'MAZ': 111,
+ 'MEI': 112,
+ 'MEP': 113,
+ 'MFS': 114,
+ 'MON': 115,
+ 'MOZ': 116,
+ 'MRT': 117,
+ 'MSE': 118,
+ 'MSO': 119,
+ 'MTF': 120,
+ 'MTN': 121,
+ 'MTT': 122,
+ 'MVY': 123,
+ 'MWW': 124,
+ 'NAB': 125,
+ 'NES': 126,
+ 'NON': 127,
+ 'NPT': 128,
+ 'NSI': 129,
+ 'OBW': 130,
+ 'OFF': 131,
+ 'OKO': 132,
+ 'OSI': 133,
+ 'OSO': 134,
+ 'OWE': 135,
+ 'PCR': 136,
+ 'PHI': 137,
+ 'PON': 138,
+ 'POR': 139,
+ 'POS': 140,
+ 'PSI': 141,
+ 'PTF': 142,
+ 'PTO': 143,
+ 'PTT': 144,
+ 'PTY': 145,
+ 'PWW': 146,
+ 'RFE': 147,
+ 'RRO': 148,
+ 'RTE': 149,
+ 'RTH': 150,
+ 'RUT': 151,
+ 'RWR': 152,
+ 'RWY': 153,
+ 'SAF': 154,
+ 'SAO': 155,
+ 'SAS': 156,
+ 'SAT': 157,
+ 'SAV': 158,
+ 'SBE': 159,
+ 'SBN': 160,
+ 'SBS': 161,
+ 'SBT': 162,
+ 'SEW': 163,
+ 'SFE': 164,
+ 'SFF': 165,
+ 'SFG': 166,
+ 'SFH': 167,
+ 'SFN': 168,
+ 'SFO': 169,
+ 'SFS': 170,
+ 'SFW': 171,
+ 'SGT': 172,
+ 'SIV': 173,
+ 'SOD': 174,
+ 'SOF': 175,
+ 'SOR': 176,
+ 'SOS': 177,
+ 'SOV': 178,
+ 'SSF': 179,
+ 'SSY': 180,
+ 'STF': 181,
+ 'STI': 182,
+ 'STT': 183,
+ 'STW': 184,
+ 'SVV': 185,
+ 'SWY': 186,
+ 'SZR': 187,
+ 'TER': 188,
+ 'THO': 189,
+ 'TOL': 190,
+ 'TUN': 191,
+ 'UEI': 192,
+ 'UFI': 193,
+ 'UOS': 194,
+ 'UOV': 195,
+ 'UOZ': 196,
+ 'USI': 197,
+ 'UTL': 198,
+ 'UWY': 199,
+ 'VET': 200,
+ 'VFI': 201,
+ 'VNI': 202,
+ 'VSV': 203,
+ 'WEI': 204,
+ 'YUG': 205,
+ 'ZON': 206,
+ 'FER': 207,
+ 'BEC': 208,
+ 'FAU': 209,
+ 'DDR': 210,
+ 'MTW': 211,
+ 'MFI': 212,
+ 'TON': 213,
+ 'RHO': 214,
+ 'MEL': 215,
+ 'MOR': 216,
+ 'HEU': 217,
+ 'ERI': 218,
+ 'LTA': 219,
+ 'YFI': 220,
+ 'CHA': 221,
+ 'LTL': 222,
+ 'NAT': 223,
+ 'MER': 224}
+
 def build_mlp(in_dim, hidden_dim, fc_num_layers, out_dim):
     mods = [nn.Linear(in_dim, hidden_dim), nn.ReLU()]
     for i in range(fc_num_layers-1):
@@ -50,7 +275,7 @@ def build_mlp(in_dim, hidden_dim, fc_num_layers, out_dim):
 class CondPrior(nn.Module):
     def __init__(self, cond_dim, z_dim, embed=True, hoa_conditional=False):
         super(CondPrior, self).__init__()
-        self.emb = nn.Embedding(len(ZEOLITE_CODES_MAPPING_SMALL.keys()), 128)
+        self.emb = nn.Embedding(len(ZEOLITE_CODES_MAPPING_ALL_CODES.keys()) + 1, 128)
         if embed:
             # The +1 is to account for the normalized HOA
             if hoa_conditional:
@@ -76,7 +301,11 @@ class CondPrior(nn.Module):
         if embed:
             if hoa_conditional:
                 condition = self.emb(condition_frame)
-                condition = torch.cat([condition, condition_hoa.unsqueeze(1)], dim=1)
+                #print(condition)
+                #print(condition_hoa)
+                #print(condition.shape)
+                #print(condition_hoa.shape)
+                condition = torch.cat([condition, condition_hoa], dim=1)
             else:
                 condition = self.emb(condition_frame)
         
@@ -129,6 +358,10 @@ class DiffusionModel(BaseModule):
         self.fc_composition = build_mlp(self.hparams.latent_dim, self.hparams.hidden_dim,
                                         self.hparams.fc_num_layers, MAX_ATOMIC_NUM)
 
+        if self.hparams.predict_property:
+            self.fc_property = build_mlp(self.hparams.latent_dim, self.hparams.hidden_dim,
+                                         self.hparams.fc_num_layers, 1)
+
         sigmas = torch.tensor(np.exp(np.linspace(
             np.log(self.hparams.sigma_begin),
             np.log(self.hparams.sigma_end),
@@ -153,7 +386,7 @@ class DiffusionModel(BaseModule):
             else:
                 self.pz = CondPrior(1, self.hparams.latent_dim, embed=True, hoa_conditional=True)
                 self.conditional = True
-                self.hoa_conditional = False
+                self.hoa_conditional = True
     
 
         # These are passed from the datamodule after both it and the model have been initialized
@@ -277,6 +510,7 @@ class DiffusionModel(BaseModule):
             pred_cart_coord_diff, pred_atom_types = self.decoder(z, noisy_frac_coords, rand_atom_types, batch.num_atoms, batch.lengths, batch.angles)
 
         if self.conditional:
+            # print(batch["zeolite_code_enc"])
             p_mu, p_log_var = self.pz(batch['zeolite_code_enc'], batch["norm_hoa"], embed=True, hoa_conditional=self.hoa_conditional)
 
         # compute loss.
@@ -289,7 +523,10 @@ class DiffusionModel(BaseModule):
         type_loss = self.type_loss(pred_atom_types, batch.atom_types,
                                    used_type_sigmas_per_atom, batch)
 
-        kld_loss = self.kld_loss(mu, log_var, p_mu, p_log_var)
+        if self.conditional:
+            kld_loss = self.kld_loss(mu, log_var, p_mu, p_log_var)
+        else:
+            kld_loss = self.kld_loss(mu, log_var)
 
         if self.hparams.predict_property:
             property_loss = self.property_loss(z, batch)
@@ -486,7 +723,7 @@ class DiffusionModel(BaseModule):
                 zs = []
                 for domain in domains:
                     for hoa in hoas:
-                        z_mu, z_log_var = self.pz(torch.tensor([ZEOLITE_CODES_MAPPING_SMALL[domain]], device=self.device), 
+                        z_mu, z_log_var = self.pz(torch.tensor([ZEOLITE_CODES_MAPPING_ALL_CODES[domain]], device=self.device), 
                                                 torch.tensor([hoa], device=self.device), 
                                                 embed=True)
                         pz = dist.Normal(z_mu.squeeze(), z_log_var.exp().squeeze())
@@ -497,7 +734,7 @@ class DiffusionModel(BaseModule):
             else:
                 zs = []
                 for domain in domains:
-                    z_mu, z_log_var = self.pz(torch.tensor([ZEOLITE_CODES_MAPPING_SMALL[domain]], device=self.device), 
+                    z_mu, z_log_var = self.pz(torch.tensor([ZEOLITE_CODES_MAPPING_ALL_CODES[domain]], device=self.device), 
                                             torch.tensor([hoa], device=self.device), 
                                             embed=True, hoa_conditional=False)
                     pz = dist.Normal(z_mu.squeeze(), z_log_var.exp().squeeze())
@@ -541,7 +778,7 @@ class DiffusionModel(BaseModule):
         return F.cross_entropy(pred_num_atoms, batch.num_atoms)
 
     def property_loss(self, z, batch):
-        return F.mse_loss(self.fc_property(z), batch.y)
+        return F.l1_loss(self.fc_property(z), batch.y)
 
     def lattice_loss(self, pred_lengths_and_angles, batch):
         self.lattice_scaler.match_device(pred_lengths_and_angles)
@@ -556,9 +793,16 @@ class DiffusionModel(BaseModule):
         return F.mse_loss(pred_lengths_and_angles, target_lengths_and_angles)
 
     def composition_loss(self, pred_composition_per_atom, target_atom_types, batch):
+        # print(pred_composition_per_atom.shape)
+        # print(f"Target atom types shape: {target_atom_types.shape}")
+        # print(f"Batch.batch dimensions: {batch.batch.shape}")
+        batch_cpu = batch.batch.cpu()
+        # print(f"Min batch.batch {batch_cpu.min()}")
+        # print(f"Max batch.batch {batch_cpu.max()}")
         target_atom_types = target_atom_types - 1
         loss = F.cross_entropy(pred_composition_per_atom,
                                target_atom_types, reduction='none')
+        # print(f"Loss shape {loss.shape}")
         return scatter(loss, batch.batch, reduce='mean').mean()
 
     def coord_loss(self, pred_cart_coord_diff, noisy_frac_coords,
@@ -591,18 +835,25 @@ class DiffusionModel(BaseModule):
         loss = loss / used_type_sigmas_per_atom
         return scatter(loss, batch.batch, reduce='mean').mean()
 
-    def kld_loss(self, mu1, log_var1, mu2, log_var2):
-        var1 = log_var1.exp()  # Variance of q1
-        var2 = log_var2.exp()  # Variance of q2
+    def kld_loss(self, mu1, log_var1, mu2=None, log_var2=None):
+        if mu2 is not None and log_var2 is not None:
+            var1 = log_var1.exp()  # Variance of q1
+            var2 = log_var2.exp()  # Variance of q2
 
-        kld = 0.5 * torch.sum(
-            log_var2 - log_var1
-            - 1
-            + var1 / var2
-            + (mu2 - mu1).pow(2) / var2,
-            dim=1  # Sum over dimensions of the latent space
-        )
-        return kld.mean()  # Mean over the batch
+            kld = 0.5 * torch.sum(
+                log_var2 - log_var1
+                - 1
+                + var1 / var2
+                + (mu2 - mu1).pow(2) / var2,
+                dim=1  # Sum over dimensions of the latent space
+            )
+            
+            return kld.mean()  # Mean over the batch
+        else:
+            kld_loss = torch.mean(
+                -0.5 * torch.sum(1 + log_var1 - mu1**2 - log_var1.exp(), dim=1), dim=0)
+            
+            return kld_loss
 
     def training_step(self, batch: Any, batch_idx: int) -> torch.Tensor:
         teacher_forcing = (

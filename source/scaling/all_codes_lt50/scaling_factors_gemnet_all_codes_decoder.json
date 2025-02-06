@@ -1,0 +1,20 @@
+{
+    "comment": "gemnet scaling factors",
+    "TripInteraction_1_had_rbf": 19.855384826660156,
+    "TripInteraction_1_sum_cbf": 18.548181533813477,
+    "AtomUpdate_1_sum": 3.832064628601074,
+    "TripInteraction_2_had_rbf": 18.772769927978516,
+    "TripInteraction_2_sum_cbf": 17.88451385498047,
+    "AtomUpdate_2_sum": 3.626574754714966,
+    "TripInteraction_3_had_rbf": 18.478790283203125,
+    "TripInteraction_3_sum_cbf": 17.162269592285156,
+    "AtomUpdate_3_sum": 3.5270862579345703,
+    "OutBlock_0_sum": 4.625271320343018,
+    "OutBlock_0_had": 19.298263549804688,
+    "OutBlock_1_sum": 4.081906318664551,
+    "OutBlock_1_had": 18.47256088256836,
+    "OutBlock_2_sum": 4.013089179992676,
+    "OutBlock_2_had": 17.68113136291504,
+    "OutBlock_3_sum": 3.8172030448913574,
+    "OutBlock_3_had": 16.5236759185791
+}

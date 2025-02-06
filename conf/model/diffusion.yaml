@@ -4,12 +4,13 @@ latent_dim: 256
 fc_num_layers: 1
 max_atoms: 600
 cost_natom: 1.
-cost_coord: 10.
-cost_type: 1.
-cost_lattice: 10.
-cost_composition: 1.
-cost_edge: 10.
+cost_coord: 100.
+cost_type: 100.
+cost_lattice: 1.
+cost_composition: 100.
+cost_edge: 1.
 cost_property: 1.
+#TODO: Try with higher and lower beta for the all codes dataset just ot see  what happens with KLD loss
 beta: 0.01
 teacher_forcing_lattice: true
 teacher_forcing_max_epoch: ${data.teacher_forcing_max_epoch}
@@ -20,9 +21,9 @@ sigma_end: 0.01
 type_sigma_begin: 10.
 type_sigma_end: 0.01
 num_noise_level: 50
-predict_property: False
+predict_property: True
 ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/legacy_150e_256_cond_total_10_smallest.ckpt
-conditional: True
+conditional: False
 hoa_conditional: False
 
 defaults:

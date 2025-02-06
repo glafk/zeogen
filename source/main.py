@@ -10,7 +10,6 @@ from hydra.core.hydra_config import HydraConfig
 from pytorch_lightning.loggers import WandbLogger
 from diffusion_model import DiffusionModel
 import notebooks
-from data_utils.sampler import ZeoSampler
 import env
 
 # Load environment variables

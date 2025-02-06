@@ -47,10 +47,10 @@ os.chdir(PROJECT_ROOT)
 #@hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="diffusion")
 def fit_scaling(): 
 
-    num_batches = 128  # number of batches to use to fit a single variable
-    decoder_scale_file = "source/scaling/total_dataset/scaling_factors_gemnet_legacy_run_decoder.json"
-    encoder_scale_file = "source/scaling/total_dataset/scaling_factors_gemnet_legacy_run_encoder.json"
-    # Print current directory
+    num_batches = 256  # number of batches to use to fit a single variable
+    decoder_scale_file = "source/scaling/all_codes_lt50/scaling_factors_gemnet_small_decoder.json"
+    encoder_scale_file = "source/scaling/all_codes_lt50/scaling_factors_gemnet_small_encoder.json"
+    # Print current directory_
     print(f"DIR {os.getcwd()}")
     # logging.info(f"Target scale file: {scale_file}")
 
@@ -102,8 +102,8 @@ def fit_scaling():
         hydra.utils.log.info(f"Passing scaler from datamodule to model <{datamodule.scaler}>")
         model.lattice_scaler = datamodule.lattice_scaler.copy()
         model.scaler = datamodule.scaler.copy()
-        torch.save(datamodule.lattice_scaler, 'lattice_scaler_legacy.pt')
-        torch.save(datamodule.scaler, 'prop_scaler_legacy.pt')
+        torch.save(datamodule.lattice_scaler, 'lattice_scaler_small.pt')
+        torch.save(datamodule.scaler, 'prop_scaler_small.pt')
 
         # Get the test dataloader from the datamodule
         train_dataloader = datamodule.train_dataloader()
