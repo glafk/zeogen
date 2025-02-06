@@ -286,7 +286,7 @@ def run_reconstruction_cdivae_v3(cfg: DictConfig, model: CDiVAE_v3 = None):
                 {"n_step_each": 100, 
                  "step_lr": 0.0001, 
                  "min_sigma": 0.01, 
-                 "save_traj": True, 
+                 "save_traj": False, 
                  "disable_bar": False}), 
                  reconstructions_path, 
                  ground_truth_path,
@@ -366,7 +366,8 @@ def run_sampling_cdivae_v3(cfg: DictConfig, model: CDiVAE_v3 = None):
                 "disable_bar": False}), 
             kwargs_conf_name=f"samples-kwargs-{cfg.model.experiment_name_to_load}",
             domains=cfg.model.domains,
-            norm_hoas=cfg.model.norm_hoas)
+            norm_hoas=cfg.model.norm_hoas,
+            domains_per_batch=20)
 
     print(f"Saving samples to {cfg.model.samples_file}.")
     samples_path = os.path.join(f"{PROJECT_ROOT}/samples", cfg.model.samples_file)

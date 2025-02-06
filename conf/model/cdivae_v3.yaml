@@ -32,6 +32,7 @@ type_sigma_begin: 0.3
 type_sigma_end: 0.05
 num_noise_level: 20
 predict_property: False
+crf: False
 
 # Logging and loading parameters
 load_model: true
@@ -39,10 +40,10 @@ model_location: wandb
 ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model-150-epochs-MFI-only.ckpt # not applicable if model is on WandB
 
 # From which experiment the model should be loaded for continuted training, sampling and reconstruction
-experiment_name_to_load: final_cdivae_150e_small
+experiment_name_to_load: final_cdivae_150e_all_codes
 
 # Training
-run_training: true
+run_training: false
 resume_from_checkpoint: false
 
 # Reconstruction
@@ -52,10 +53,23 @@ reconstructions_file: reconstructions-${expname}.pickle
 save_reconstructions_online: true
 
 # Sampling
-run_sampling: false
+run_sampling: true
 num_samples_per_domain: 5
 # domains: ["MOR"]
-domains: ['YFI', 'MTW', 'ITW', 'MEL', 'TON', 'LTL', 'NAT', 'LTA', 'RHO', 'BEC', 'FER', 'HEU', 'DDR', 'ERI', 'FAU', 'CHA', 'MOR', 'MER', 'MFI']
+domains: [
+    'BOF', 'BOG', 'BOZ', 'BPH', 'BRE', 'BSV', 'CAN', 'CAS', 'CDO', 'CFI', 'CGF', 'CGS', 'CON', 'CSV', 'CZP', 'DAC', 
+    'DFO', 'DFT', 'DOH', 'DON', 'EAB', 'EEI', 'EMT', 'EON', 'EOS', 'EPI', 'ESV', 'ETL', 'ETR', 'ETV', 'EUO', 'EWF', 
+    'EWO', 'EWS', 'EZT', 'FAR', 'FRA', 'GIS', 'GIU', 'GME', 'GON', 'GOO', 'IFO', 'IFR', 'IFW', 'IFY', 'IHW', 'IRN', 
+    'IRR', 'ISV', 'ITE', 'ITG', 'ITH', 'ITR', 'ITT', 'ITW', 'IWR', 'IWS', 'IWV', 'IWW', 'JNT', 'JOZ', 'JRY', 'JSN', 
+    'JSR', 'JST', 'JSW', 'JSY', 'JZT', 'KFI', 'LAU', 'LEV', 'LIO', 'LOS', 'LOV', 'LTF', 'LTJ', 'MAR', 'MAZ', 'MEI', 
+    'MEP', 'MFS', 'MON', 'MOZ', 'MRT', 'MSE', 'MSO', 'MTF', 'MTN', 'MTT', 'MVY', 'MWW', 'NAB', 'NES', 'NON', 'NPT', 
+    'NSI', 'OBW', 'OFF', 'OKO', 'OSI', 'OSO', 'OWE', 'PCR', 'PHI', 'PON', 'POR', 'POS', 'PSI', 'PTF', 'PTO', 'PTT', 
+    'PTY', 'PWW', 'RFE', 'RRO', 'RTE', 'RTH', 'RUT', 'RWR', 'RWY', 'SAF', 'SAO', 'SAS', 'SAT', 'SAV', 'SBE', 'SBN', 
+    'SBS', 'SBT', 'SEW', 'SFE', 'SFF', 'SFG', 'SFH', 'SFN', 'SFO', 'SFS', 'SFW', 'SGT', 'SIV', 'SOD', 'SOF', 'SOR', 
+    'SOS', 'SOV', 'SSF', 'SSY', 'STF', 'STI', 'STT', 'STW', 'SVV', 'SWY', 'SZR', 'TER', 'THO', 'TOL', 'TUN', 'UEI', 
+    'UFI', 'UOS', 'UOV', 'UOZ', 'USI', 'UTL', 'UWY', 'VET', 'VFI', 'VNI', 'VSV', 'WEI', 'YUG', 'ZON', 'FER', 'BEC', 
+    'FAU', 'DDR', 'MTW', 'MFI', 'TON', 'RHO', 'MEL', 'MOR', 'HEU', 'ERI', 'LTA', 'YFI', 'CHA', 'LTL', 'NAT', 'MER'
+]
 norm_hoas: [0.0, 0.5, 1.0, 1.5, 2.0]
 samples_file: samples-${expname}.pickle
 save_samples_online: true

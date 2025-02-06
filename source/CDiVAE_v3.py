@@ -205,7 +205,10 @@ class CDiVAE_v3(BaseModule):
         self.fc_composition = build_mlp(self.hparams.class_latent_dim, self.hparams.hidden_dim,
                                         self.hparams.fc_num_layers, 1, final_activation="hard_sigmoid")
 
-        self.crf_layer = CRF(2, batch_first=True)
+        if self.hparams.crf:
+            self.crf_layer = CRF(2, batch_first=True)
+        else:
+            self.crf_layer = None
 
         sigmas = torch.tensor(np.exp(np.linspace(
             np.log(self.hparams.sigma_begin),
@@ -288,12 +291,6 @@ class CDiVAE_v3(BaseModule):
             if self.hparams.teacher_forcing_lattice and teacher_forcing:
                 lengths = gt_lengths
                 angles = gt_angles
-        # elif gt_num_atoms is not None and num_atoms_forcing:
-        #     num_atoms = self.predict_num_atoms(zd)
-        #     lengths = self.predict_lenghts(zd, gt_num_atoms)
-        #     angles = self.predict_angles(zd)
-        #     lengths_and_angles = torch.cat([lengths, angles], dim=-1)
-        #     composition_per_crystal = self.predict_composition(zy, gt_num_atoms)
         else:
             num_atoms = self.predict_num_atoms(zd)
             num_atoms_copy = num_atoms.clone().detach()
@@ -646,11 +643,12 @@ class CDiVAE_v3(BaseModule):
                     all_atom_types.append(cur_atom_types)
 
         # Comment out the CRF layer for now
-        # crystal_logits = torch.split(pred_atom_types, num_atoms.clone().detach().cpu().numpy().tolist())
-        # padded_logits = pad_sequence(crystal_logits, batch_first=True)
-        # mask = pad_sequence([torch.ones(seq, dtype=torch.uint8) for seq in num_atoms], batch_first=True).to(self.device)
-        # pred_atom_types = self.crf_layer.decode(padded_logits, mask=mask.bool())
-        # cur_atom_types = torch.cat([torch.tensor(crystal) for crystal in pred_atom_types]).to(self.device) + 13
+        if self.crf_layer is not None:
+            crystal_logits = torch.split(pred_atom_types, num_atoms.clone().detach().cpu().numpy().tolist())
+            padded_logits = pad_sequence(crystal_logits, batch_first=True)
+            mask = pad_sequence([torch.ones(seq, dtype=torch.uint8) for seq in num_atoms], batch_first=True).to(self.device)
+            pred_atom_types = self.crf_layer.decode(padded_logits, mask=mask.bool())
+            cur_atom_types = torch.cat([torch.tensor(crystal) for crystal in pred_atom_types]).to(self.device) + 13
         
         output_dict = {'zd': zd.cpu().numpy(), 'zy': zy.cpu().numpy(),
                        'num_atoms': num_atoms.cpu().numpy(), 'lengths': lengths.cpu().numpy(), 'angles': angles.cpu().numpy(),
@@ -672,91 +670,151 @@ class CDiVAE_v3(BaseModule):
 
         return output_dict
 
-    def sample(self, num_samples_per_domain, ld_kwargs, kwargs_conf_name, domains, norm_hoas):
-        """
-        Samples crystals and optionally saves them.
+    # def sample(self, num_samples_per_domain, ld_kwargs, kwargs_conf_name, domains, norm_hoas):
+    #     """
+    #     Samples crystals and optionally saves them.
 
+    #     Args:
+    #         num_samples_per_domain (int): Number of samples to generate per domain.
+    #         ld_kwargs (dict): Keyword arguments for the Langevin dynamics method.
+    #         kwargs_conf_name (str, optional): Name for the WandB artifact for the config.
+    #         domains (list): Domains for which to generate samples
+    #         norm_hoas (list): Conditional normalized HOA for each samples 
+    #             to be taken for each domain. Length should be equal to num_samples  
+
+    #     Returns:
+    #         samples (Tensor): The generated samples.
+    #     """
+    #     # Log the LD configuration
+    #     log_config_to_wandb(ld_kwargs, kwargs_conf_name, auxiliary_config=True)
+
+    #     # Make sure norm_hoas has the same length as num_samples
+    #     # This way for each generated sample per zeolite type we can have different HOAs
+    #     assert len(norm_hoas) == num_samples_per_domain
+
+    #     # Here in the sampling part I will need to figure out how to force the model to sample from the part of the distribution where the representations of the "high-capacity" crystals lie
+        
+    #     print(f"Sampling {num_samples_per_domain} crystals per domain with the following HOAs: {norm_hoas}.")
+    #     print(f"Domains: {domains}")
+
+    #     all_samples = [] 
+    #     for domain in domains:
+    #         if len(domain.split('/')) == 1:
+    #             print(f"Sampling domain: {domain}")
+    #             # Here we are in the case where we condition on a single domain which we have seen
+    #             zd_p_loc, zd_p_scale = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain]], device=self.device), embed=True)
+    #             zy_p_loc, zy_p_scale = self.pzy(torch.tensor([norm_hoas], device=self.device).view(-1, 1)) 
+                
+    #             pzd = dist.Normal(zd_p_loc, zd_p_scale)
+    #             zd_per_hoa = pzd.sample(sample_shape=(num_samples_per_domain, 1)).squeeze()
+    #             # zd_per_hoa = zd.repeat(num_samples_per_domain, 1)
+
+    #             pzy = dist.Normal(zy_p_loc, zy_p_scale)
+    #             zy = pzy.sample()
+                
+    #             hoa_mu_pred = self.hoa_mu_predictor(zd_per_hoa)
+    #             hoa_mu_pred = self.prop_mu_scaler.inverse_transform(hoa_mu_pred)
+    #             hoa_std_pred = self.hoa_std_predictor(zd_per_hoa)
+    #             hoa_std_pred = self.prop_std_scaler.inverse_transform(hoa_std_pred)
+    #             norm_hoa_pred = self.norm_hoa_predictor(zy)
+    #             domains_pred = self.domain_predictor(zd_per_hoa)
+    #             pred_hoas = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
+    #             samples = self.langevin_dynamics(zd_per_hoa, zy, ld_kwargs, domain, norm_hoas, pred_hoas, norm_hoa_pred, domains_pred)
+    #             all_samples.extend([samples])
+    #         else:
+    #             domain = domain.split('/')
+    #             # Here we are in the case where we condition on multiple domains and interpolate between them
+    #             zd_p_loc_1, zd_p_scale_1 = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain[0]]], device=self.device), embed=True)
+    #             zd_p_loc_2, zd_p_scale_2 = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain[1]]], device=self.device), embed=True)
+    #             zy_p_loc, zy_p_scale = self.pzy(torch.tensor([norm_hoas], device=self.device).view(-1, 1))
+    #             # For now only interpolate with a weight of 0.5. We could do something more sophisticated later
+    #             # like interpolating with a weight of 0.1, 0.3, 0.6, 0.9
+
+    #             pzd_1 = dist.Normal(zd_p_loc_1, zd_p_scale_1)
+    #             zd_1 = pzd_1.sample(sample_shape=(num_samples_per_domain, 1)).squeeze()
+
+    #             pzd_2 = dist.Normal(zd_p_loc_2, zd_p_scale_2)
+    #             zd_2 = pzd_2.sample(sample_shape=(num_samples_per_domain, 1)).squeeze()
+
+    #             zd_interpolated = torch.lerp(zd_1, zd_2, 0.5)
+    #             zd_per_hoa = zd_interpolated.repeat(num_samples_per_domain, 1)
+
+    #             pzy = dist.Normal(zy_p_loc, zy_p_scale)
+    #             zy = pzy.sample()
+
+    #             hoa_mu_pred = self.hoa_mu_predictor(zd_per_hoa)
+    #             hoa_mu_pred = self.prop_mu_scaler.inverse_transform(hoa_mu_pred)
+    #             hoa_std_pred = self.hoa_std_predictor(zd_per_hoa)
+    #             hoa_std_pred = self.prop_std_scaler.inverse_transform(hoa_std_pred)
+    #             norm_hoa_pred = self.norm_hoa_predictor(zy)
+    #             pred_hoas = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
+
+    #             samples = self.langevin_dynamics(zd_per_hoa, zy, ld_kwargs, domain, norm_hoas, pred_hoas)
+    #             all_samples.extend([samples])
+
+    #     return all_samples   
+
+
+    def sample(self, num_samples_per_domain, ld_kwargs, kwargs_conf_name, domains, norm_hoas, domains_per_batch):
+        """
+        Samples crystals in a batched manner based on domains_per_batch.
+        
         Args:
             num_samples_per_domain (int): Number of samples to generate per domain.
             ld_kwargs (dict): Keyword arguments for the Langevin dynamics method.
             kwargs_conf_name (str, optional): Name for the WandB artifact for the config.
-            domains (list): Domains for which to generate samples
-            norm_hoas (list): Conditional normalized HOA for each samples 
-                to be taken for each domain. Length should be equal to num_samples  
-
+            domains (list): Domains for which to generate samples.
+            norm_hoas (list): Conditional normalized HOA for each sample.
+            domains_per_batch (int): Number of domains to sample in each batch.
+        
         Returns:
             samples (Tensor): The generated samples.
         """
-        # Log the LD configuration
         log_config_to_wandb(ld_kwargs, kwargs_conf_name, auxiliary_config=True)
-
-        # Make sure norm_hoas has the same length as num_samples
-        # This way for each generated sample per zeolite type we can have different HOAs
         assert len(norm_hoas) == num_samples_per_domain
 
-        # Here in the sampling part I will need to figure out how to force the model to sample from the part of the distribution where the representations of the "high-capacity" crystals lie
-        
         print(f"Sampling {num_samples_per_domain} crystals per domain with the following HOAs: {norm_hoas}.")
         print(f"Domains: {domains}")
 
-        all_samples = [] 
-        for domain in domains:
-            if len(domain.split('/')) == 1:
-                print(f"Sampling domain: {domain}")
-                # Here we are in the case where we condition on a single domain which we have seen
-                zd_p_loc, zd_p_scale = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain]], device=self.device), embed=True)
-                zy_p_loc, zy_p_scale = self.pzy(torch.tensor([norm_hoas], device=self.device).view(-1, 1)) 
+        all_samples = []
+        
+        # Process domains in batches
+        for i in range(0, len(domains), domains_per_batch):
+            batch_domains = domains[i:i + domains_per_batch]
+            print(f"Processing batch: {batch_domains}")
+            
+            if '/' in batch_domains[0]:  # Handling mixed domains
+                domain_tensors_1 = torch.tensor([ZEOLITE_CODES_MAPPING[d.split('/')[0]] for d in batch_domains], device=self.device)
+                domain_tensors_2 = torch.tensor([ZEOLITE_CODES_MAPPING[d.split('/')[1]] for d in batch_domains], device=self.device)
                 
-                pzd = dist.Normal(zd_p_loc, zd_p_scale)
-                zd_per_hoa = pzd.sample(sample_shape=(num_samples_per_domain, 1)).squeeze()
-                # zd_per_hoa = zd.repeat(num_samples_per_domain, 1)
-
-                pzy = dist.Normal(zy_p_loc, zy_p_scale)
-                zy = pzy.sample()
+                zd_p_loc_1, zd_p_scale_1 = self.pzd(domain_tensors_1, embed=True)
+                zd_p_loc_2, zd_p_scale_2 = self.pzd(domain_tensors_2, embed=True)
                 
-                hoa_mu_pred = self.hoa_mu_predictor(zd_per_hoa)
-                hoa_mu_pred = self.prop_mu_scaler.inverse_transform(hoa_mu_pred)
-                hoa_std_pred = self.hoa_std_predictor(zd_per_hoa)
-                hoa_std_pred = self.prop_std_scaler.inverse_transform(hoa_std_pred)
-                norm_hoa_pred = self.norm_hoa_predictor(zy)
-                domains_pred = self.domain_predictor(zd_per_hoa)
-                pred_hoas = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
-                samples = self.langevin_dynamics(zd_per_hoa, zy, ld_kwargs, domain, norm_hoas, pred_hoas, norm_hoa_pred, domains_pred)
-                all_samples.extend([samples])
+                zd_samples_1 = dist.Normal(zd_p_loc, zd_p_scale).sample(sample_shape=(num_samples_per_domain,)).view(-1, 128)
+                zd_samples_2 = dist.Normal(zd_p_loc, zd_p_scale).sample(sample_shape=(num_samples_per_domain,)).view(-1, 128)
+                
+                zd_per_hoa_batch = torch.lerp(zd_samples_1, zd_samples_2, 0.5)
             else:
-                domain = domain.split('/')
-                # Here we are in the case where we condition on multiple domains and interpolate between them
-                zd_p_loc_1, zd_p_scale_1 = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain[0]]], device=self.device), embed=True)
-                zd_p_loc_2, zd_p_scale_2 = self.pzd(torch.tensor([ZEOLITE_CODES_MAPPING[domain[1]]], device=self.device), embed=True)
-                zy_p_loc, zy_p_scale = self.pzy(torch.tensor([norm_hoas], device=self.device).view(-1, 1))
-                # For now only interpolate with a weight of 0.5. We could do something more sophisticated later
-                # like interpolating with a weight of 0.1, 0.3, 0.6, 0.9
+                domain_tensors = torch.tensor([ZEOLITE_CODES_MAPPING[d] for d in batch_domains], device=self.device)
+                zd_p_loc, zd_p_scale = self.pzd(domain_tensors, embed=True)
+                zd_per_hoa_batch = dist.Normal(zd_p_loc, zd_p_scale).sample(sample_shape=(num_samples_per_domain,)).view(-1, 128)
+            
+            zy_p_loc, zy_p_scale = self.pzy(torch.tensor([norm_hoas] * len(batch_domains), device=self.device).view(-1, 1))
+            zy_batch = dist.Normal(zy_p_loc, zy_p_scale).sample()
+            
+            hoa_mu_pred = self.hoa_mu_predictor(zd_per_hoa_batch)
+            hoa_mu_pred = self.prop_mu_scaler.inverse_transform(hoa_mu_pred)
+            hoa_std_pred = self.hoa_std_predictor(zd_per_hoa_batch)
+            hoa_std_pred = self.prop_std_scaler.inverse_transform(hoa_std_pred)
+            norm_hoa_pred = self.norm_hoa_predictor(zy_batch)
+            domains_pred = self.domain_predictor(zd_per_hoa_batch)
+            pred_hoas = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
+            
+            samples = self.langevin_dynamics(zd_per_hoa_batch, zy_batch, ld_kwargs, batch_domains, norm_hoas, pred_hoas, norm_hoa_pred, domains_pred)
+            all_samples.extend([samples])
+        
+        return all_samples
 
-                pzd_1 = dist.Normal(zd_p_loc_1, zd_p_scale_1)
-                zd_1 = pzd_1.sample(sample_shape=(num_samples_per_domain, 1)).squeeze()
-
-                pzd_2 = dist.Normal(zd_p_loc_2, zd_p_scale_2)
-                zd_2 = pzd_2.sample(sample_shape=(num_samples_per_domain, 1)).squeeze()
-
-                zd_interpolated = torch.lerp(zd_1, zd_2, 0.5)
-                zd_per_hoa = zd_interpolated.repeat(num_samples_per_domain, 1)
-
-                pzy = dist.Normal(zy_p_loc, zy_p_scale)
-                zy = pzy.sample()
-
-                hoa_mu_pred = self.hoa_mu_predictor(zd_per_hoa)
-                hoa_mu_pred = self.prop_mu_scaler.inverse_transform(hoa_mu_pred)
-                hoa_std_pred = self.hoa_std_predictor(zd_per_hoa)
-                hoa_std_pred = self.prop_std_scaler.inverse_transform(hoa_std_pred)
-                norm_hoa_pred = self.norm_hoa_predictor(zy)
-                pred_hoas = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
-
-                samples = self.langevin_dynamics(zd_per_hoa, zy, ld_kwargs, domain, norm_hoas, pred_hoas)
-                all_samples.extend([samples])
-
-        return all_samples   
-
-    # TODO: Refactor recosntruction 
     def reconstruct(self, batch, ld_kwargs, reconstructions_path, ground_truth_path, kwargs_conf_name):
         """
         Reconstructs materials from a dataset sample using the Langevin dynamics method.

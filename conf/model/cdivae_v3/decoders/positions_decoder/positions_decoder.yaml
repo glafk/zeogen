@@ -4,4 +4,4 @@ hidden_dim_edge_emb: 128
 latent_dim: ${model.domain_latent_dim}
 max_neighbors: ${model.max_neighbors}
 radius: ${model.radius}
-scale_file: ${oc.env:PROJECT_ROOT}/source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_small_lt50_CDiVAE.json
+scale_file: ${oc.env:PROJECT_ROOT}/source/scaling_factors/cdivae_v3/pos_decoder_scaling_factors_all_codes_CDiVAE.json

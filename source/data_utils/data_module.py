@@ -105,8 +105,8 @@ class CrystDataModule(pl.LightningDataModule):
         """
         print("Setting up data module")
         if stage == "fit":
-            train_preprocessed_path = self.datasets.train.path.split('.')[0] + '_preprocessed_lt50.pt'
-            val_preprocessed_path = self.datasets.val.path.split('.')[0] + '_preprocessed_lt50.pt'
+            train_preprocessed_path = self.datasets.train.path.split('.')[0] + '_preprocessed.pt'
+            val_preprocessed_path = self.datasets.val.path.split('.')[0] + '_preprocessed.pt'
             if os.path.exists(train_preprocessed_path) and os.path.exists(val_preprocessed_path):
                 self.train_dataset = torch.load(train_preprocessed_path)
                 self.val_dataset = torch.load(val_preprocessed_path)
@@ -129,7 +129,7 @@ class CrystDataModule(pl.LightningDataModule):
             self.val_dataset.prop_std_scaler = self.prop_std_scaler
 
         if stage == "test":
-            test_preprocessed_path = self.datasets.test.path.split('.')[0] + '_preprocessed_lt50.pt'
+            test_preprocessed_path = self.datasets.test.path.split('.')[0] + '_preprocessed.pt'
             if os.path.exists(test_preprocessed_path):
                 self.test_dataset = torch.load(test_preprocessed_path)
             else:
@@ -145,7 +145,7 @@ class CrystDataModule(pl.LightningDataModule):
             self.test_dataset.prop_std_scaler = self.prop_std_scaler
 
         if stage == "predict":
-            predict_preprocessed_path = self.datasets.predict.path.split('.')[0] + '_preprocessed_lt50.pt'
+            predict_preprocessed_path = self.datasets.predict.path.split('.')[0] + '_preprocessed.pt'
             if os.path.exists(predict_preprocessed_path):
                 self.predict_dataset = torch.load(predict_preprocessed_path)
             else:
