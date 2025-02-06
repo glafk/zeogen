@@ -42,17 +42,17 @@ ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model-150-epochs-MFI-only.ck
 experiment_name_to_load: final_cdivae_150e_small
 
 # Training
-run_training: false
+run_training: true
 resume_from_checkpoint: false
 
 # Reconstruction
 run_reconstruction: false
-num_reconstructions: 10
+num_reconstructions: 100
 reconstructions_file: reconstructions-${expname}.pickle
 save_reconstructions_online: true
 
 # Sampling
-run_sampling: True
+run_sampling: false
 num_samples_per_domain: 5
 # domains: ["MOR"]
 domains: ['YFI', 'MTW', 'ITW', 'MEL', 'TON', 'LTL', 'NAT', 'LTA', 'RHO', 'BEC', 'FER', 'HEU', 'DDR', 'ERI', 'FAU', 'CHA', 'MOR', 'MER', 'MFI']

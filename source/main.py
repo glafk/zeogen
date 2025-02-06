@@ -197,7 +197,10 @@ def run_reconstruction(cfg: DictConfig, model: DiffusionModel = None):
     reconstructions_path = os.path.join(f"{PROJECT_ROOT}/reconstructions", cfg.model.reconstructions_file)
     ground_truth_path = os.path.join(f"{PROJECT_ROOT}/reconstructions", cfg.model.reconstructions_file.split('.')[0] + "_gt.pickle")
 
-    for batch in predict_dataloader:
+    for i, batch in enumerate(predict_dataloader):
+        if i>= cfg.model.num_reconstructions:
+            break
+
         batch = batch.to("cuda")
         with torch.no_grad():  # No need to track gradients during inference
             model.reconstruct(batch, DictConfig(
@@ -271,7 +274,10 @@ def run_reconstruction_cdivae_v3(cfg: DictConfig, model: CDiVAE_v3 = None):
 
     print(len(predict_dataloader))
     counter = 1
-    for batch in predict_dataloader:
+    for i, batch in enumerate(predict_dataloader):
+        if i >= cfg.model.num_reconstructions:
+            break
+        
         print(f"processsing batch {counter}")
         batch = batch.to("cuda")
         with torch.no_grad():  # No need to track gradients during inference

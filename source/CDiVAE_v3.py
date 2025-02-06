@@ -205,7 +205,7 @@ class CDiVAE_v3(BaseModule):
         self.fc_composition = build_mlp(self.hparams.class_latent_dim, self.hparams.hidden_dim,
                                         self.hparams.fc_num_layers, 1, final_activation="hard_sigmoid")
 
-        # self.crf_layer = CRF(2, batch_first=True)
+        self.crf_layer = CRF(2, batch_first=True)
 
         sigmas = torch.tensor(np.exp(np.linspace(
             np.log(self.hparams.sigma_begin),
@@ -454,19 +454,19 @@ class CDiVAE_v3(BaseModule):
             _, pred_atom_types = self.types_decoder(
                     zy, pred_frac_coords, noisy_atom_types, batch.num_atoms, pred_lengths, pred_angles)
 
-        # unique_crystal_ids = batch.batch.unique()
-        # atom_types = batch.atom_types - 13
-        # crystal_logits = [torch.index_select(pred_atom_types, 0, torch.nonzero(batch.batch == cid, as_tuple=True)[0]) for cid in unique_crystal_ids]
-        # crystal_labels = [torch.index_select(atom_types, 0, torch.nonzero(batch.batch == cid, as_tuple=True)[0]) for cid in unique_crystal_ids]
+        unique_crystal_ids = batch.batch.unique()
+        atom_types = batch.atom_types - 13
+        crystal_logits = [torch.index_select(pred_atom_types, 0, torch.nonzero(batch.batch == cid, as_tuple=True)[0]) for cid in unique_crystal_ids]
+        crystal_labels = [torch.index_select(atom_types, 0, torch.nonzero(batch.batch == cid, as_tuple=True)[0]) for cid in unique_crystal_ids]
 
-        # padded_logits = pad_sequence(crystal_logits, batch_first=True)  # Shape: [batch_size, max_num_atoms, 2]
-        # padded_labels = pad_sequence(crystal_labels, batch_first=True)  # Shape: [batch_size, max_num_atoms]
-        # mask = pad_sequence([torch.ones(len(seq), dtype=torch.uint8) for seq in crystal_labels], batch_first=True).to(self.device)
+        padded_logits = pad_sequence(crystal_logits, batch_first=True)  # Shape: [batch_size, max_num_atoms, 2]
+        padded_labels = pad_sequence(crystal_labels, batch_first=True)  # Shape: [batch_size, max_num_atoms]
+        mask = pad_sequence([torch.ones(len(seq), dtype=torch.uint8) for seq in crystal_labels], batch_first=True).to(self.device)
 
         # # Unlike the other losses which are calucalted after the fowrard pass
         # # this one is calculated directly by the CRF layer
-        # type_loss = -self.crf_layer(padded_logits, padded_labels, mask=mask.bool())
-        # pred_atom_types = self.crf_layer.decode(padded_logits, mask=mask.bool())
+        type_loss = -self.crf_layer(padded_logits, padded_labels, mask=mask.bool())
+        pred_atom_types = self.crf_layer.decode(padded_logits, mask=mask.bool())
 
         # Predict domain and HOA
         domain_pred = self.domain_predictor(zd)
@@ -496,7 +496,7 @@ class CDiVAE_v3(BaseModule):
             'pred_angles': pred_angles,
             'pred_cart_coord_diff': pred_cart_coord_diff,
             'pred_atom_types': pred_atom_types,
-            # 'type_loss': type_loss,
+            'type_loss': type_loss,
             'pred_si_ratio_per_crystal': pred_si_ratio_per_crystal,
             # 'pred_composition_ratio': pred_composition_ratio,
             'used_sigmas_per_atom': used_sigmas_per_atom,
@@ -722,7 +722,7 @@ class CDiVAE_v3(BaseModule):
                 domains_pred = self.domain_predictor(zd_per_hoa)
                 pred_hoas = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
                 samples = self.langevin_dynamics(zd_per_hoa, zy, ld_kwargs, domain, norm_hoas, pred_hoas, norm_hoa_pred, domains_pred)
-                all_samples.extend(samples)
+                all_samples.extend([samples])
             else:
                 domain = domain.split('/')
                 # Here we are in the case where we condition on multiple domains and interpolate between them
@@ -752,7 +752,7 @@ class CDiVAE_v3(BaseModule):
                 pred_hoas = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
 
                 samples = self.langevin_dynamics(zd_per_hoa, zy, ld_kwargs, domain, norm_hoas, pred_hoas)
-                all_samples.extend(samples)
+                all_samples.extend([samples])
 
         return all_samples   
 
@@ -789,7 +789,7 @@ class CDiVAE_v3(BaseModule):
         norm_hoa_pred = self.norm_hoa_predictor(zy)
         pred_hoa = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
 
-        reconstruction = self.langevin_dynamics(zd, zy, ld_kwargs, pred_domain, norm_hoa_pred, pred_hoa)
+        reconstruction = self.langevin_dynamics(zd, zy, ld_kwargs, batch["zeolite_code"], batch["norm_hoa"], pred_hoa, norm_hoa_pred, pred_domain)
 
         add_object(reconstruction, reconstructions_path)
         add_object(batch, ground_truth_path)
@@ -895,7 +895,7 @@ class CDiVAE_v3(BaseModule):
         pred_si_ratio_per_crystal = outputs['pred_si_ratio_per_crystal']
         pred_cart_coord_diff = outputs['pred_cart_coord_diff']
         pred_atom_types = outputs['pred_atom_types']
-        # type_loss = outputs['type_loss']
+        type_loss = outputs['type_loss']
         noisy_frac_coords = outputs['noisy_frac_coords']
         used_sigmas_per_atom = outputs['used_sigmas_per_atom']
         type_noise = outputs['type_noise']
@@ -920,8 +920,8 @@ class CDiVAE_v3(BaseModule):
             pred_si_ratio_per_crystal, batch)
         coord_loss = self.coord_loss(
             pred_cart_coord_diff, noisy_frac_coords, used_sigmas_per_atom, batch)
-        type_loss = self.type_loss(pred_atom_types, batch.atom_types,
-                                   type_noise, batch)
+        # type_loss = self.type_loss(pred_atom_types, batch.atom_types,
+        #                           type_noise, batch)
 
         kld_loss_d = self.kld_loss(zd_q_loc, zd_q_scale, zd_p_loc, zd_p_scale, zd)
         kld_loss_y = self.kld_loss(zy_q_loc, zy_q_scale, zy_p_loc, zy_p_scale, zy)
@@ -992,11 +992,20 @@ class CDiVAE_v3(BaseModule):
             # evaluate atom type prediction.
             pred_atom_types = outputs['pred_atom_types']
             target_atom_types = outputs['target_atom_types']
-            # flattened_pred_atom_types = [pred for predictions in pred_atom_types for pred in predictions]
-            pred_atom_types = pred_atom_types.argmax(dim=-1)
+            
+            # THIS IS NEEDED WHEN WE HAVE THE CRF LAYER
+            flattened_pred_atom_types = [pred for predictions in pred_atom_types for pred in predictions]
+            
+            # THIS IS NEEDED IF WE DON'T HAVE THE CRF LAYER
+            # pred_atom_types = pred_atom_types.argmax(dim=-1)
             type_accuracy = pred_atom_types == (target_atom_types - 13)
-            type_accuracy = scatter(type_accuracy.float(
-            ), batch.batch, dim=0, reduce='mean').mean()
+            
+            # With CRF layer
+            type_accuracy = scatter(type_accuracy, batch.batch, dim=0, reduce='mean').mean()
+            
+            # NO CRF layer
+            # type_accuracy = scatter(type_accuracy.float(
+            # ), batch.batch, dim=0, reduce='mean').mean()
 
             # Evaluate aluminum atom predictions
             al_mask = target_atom_types == 13
@@ -1004,7 +1013,10 @@ class CDiVAE_v3(BaseModule):
             al_type_accuracy = pred_atom_types[al_mask] == (target_atom_types[al_mask] - 13)
 
             # Calculate the mean accuracy over the selected atoms and scatter to the batch level
-            al_type_accuracy = scatter(al_type_accuracy.float(), batch.batch[al_mask], dim=0, reduce='mean').mean()
+            # With CRF layer
+            al_type_accuracy = scatter(al_type_accuracy, batch.batch[al_mask], dim=0, reduce='mean').mean()
+            # NO CRF layer
+            # al_type_accuracy = scatter(al_type_accuracy.float(), batch.batch[al_mask], dim=0, reduce='mean').mean()
 
             # Evaluate predicted domains
             domain_accuracy = domain_pred.argmax(dim=-1) == batch.zeolite_code_enc

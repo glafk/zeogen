@@ -1,4 +1,4 @@
-expname: sample_zdivae_small
+expname: final_zdivae_crf_150e_small_lt50
 # metadata specialised for each experiment
 core:
   version: 1.0.0
