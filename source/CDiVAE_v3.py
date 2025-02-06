@@ -995,17 +995,20 @@ class CDiVAE_v3(BaseModule):
             
             # THIS IS NEEDED WHEN WE HAVE THE CRF LAYER
             flattened_pred_atom_types = [pred for predictions in pred_atom_types for pred in predictions]
-            
+            pred_atom_types = torch.tensor(flattened_pred_atom_types)
+            pred_atom_types = pred_atom_types.to(target_atom_types.device)
+
             # THIS IS NEEDED IF WE DON'T HAVE THE CRF LAYER
             # pred_atom_types = pred_atom_types.argmax(dim=-1)
-            type_accuracy = pred_atom_types == (target_atom_types - 13)
             
+            type_accuracy = pred_atom_types == (target_atom_types - 13)
+
             # With CRF layer
-            type_accuracy = scatter(type_accuracy, batch.batch, dim=0, reduce='mean').mean()
+            # type_accuracy = scatter(type_accuracy, batch.batch, dim=0, reduce='mean').mean()
             
             # NO CRF layer
-            # type_accuracy = scatter(type_accuracy.float(
-            # ), batch.batch, dim=0, reduce='mean').mean()
+            type_accuracy = scatter(type_accuracy.float(
+                ), batch.batch, dim=0, reduce='mean').mean()
 
             # Evaluate aluminum atom predictions
             al_mask = target_atom_types == 13
@@ -1014,9 +1017,9 @@ class CDiVAE_v3(BaseModule):
 
             # Calculate the mean accuracy over the selected atoms and scatter to the batch level
             # With CRF layer
-            al_type_accuracy = scatter(al_type_accuracy, batch.batch[al_mask], dim=0, reduce='mean').mean()
+            # al_type_accuracy = scatter(al_type_accuracy, batch.batch[al_mask], dim=0, reduce='mean').mean()
             # NO CRF layer
-            # al_type_accuracy = scatter(al_type_accuracy.float(), batch.batch[al_mask], dim=0, reduce='mean').mean()
+            al_type_accuracy = scatter(al_type_accuracy.float(), batch.batch[al_mask], dim=0, reduce='mean').mean()
 
             # Evaluate predicted domains
             domain_accuracy = domain_pred.argmax(dim=-1) == batch.zeolite_code_enc

@@ -141,6 +141,7 @@ def run_training(cfg: DictConfig):
             accelerator="gpu",
             # accelerator='cpu',
             callbacks=[checkpoint_callback],
+            # Add gradient clipping for CRF layer to prevent NaNs
             # detect_anomaly=True
         )
 
