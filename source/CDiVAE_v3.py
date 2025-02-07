@@ -653,7 +653,7 @@ class CDiVAE_v3(BaseModule):
         output_dict = {'zd': zd.cpu().numpy(), 'zy': zy.cpu().numpy(),
                        'num_atoms': num_atoms.cpu().numpy(), 'lengths': lengths.cpu().numpy(), 'angles': angles.cpu().numpy(),
                        'frac_coords': cur_frac_coords.cpu().numpy(), 'atom_types': cur_atom_types.cpu().numpy(),
-                       'domains': [domain] * len(norm_hoas), 'norm_hoas': norm_hoas,
+                       'domains': domain * len(norm_hoas), 'norm_hoas': norm_hoas,
                        'pred_hoas': pred_hoas.cpu().numpy(),
                        'pred_norm_hoas': pred_norm_hoas.cpu().numpy(),
                        'pred_domains': pred_domains.cpu().numpy(),
@@ -799,7 +799,7 @@ class CDiVAE_v3(BaseModule):
                 zd_p_loc, zd_p_scale = self.pzd(domain_tensors, embed=True)
                 zd_per_hoa_batch = dist.Normal(zd_p_loc, zd_p_scale).sample(sample_shape=(num_samples_per_domain,)).view(-1, 128)
             
-            zy_p_loc, zy_p_scale = self.pzy(torch.tensor([norm_hoas] * len(batch_domains), device=self.device).view(-1, 1))
+            zy_p_loc, zy_p_scale = self.pzy(torch.tensor([norm_hoa for norm_hoa in norm_hoas for _ in range(len(batch_domains))], device=self.device).view(-1, 1))
             zy_batch = dist.Normal(zy_p_loc, zy_p_scale).sample()
             
             hoa_mu_pred = self.hoa_mu_predictor(zd_per_hoa_batch)
@@ -848,6 +848,8 @@ class CDiVAE_v3(BaseModule):
         pred_hoa = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
 
         reconstruction = self.langevin_dynamics(zd, zy, ld_kwargs, batch["zeolite_code"], batch["norm_hoa"], pred_hoa, norm_hoa_pred, pred_domain)
+
+        reconstructions =  []
 
         add_object(reconstruction, reconstructions_path)
         add_object(batch, ground_truth_path)
