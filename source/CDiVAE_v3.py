@@ -854,14 +854,11 @@ class CDiVAE_v3(BaseModule):
         norm_hoa_pred = self.norm_hoa_predictor(zy)
         pred_hoa = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
 
-        reconstruction = self.langevin_dynamics(zd, zy, ld_kwargs, batch["zeolite_code"], batch["norm_hoa"], pred_hoa, norm_hoa_pred, pred_domain, reconstruction=True)
+        reconstructions = self.langevin_dynamics(zd, zy, ld_kwargs, batch["zeolite_code"], batch["norm_hoa"], pred_hoa, norm_hoa_pred, pred_domain, reconstruction=True)
 
-        # TODO: Split the reconstruction into separate samples after batch processing
-        
-        reconstructions =  []
-
-        add_object(reconstruction, reconstructions_path)
-        add_object(batch, ground_truth_path)
+        batch_dict_serializable = {key: tensor for key, tensor in batch.items()}
+        add_object([reconstructions], reconstructions_path)
+        add_object([batch_dict_serializable], ground_truth_path)
     # endregion
     
     # region LOSSES

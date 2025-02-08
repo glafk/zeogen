@@ -40,7 +40,7 @@ model_location: wandb
 ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/model-150-epochs-MFI-only.ckpt # not applicable if model is on WandB
 
 # From which experiment the model should be loaded for continuted training, sampling and reconstruction
-experiment_name_to_load: final_cdivae_150e_all_codes
+experiment_name_to_load: final_cdivae_150e_small
 
 # Training
 run_training: false
@@ -48,7 +48,7 @@ resume_from_checkpoint: false
 
 # Reconstruction
 run_reconstruction: true
-num_reconstructions: 1000
+num_reconstructions: 100
 reconstructions_file: reconstructions-${expname}.pickle
 save_reconstructions_online: true
 

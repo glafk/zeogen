@@ -1,4 +1,4 @@
-expname: recon_zdivae_all_codes
+expname: recon_zdivae_small_debug
 # metadata specialised for each experiment
 core:
   version: 1.0.0
@@ -10,7 +10,7 @@ hydra:
     dir: ${oc.env:HYDRA_JOBS}/singlerun/${now:%Y-%m-%d}/${expname}/
 
 defaults:
-  - data: data_all_codes
+  - data: data_small
   - model: cdivae_v3
   - optim: optim
   - train: train
