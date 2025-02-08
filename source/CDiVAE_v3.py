@@ -568,7 +568,7 @@ class CDiVAE_v3(BaseModule):
 
     # region SAMPLING
     @torch.no_grad()
-    def langevin_dynamics(self, zd, zy, ld_kwargs, domain, norm_hoas, pred_hoas, pred_norm_hoas, pred_domains, gt_num_atoms=None, gt_atom_types=None):
+    def langevin_dynamics(self, zd, zy, ld_kwargs, domain, norm_hoas, pred_hoas, pred_norm_hoas, pred_domains, gt_num_atoms=None, gt_atom_types=None, reconstruction=False):
         """
         decode crystral structure from latent embeddings.
         ld_kwargs: args for doing annealed langevin dynamics sampling:
@@ -649,14 +649,21 @@ class CDiVAE_v3(BaseModule):
             mask = pad_sequence([torch.ones(seq, dtype=torch.uint8) for seq in num_atoms], batch_first=True).to(self.device)
             pred_atom_types = self.crf_layer.decode(padded_logits, mask=mask.bool())
             cur_atom_types = torch.cat([torch.tensor(crystal) for crystal in pred_atom_types]).to(self.device) + 13
-        
+        if reconstruction:
+            domains = domain
+        else:
+            domains = domain * len(norm_hoas) 
+
+        # Parse predicted domains to codes
+        reverse_zeolite_codes_dict = {v: k for k, v in ZEOLITE_CODES_MAPPING.items()}
+        pred_domains = [reverse_zeolite_codes_dict[index] for index in pred_domains.argmax(dim=1).cpu().numpy()]
         output_dict = {'zd': zd.cpu().numpy(), 'zy': zy.cpu().numpy(),
                        'num_atoms': num_atoms.cpu().numpy(), 'lengths': lengths.cpu().numpy(), 'angles': angles.cpu().numpy(),
                        'frac_coords': cur_frac_coords.cpu().numpy(), 'atom_types': cur_atom_types.cpu().numpy(),
-                       'domains': domain * len(norm_hoas), 'norm_hoas': norm_hoas,
+                       'domains': domains, 'norm_hoas': norm_hoas,
                        'pred_hoas': pred_hoas.cpu().numpy(),
                        'pred_norm_hoas': pred_norm_hoas.cpu().numpy(),
-                       'pred_domains': pred_domains.cpu().numpy(),
+                       'pred_domains': pred_domains,
                        'is_traj': False}
 
         if ld_kwargs.save_traj:
@@ -847,8 +854,10 @@ class CDiVAE_v3(BaseModule):
         norm_hoa_pred = self.norm_hoa_predictor(zy)
         pred_hoa = norm_hoa_pred * hoa_std_pred + hoa_mu_pred
 
-        reconstruction = self.langevin_dynamics(zd, zy, ld_kwargs, batch["zeolite_code"], batch["norm_hoa"], pred_hoa, norm_hoa_pred, pred_domain)
+        reconstruction = self.langevin_dynamics(zd, zy, ld_kwargs, batch["zeolite_code"], batch["norm_hoa"], pred_hoa, norm_hoa_pred, pred_domain, reconstruction=True)
 
+        # TODO: Split the reconstruction into separate samples after batch processing
+        
         reconstructions =  []
 
         add_object(reconstruction, reconstructions_path)

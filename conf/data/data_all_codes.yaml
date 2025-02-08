@@ -30,7 +30,7 @@ datamodule:
       graph_method: ${data.graph_method}
       lattice_scale_method: ${data.lattice_scale_method}
       preprocess_workers: ${data.preprocess_workers}
-      # max_zeolite_size: 50
+      max_zeolite_size: 50
       #top_k: 10
       #sort: "smallest"
       # num_records: 64
@@ -45,7 +45,7 @@ datamodule:
       graph_method: ${data.graph_method}
       lattice_scale_method: ${data.lattice_scale_method}
       preprocess_workers: ${data.preprocess_workers}
-      # max_zeolite_size: 50
+      max_zeolite_size: 50
       #top_k: 10
       #sort: "smallest"
       # num_records: 64
@@ -60,7 +60,7 @@ datamodule:
       graph_method: ${data.graph_method}
       lattice_scale_method: ${data.lattice_scale_method}
       preprocess_workers: ${data.preprocess_workers}
-      # max_zeolite_size: 50
+      max_zeolite_size: 50
       #top_k: 10
       #sort: "smallest"
       # num_records: 16
@@ -75,7 +75,7 @@ datamodule:
       graph_method: ${data.graph_method}
       lattice_scale_method: ${data.lattice_scale_method}
       preprocess_workers: ${data.preprocess_workers}
-      # max_zeolite_size: 50
+      max_zeolite_size: 50
       #top_k: 10
       #sort: "smallest"
       num_records: 10
@@ -100,4 +100,4 @@ datamodule:
     train: 32
     val: 32
     test: 32
-    predict: 1
+    predict: 64

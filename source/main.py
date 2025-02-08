@@ -244,7 +244,14 @@ def run_reconstruction_cdivae_v3(cfg: DictConfig, model: CDiVAE_v3 = None):
         elif cfg.model.model_location == "wandb":
             assert cfg.model.experiment_name_to_load is not None, "Please provide an experiment name"
             model_path, model_dir = load_from_wandb(cfg.model.experiment_name_to_load)
+            checkpoint = torch.load(model_path)
+            # Replace the hyperparameters with the current config to make sure
+            # the model can be loaded
+            checkpoint["hyper_parameters"] = cfg.model
+            torch.save(checkpoint, model_path)
+            print(f"Loading model from downloaded file at {model_path}")
             model = CDiVAE_v3.load_from_checkpoint(model_path)
+            # model = CDiVAE_v3.load_from_checkpoint(model_path)
 
             # Clean up downloaded files
             shutil.rmtree(model_dir)
@@ -324,13 +331,11 @@ def run_sampling_cdivae_v3(cfg: DictConfig, model: CDiVAE_v3 = None):
             assert cfg.model.experiment_name_to_load is not None, "Please provide an experiment name"
             model_path, model_dir = load_from_wandb(cfg.model.experiment_name_to_load)
             checkpoint = torch.load(model_path)
-            print(checkpoint.keys())
             # Replace the hyperparameters with the current config to make sure
             # the model can be loaded
             checkpoint["hyper_parameters"] = cfg.model
             torch.save(checkpoint, model_path)
             print(f"Loading model from downloaded file at {model_path}")
-            print("State dict keys:", checkpoint["state_dict"].keys())
             model = CDiVAE_v3.load_from_checkpoint(model_path)
 
             # Clean up downloaded files
@@ -362,7 +367,7 @@ def run_sampling_cdivae_v3(cfg: DictConfig, model: CDiVAE_v3 = None):
                 {"n_step_each": 100,
                 "step_lr": 0.0001, 
                 "min_sigma": 0.01,
-                "save_traj": True, 
+                "save_traj": False, 
                 "disable_bar": False}), 
             kwargs_conf_name=f"samples-kwargs-{cfg.model.experiment_name_to_load}",
             domains=cfg.model.domains,
