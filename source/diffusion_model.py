@@ -632,7 +632,7 @@ class DiffusionModel(BaseModule):
 
 
     @torch.no_grad()
-    def langevin_dynamics(self, z, ld_kwargs, gt_num_atoms=None, gt_atom_types=None):
+    def langevin_dynamics(self, z, ld_kwargs, gt_num_atoms=None, gt_atom_types=None, pred_hoas=None, domains=None, hoas=None):
         """
         decode crystral structure from latent embeddings.
         ld_kwargs: args for doing annealed langevin dynamics sampling:
@@ -702,7 +702,18 @@ class DiffusionModel(BaseModule):
                        'angles': angles.cpu().numpy(),
                        'frac_coords': cur_frac_coords.cpu().numpy(),
                        'atom_types': cur_atom_types.cpu().numpy(),
+                       'pred_hoas': pred_hoas,
                        'is_traj': False}
+
+        if domains is not None and domains.size(0) > 0:
+            output_dict.update(dict(
+                domains=domains,
+            ))
+
+        if hoas is not None and hoas.size(0) > 0:
+            output_dict.update(dict(
+                hoas=hoas,
+            ))
 
         if ld_kwargs.save_traj:
             output_dict.update(dict(
@@ -717,6 +728,8 @@ class DiffusionModel(BaseModule):
 
     def sample(self, num_samples, ld_kwargs, save_samples=False, samples_file="samples.pickle", domains=None, hoas=None):
         # Here in the sampling part I will need to figure out how to force the model to sample from the part of the distribution where the representations of the "high-capacity" crystals lie
+        domains_log = []
+        hoas_log = []
         if self.conditional:
             if self.hoa_conditional:
                 assert num_samples == len(hoas)
@@ -727,8 +740,11 @@ class DiffusionModel(BaseModule):
                                                 torch.tensor([hoa], device=self.device), 
                                                 embed=True)
                         pz = dist.Normal(z_mu.squeeze(), z_log_var.exp().squeeze())
+                        # Sample one per domain per hoa
                         sample_n = pz.sample((1,))
                         zs.append(sample_n)
+                        hoas_log.extend([hoa])
+                    domains_log.extend([domain] * len(hoas))
 
                 z = torch.cat(zs)
             else:
@@ -738,16 +754,19 @@ class DiffusionModel(BaseModule):
                                             torch.tensor([hoa], device=self.device), 
                                             embed=True, hoa_conditional=False)
                     pz = dist.Normal(z_mu.squeeze(), z_log_var.exp().squeeze())
-                    sample_n = pz.sample((1,))
+                    # Sample num_samples//len(domains) per domain, to end up witht he presribed number of samples
+                    sample_n = pz.sample((num_samples//len(domains),))
                     zs.append(sample_n)
 
                 z = torch.cat(zs)
         else:
+            domains_log = None
+            hoas_log = None
             print(f"Saving sampled crystals - {save_samples}.")
             z = torch.randn(num_samples, self.hparams.latent_dim,
                             device=self.device)
-        
-        samples = self.langevin_dynamics(z, ld_kwargs)
+        pred_hoas = self.fc_property(z) 
+        samples = self.langevin_dynamics(z, ld_kwargs, pred_hoas=pred_hoas, domains=domains_log, hoas=hoas_log)
 
         # if self.conditional:
         #     domains_list = [domain for domain in domains for _ in range(num_samples)]
@@ -765,7 +784,10 @@ class DiffusionModel(BaseModule):
         # Reconstruct materials from dataset sample
         mu, log_var, z, hidden = self.encode(batch)
 
-        reconstruction = self.langevin_dynamics(z, ld_kwargs)
+        pred_hoas = self.fc_property(z)
+        domains_log = batch["zeolite_code"].tolist()
+        hoas_log = batch["norm_hoa"].tolist()
+        reconstruction = self.langevin_dynamics(z, ld_kwargs, pred_hoas=pred_hoas, domains=domains_log, hoas=hoas_log)
 
         print(f"Saving reconstructions to {reconstructions_file}.")
         reconstructions_path = os.path.join(f"{PROJECT_ROOT}/reconstructions", reconstructions_file)

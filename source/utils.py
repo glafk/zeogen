@@ -18,5 +18,5 @@ def save_objects(objects, pickle_file):
 # Function to add an object to the list and save it
 def add_object(new_object, pickle_file):
     objects = load_objects(pickle_file)
-    objects.append(new_object)
+    objects.extend(new_object)
     save_objects(objects, pickle_file)

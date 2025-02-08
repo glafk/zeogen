@@ -172,3 +172,10 @@ data/combined_dataset_small/*.pt
 
 samples/
 reconstructions/
+data/gen_data_with_hoa/
+data/all_codes_dataset_splits/
+parsed_reconstructions/
+wandb/
+weights/
+parsed_samples_low_noise_small_LR/
+data/all_codes_dataset/*.pt
