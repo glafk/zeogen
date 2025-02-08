@@ -100,4 +100,4 @@ datamodule:
     train: 32
     val: 32
     test: 32
-    predict: 64
+    predict: 25

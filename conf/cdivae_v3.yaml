@@ -1,4 +1,4 @@
-expname: final_zdivae_all_codes_lt50
+expname: recon_zdivae_all_codes
 # metadata specialised for each experiment
 core:
   version: 1.0.0

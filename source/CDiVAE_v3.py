@@ -451,19 +451,19 @@ class CDiVAE_v3(BaseModule):
             _, pred_atom_types = self.types_decoder(
                     zy, pred_frac_coords, noisy_atom_types, batch.num_atoms, pred_lengths, pred_angles)
 
-        unique_crystal_ids = batch.batch.unique()
-        atom_types = batch.atom_types - 13
-        crystal_logits = [torch.index_select(pred_atom_types, 0, torch.nonzero(batch.batch == cid, as_tuple=True)[0]) for cid in unique_crystal_ids]
-        crystal_labels = [torch.index_select(atom_types, 0, torch.nonzero(batch.batch == cid, as_tuple=True)[0]) for cid in unique_crystal_ids]
+        # unique_crystal_ids = batch.batch.unique()
+        # atom_types = batch.atom_types - 13
+        # crystal_logits = [torch.index_select(pred_atom_types, 0, torch.nonzero(batch.batch == cid, as_tuple=True)[0]) for cid in unique_crystal_ids]
+        # crystal_labels = [torch.index_select(atom_types, 0, torch.nonzero(batch.batch == cid, as_tuple=True)[0]) for cid in unique_crystal_ids]
 
-        padded_logits = pad_sequence(crystal_logits, batch_first=True)  # Shape: [batch_size, max_num_atoms, 2]
-        padded_labels = pad_sequence(crystal_labels, batch_first=True)  # Shape: [batch_size, max_num_atoms]
-        mask = pad_sequence([torch.ones(len(seq), dtype=torch.uint8) for seq in crystal_labels], batch_first=True).to(self.device)
+        # padded_logits = pad_sequence(crystal_logits, batch_first=True)  # Shape: [batch_size, max_num_atoms, 2]
+        # padded_labels = pad_sequence(crystal_labels, batch_first=True)  # Shape: [batch_size, max_num_atoms]
+        # mask = pad_sequence([torch.ones(len(seq), dtype=torch.uint8) for seq in crystal_labels], batch_first=True).to(self.device)
 
         # # Unlike the other losses which are calucalted after the fowrard pass
         # # this one is calculated directly by the CRF layer
-        type_loss = -self.crf_layer(padded_logits, padded_labels, mask=mask.bool())
-        pred_atom_types = self.crf_layer.decode(padded_logits, mask=mask.bool())
+        # type_loss = -self.crf_layer(padded_logits, padded_labels, mask=mask.bool())
+        # pred_atom_types = self.crf_layer.decode(padded_logits, mask=mask.bool())
 
         # Predict domain and HOA
         domain_pred = self.domain_predictor(zd)
@@ -493,7 +493,7 @@ class CDiVAE_v3(BaseModule):
             'pred_angles': pred_angles,
             'pred_cart_coord_diff': pred_cart_coord_diff,
             'pred_atom_types': pred_atom_types,
-            'type_loss': type_loss,
+            # 'type_loss': type_loss,
             'pred_si_ratio_per_crystal': pred_si_ratio_per_crystal,
             # 'pred_composition_ratio': pred_composition_ratio,
             'used_sigmas_per_atom': used_sigmas_per_atom,
@@ -964,7 +964,7 @@ class CDiVAE_v3(BaseModule):
         pred_si_ratio_per_crystal = outputs['pred_si_ratio_per_crystal']
         pred_cart_coord_diff = outputs['pred_cart_coord_diff']
         pred_atom_types = outputs['pred_atom_types']
-        type_loss = outputs['type_loss']
+        # type_loss = outputs['type_loss']
         noisy_frac_coords = outputs['noisy_frac_coords']
         used_sigmas_per_atom = outputs['used_sigmas_per_atom']
         type_noise = outputs['type_noise']
@@ -989,8 +989,8 @@ class CDiVAE_v3(BaseModule):
             pred_si_ratio_per_crystal, batch)
         coord_loss = self.coord_loss(
             pred_cart_coord_diff, noisy_frac_coords, used_sigmas_per_atom, batch)
-        # type_loss = self.type_loss(pred_atom_types, batch.atom_types,
-        #                           type_noise, batch)
+        type_loss = self.type_loss(pred_atom_types, batch.atom_types,
+                                   type_noise, batch)
 
         kld_loss_d = self.kld_loss(zd_q_loc, zd_q_scale, zd_p_loc, zd_p_scale, zd)
         kld_loss_y = self.kld_loss(zy_q_loc, zy_q_scale, zy_p_loc, zy_p_scale, zy)
@@ -1063,12 +1063,12 @@ class CDiVAE_v3(BaseModule):
             target_atom_types = outputs['target_atom_types']
             
             # THIS IS NEEDED WHEN WE HAVE THE CRF LAYER
-            flattened_pred_atom_types = [pred for predictions in pred_atom_types for pred in predictions]
-            pred_atom_types = torch.tensor(flattened_pred_atom_types)
-            pred_atom_types = pred_atom_types.to(target_atom_types.device)
+            # flattened_pred_atom_types = [pred for predictions in pred_atom_types for pred in predictions]
+            # pred_atom_types = torch.tensor(flattened_pred_atom_types)
+            # pred_atom_types = pred_atom_types.to(target_atom_types.device)
 
             # THIS IS NEEDED IF WE DON'T HAVE THE CRF LAYER
-            # pred_atom_types = pred_atom_types.argmax(dim=-1)
+            pred_atom_types = pred_atom_types.argmax(dim=-1)
             
             type_accuracy = pred_atom_types == (target_atom_types - 13)
 

@@ -283,7 +283,7 @@ def run_reconstruction_cdivae_v3(cfg: DictConfig, model: CDiVAE_v3 = None):
     print(len(predict_dataloader))
     counter = 1
     for i, batch in enumerate(predict_dataloader):
-        if i >= cfg.model.num_reconstructions:
+        if i * cfg.data.datamodule.batch_size.predict >= cfg.model.num_reconstructions:
             break
         
         print(f"processsing batch {counter}")
