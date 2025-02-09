@@ -10,7 +10,9 @@ from hydra.core.hydra_config import HydraConfig
 from pytorch_lightning.loggers import WandbLogger
 from diffusion_model import DiffusionModel
 import notebooks
+from dataset_codes import SMALL_DATASET_CODES, ALL_CODES
 import env
+import wandb
 
 # Load environment variables
 env.load_envs()
@@ -120,14 +122,32 @@ def run_reconstruction(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
     predict_dataloader = datamodule.predict_dataloader()
     
     model = model.to("cuda")
-
-    for batch in predict_dataloader:
+    print(f"Saving reconstructions to {cfg.model.reconstructions_file}.")
+    reconstructions_path = os.path.join(f"{PROJECT_ROOT}/reconstructions", cfg.model.reconstructions_file)
+    gt_path = os.path.join(f"{PROJECT_ROOT}/reconstructions", cfg.model.reconstructions_file.split('.')[0] + "_gt.pickle")
+    counter = 1
+    for i, batch in enumerate(predict_dataloader):
+        if i * cfg.data.datamodule.batch_size.predict >= cfg.model.num_reconstructions:
+            break        
+        print(f"processsing batch {counter}")
         batch = batch.to("cuda")
         with torch.no_grad():  # No need to track gradients during inference
-            model.reconstruct(batch, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.0001, "min_sigma": 0.01, "save_traj": True, "disable_bar": False}),
-                              reconstructions_file="reconstructions-legacy-150e-cond_256_10_smallest.pickle")
+            model.reconstruct(batch, omegaconf.DictConfig({"n_step_each": 100, "step_lr": 0.0001, "min_sigma": 0.01, "save_traj": False, "disable_bar": False}), reconstructions_path=reconstructions_path, reconstructions_gt_path=gt_path)
+
+        if cfg.model.save_reconstructions_online:
+            artifact_recon = wandb.Artifact(cfg.model.reconstructions_file.split('.')[0], type='dataset')
+            artifact_recon.add_file(reconstructions_path)
+            artifact_recon_gt = wandb.Artifact(cfg.model.reconstructions_file.split('.')[0] + "_gt", type='dataset')
+            artifact_recon_gt.add_file(gt_path)
+            
+            wandb.log_artifact(artifact_recon)
+            wandb.log_artifact(artifact_recon_gt)
+
+            # Clean up the file so that it doesn't hang around
+            os.remove(reconstructions_path)
+            os.remove(gt_path)
     
-def run_sampling(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
+def run_sampling(cfg: omegaconf.DictConfig, model: DiffusionModel = None, domains_to_sample=None, domains_per_batch = None):
     if cfg.train.deterministic:
         seed_everything(cfg.train.random_seed)
     
@@ -152,29 +172,38 @@ def run_sampling(cfg: omegaconf.DictConfig, model: DiffusionModel = None):
     model.lattice_scaler = datamodule.lattice_scaler.copy()
     model.scaler = datamodule.scaler.copy()
 
-    datamodule.setup(stage="predict")
     model.eval()
-    predict_dataloader = datamodule.predict_dataloader()
 
     model = model.to("cuda")
+    samples_path = os.path.join(f"{PROJECT_ROOT}/samples", cfg.model.samples_file)
 
-    model.sample(5, omegaconf.DictConfig({"n_step_each": 100, 
-                                           "step_lr": 0.0001, 
-                                           "min_sigma": 0.01, 
-                                           "save_traj": True, 
-                                           "disable_bar": False}), 
-                                           save_samples=True, 
-                                           samples_file="samples-legacy-150e-cond_256_10_smallest.pickle",
-                                           domains=["NAT", "ITW", "TON", "LTA", "MTW"],
-                                           hoas=[0, 0.5, 1.0, 1.5, 2.0])
+    for i in range(0, len(domains_to_sample), domains_per_batch):
+        domains = domains_to_sample[i:i+domains_per_batch]
+        model.sample(cfg.model.samples_per_domain, omegaconf.DictConfig({"n_step_each": 100, 
+                                            "step_lr": 0.0001, 
+                                            "min_sigma": 0.01, 
+                                            "save_traj": False, 
+                                            "disable_bar": False}), 
+                                            save_samples=True, 
+                                            samples_path=samples_path,
+                                            domains=domains,
+                                            hoas=[0, 0.5, 1.0, 1.5, 2.0])
+        if cfg.model.save_samples_online:
+            artifact = wandb.Artifact(cfg.model.samples_file.split('.')[0], type='dataset')
+            artifact.add_file(samples_path)
+            wandb.log_artifact(artifact)
+
+            # Clean up the file so that it doesn't hang around
+            os.remove(samples_path)
 
 @hydra.main(config_path=str(PROJECT_ROOT / "conf"), config_name="diffusion")
 def main(cfg: omegaconf.DictConfig):
+    model = None
     # Run training and sampling loop
-    run_diffusion(cfg)
+    # model = run_diffusion(cfg)
     
     # Run only sampling from saved model
-    # run_sampling(cfg)
+    run_sampling(cfg, model, SMALL_DATASET_CODES, 3)
 
     # Run reconstruction from saved model
     # run_reconstruction(cfg)

@@ -78,7 +78,7 @@ datamodule:
       # max_zeolite_size: 50
       #top_k: 10
       #sort: "smallest"
-      num_records: 10
+      # num_records: 10
 
   # Comment out the scaler_path to fit to the new dataset. To be added in the future 
   # scaler_path: ${oc.env:PROJECT_ROOT}/source/scaling/small_dataset_lt50
@@ -96,4 +96,4 @@ datamodule:
     train: 32
     val: 32
     test: 32
-    predict: 1
+    predict: 25

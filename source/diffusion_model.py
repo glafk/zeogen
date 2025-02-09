@@ -16,6 +16,7 @@ from tqdm import tqdm
 import pickle
 from utils import add_object
 import torch.distributions as dist
+import torch.optim as optim
 
 from data_utils.crystal_utils import frac_to_cart_coords, cart_to_frac_coords, min_distance_sqr_pbc, mard, lengths_angles_to_volume
 
@@ -726,7 +727,20 @@ class DiffusionModel(BaseModule):
 
         return output_dict
 
-    def sample(self, num_samples, ld_kwargs, save_samples=False, samples_file="samples.pickle", domains=None, hoas=None):
+    def optimize_latent_embeddings(self, z, num_steps):
+        optimizer = optim.Adam([z], lr=0.01)
+
+        for step in range(num_steps):
+            optimizer.zero_grad()
+            hoa_pred = self.fc_property(z)
+            loss = -hoa_pred
+            loss.backward()
+            optimizer.step()
+
+        return z.detach()
+
+
+    def sample(self, num_samples, ld_kwargs, save_samples=False, samples_path="", domains=None, hoas=None):
         # Here in the sampling part I will need to figure out how to force the model to sample from the part of the distribution where the representations of the "high-capacity" crystals lie
         domains_log = []
         hoas_log = []
@@ -765,6 +779,9 @@ class DiffusionModel(BaseModule):
             print(f"Saving sampled crystals - {save_samples}.")
             z = torch.randn(num_samples, self.hparams.latent_dim,
                             device=self.device)
+
+        # Optimize for HOA using gradient ascent steps
+        self.optimize_latent_embeddings(z, 5000)
         pred_hoas = self.fc_property(z) 
         samples = self.langevin_dynamics(z, ld_kwargs, pred_hoas=pred_hoas, domains=domains_log, hoas=hoas_log)
 
@@ -774,27 +791,21 @@ class DiffusionModel(BaseModule):
         #         samples[i]["domain"] = domains_list[i]
 
         if save_samples:
-            print(f"Saving samples to {samples_file}.")
-            with open(os.path.join(f"{PROJECT_ROOT}/samples", samples_file), "wb") as f:
-                pickle.dump(samples, f)
-
+            add_object([samples], samples_path)
         return samples
 
-    def reconstruct(self, batch, ld_kwargs, reconstructions_file="reconstructions.pickle"):
+    def reconstruct(self, batch, ld_kwargs, reconstructions_path="", gt_path=""):
         # Reconstruct materials from dataset sample
         mu, log_var, z, hidden = self.encode(batch)
 
         pred_hoas = self.fc_property(z)
         domains_log = batch["zeolite_code"].tolist()
         hoas_log = batch["norm_hoa"].tolist()
-        reconstruction = self.langevin_dynamics(z, ld_kwargs, pred_hoas=pred_hoas, domains=domains_log, hoas=hoas_log)
+        reconstructions = self.langevin_dynamics(z, ld_kwargs, pred_hoas=pred_hoas, domains=domains_log, hoas=hoas_log)
 
-        print(f"Saving reconstructions to {reconstructions_file}.")
-        reconstructions_path = os.path.join(f"{PROJECT_ROOT}/reconstructions", reconstructions_file)
-        gt_path = os.path.join(f"{PROJECT_ROOT}/reconstructions", reconstructions_file.split('.')[0] + "_gt.pickle")
-
-        add_object(reconstruction, reconstructions_path)
-        add_object(batch, gt_path)
+        batch_dict_serializable = {key: tensor for key, tensor in batch.items()}
+        add_object([reconstructions], reconstructions_path)
+        add_object([batch_dict_serializable], gt_path)
 
     def num_atom_loss(self, pred_num_atoms, batch):
         return F.cross_entropy(pred_num_atoms, batch.num_atoms)
@@ -804,7 +815,6 @@ class DiffusionModel(BaseModule):
 
     def lattice_loss(self, pred_lengths_and_angles, batch):
         self.lattice_scaler.match_device(pred_lengths_and_angles)
-        # TODO: Here as well
         if self.hparams.data["lattice_scale_method"] == 'scale_length':
             target_lengths = batch.lengths / \
                 batch.num_atoms.view(-1, 1).float()**(1/3)
@@ -815,16 +825,9 @@ class DiffusionModel(BaseModule):
         return F.mse_loss(pred_lengths_and_angles, target_lengths_and_angles)
 
     def composition_loss(self, pred_composition_per_atom, target_atom_types, batch):
-        # print(pred_composition_per_atom.shape)
-        # print(f"Target atom types shape: {target_atom_types.shape}")
-        # print(f"Batch.batch dimensions: {batch.batch.shape}")
-        batch_cpu = batch.batch.cpu()
-        # print(f"Min batch.batch {batch_cpu.min()}")
-        # print(f"Max batch.batch {batch_cpu.max()}")
         target_atom_types = target_atom_types - 1
         loss = F.cross_entropy(pred_composition_per_atom,
                                target_atom_types, reduction='none')
-        # print(f"Loss shape {loss.shape}")
         return scatter(loss, batch.batch, reduce='mean').mean()
 
     def coord_loss(self, pred_cart_coord_diff, noisy_frac_coords,

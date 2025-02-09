@@ -22,9 +22,17 @@ type_sigma_begin: 10.
 type_sigma_end: 0.01
 num_noise_level: 50
 predict_property: True
-ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/legacy_150e_256_cond_total_10_smallest.ckpt
+ckpt_path: ${oc.env:PROJECT_ROOT}/model_checkpoints/final_base_cdvae_small.ckpt
 conditional: False
 hoa_conditional: False
+
+samples_file: "samples-sample_base_cdvae_small"
+samples_per_domain: 5
+save_samples_online: true 
+
+reconstructions_file: "reconstructions-recon_base_cdvae_small.pickle"
+save_reconstructions_online: true
+num_reconstructions: 100
 
 defaults:
   - encoder: gemnet_encoder
