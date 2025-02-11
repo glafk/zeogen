@@ -1,6 +1,8 @@
 import pickle
 import os
 import json
+import wandb
+import time
 
 import wandb
 from omegaconf import OmegaConf
@@ -122,22 +124,48 @@ def log_config_to_wandb(config, artifact_name="experiment_config", auxiliary_con
     # Clean up the file so that it doesn't hang around
     os.remove(config_filename)
 
-
 def retrieve_artifacts_by_name(experiment_name, artifact_type='dataset', project='zeogen', entity='glafk'):
-    api = wandb.Api()
-    
-    # Retrieve the runs with matching experiment name
-    runs = api.runs(f"{entity}/{project}", {"config.expname": experiment_name})
+    api = wandb.Api(timeout=300)  # Increase timeout to 5 minutes (default is 30s)
+
+    # Retrieve all runs
+    runs = api.runs(f"{entity}/{project}")
 
     artifact_files = []
     
     for run in runs:
-        # Retrieve the artifacts associated with each run
-        artifacts = run.use_artifacts(type=artifact_type)
+        if run.config.get("expname") == experiment_name or run.name == experiment_name:
+            print(f"Found run {experiment_name}. Retrieving artifacts...")
+            print(f"Run id {run.id}")
+            artifacts = run.logged_artifacts()
+
+            for artifact in artifacts:
+                if artifact.type == artifact_type:
+                    try:
+                        print(f"Downloading artifact: {artifact.name}...")
+                        artifact_dir = artifact.download()
+                        artifact_files.extend([os.path.join(artifact_dir, file) for file in artifact.manifest.entries.keys()])
+                    except Exception as e:
+                        print(f"Failed to download {artifact.name}: {e}")
+                        time.sleep(5)  # Wait before retrying
         
-        for artifact in artifacts:
-            # Download the artifact files
-            artifact_dir = artifact.download()
-            artifact_files.extend([os.path.join(artifact_dir, file) for file in artifact.manifest.entries.keys()])
-    
     return artifact_files
+
+# def retrieve_artifacts_by_name(experiment_name, artifact_type='dataset', project='zeogen', entity='glafk'):
+
+#     api = wandb.Api()
+    
+#     # Retrieve the runs with matching experiment name
+#     runs = api.runs(f"{entity}/{project}", {"config.expname": experiment_name})
+
+#     artifact_files = []
+    
+#     for run in runs:
+#         # Retrieve the artifacts associated with each run
+#         artifacts = run.use_artifacts(type=artifact_type)
+        
+#         for artifact in artifacts:
+#             # Download the artifact files
+#             artifact_dir = artifact.download()
+#             artifact_files.extend([os.path.join(artifact_dir, file) for file in artifact.manifest.entries.keys()])
+    
+#     return artifact_files

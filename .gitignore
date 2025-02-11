@@ -191,3 +191,5 @@ data/all_codes_dataset_splits/
 data/combined_val_preprocessed.pt
 data/combined_train_preprocessed.pt
 data/combined_test_preprocessed.pt
+data/combined_dataset_small/*.pt
+/artifacts

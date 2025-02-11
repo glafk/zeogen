@@ -156,7 +156,7 @@ class CrystDataModule(pl.LightningDataModule):
 
             print("Instantiating predict dataset")
             self.predict_dataset.lengths_scaler = self.lengths_scaler
-            self.predict_dataset.rrop_scaler = self.prop_scaler
+            self.predict_dataset.prop_scaler = self.prop_scaler
             self.predict_dataset.prop_mu_scaler = self.prop_mu_scaler
             self.predict_dataset.prop_std_scaler = self.prop_std_scaler 
 
